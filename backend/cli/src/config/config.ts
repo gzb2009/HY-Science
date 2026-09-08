@@ -1019,6 +1019,10 @@ export namespace Config {
         .string()
         .describe("Small model to use for tasks like title generation in the format of provider/model")
         .optional(),
+      execution_model: z
+        .string()
+        .describe("Local OpenAI-compatible model for mature recipe execution in the format of provider/model")
+        .optional(),
       default_agent: z
         .string()
         .optional()

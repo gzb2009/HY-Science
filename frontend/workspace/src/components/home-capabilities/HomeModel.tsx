@@ -67,11 +67,16 @@ export function HomeModelDock(): JSX.Element {
   const [busy, setBusy] = createSignal(false)
   const [keyProvider, setKeyProvider] = createSignal<(typeof BYOK)[number]["id"]>(BYOK[0].id)
   const [keyValue, setKeyValue] = createSignal("")
+  const [localOpen, setLocalOpen] = createSignal(false)
+  const [localName, setLocalName] = createSignal("Local OpenAI")
+  const [localBase, setLocalBase] = createSignal("http://localhost:11434/v1")
+  const [localModel, setLocalModel] = createSignal("")
+  const [localKey, setLocalKey] = createSignal("")
   let root: HTMLDivElement | undefined
 
   onMount(() => {
     const onDoc = (event: MouseEvent) => {
-      if (!open() || drawer()) return
+      if (!open() || drawer() || localOpen()) return
       if (root?.contains(event.target as Node)) return
       setOpen(false)
     }
@@ -95,6 +100,7 @@ export function HomeModelDock(): JSX.Element {
   const connected = createMemo(() => providers.connected().filter((p) => p.id !== "hysci" || options().length > 0))
   const defaultModel = () => sync.data.config.model
   const subagentModel = () => sync.data.config.small_model
+  const executionModel = () => sync.data.config.execution_model
   const domain = createMemo(() => domainById(params.id) ?? domainById(lastSelectedDomain()) ?? domainById("general"))
   const ready = () => connected().length > 0 && options().length > 0
 
@@ -105,6 +111,49 @@ export function HomeModelDock(): JSX.Element {
   const setSubagentModel = (value: string) => {
     if (!value) return
     void sync.updateConfig({ small_model: value })
+  }
+  const setExecutionModel = (value: string) => {
+    void sync.updateConfig({ execution_model: value || undefined })
+  }
+
+  const saveLocal = async () => {
+    const name = localName().trim()
+    const base = localBase().trim()
+    const modelID = localModel().trim()
+    if (!name || !base || !modelID || busy()) return
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "local-openai"
+    setBusy(true)
+    try {
+      await sync.updateConfig({
+        provider: {
+          ...(sync.data.config.provider ?? {}),
+          [id]: {
+            name,
+            npm: "@ai-sdk/openai-compatible",
+            models: {
+              [modelID]: {
+                name: modelID,
+                tool_call: true,
+                limit: { context: 8192, output: 2048 },
+              },
+            },
+            options: {
+              baseURL: base,
+              ...(localKey().trim() ? { apiKey: localKey().trim() } : {}),
+            },
+          },
+        },
+        execution_model: `${id}/${modelID}`,
+      })
+      setLocalOpen(false)
+    } catch (err) {
+      showToast({
+        title: language.t("home.capabilities.model.localFailed"),
+        description: err instanceof Error ? err.message : String(err),
+      })
+    } finally {
+      setBusy(false)
+    }
   }
 
   const saveKey = async () => {
@@ -211,6 +260,36 @@ export function HomeModelDock(): JSX.Element {
                 <For each={options()}>{(o) => <option value={o.value}>{o.label}</option>}</For>
               </select>
               <span class="cs-model-dock-note">{language.t("home.capabilities.model.subagentHint")}</span>
+            </section>
+
+            <section class="cs-model-dock-section">
+              <label class="cs-model-dock-label" for="cs-model-execution">
+                {language.t("home.capabilities.model.execution")}
+              </label>
+              <select
+                id="cs-model-execution"
+                class="cs-model-dock-select"
+                value={executionModel() ?? ""}
+                onChange={(e) => setExecutionModel(e.currentTarget.value)}
+              >
+                <option value="">{language.t("home.capabilities.model.auto")}</option>
+                <For each={options()}>{(o) => <option value={o.value}>{o.label}</option>}</For>
+              </select>
+              <span class="cs-model-dock-note">
+                {executionModel()
+                  ? modelLabel(executionModel(), options())
+                  : language.t("home.capabilities.model.executionNone")}
+              </span>
+              <button
+                type="button"
+                class="cs-cap-drawer-link"
+                onClick={() => {
+                  setOpen(false)
+                  setLocalOpen(true)
+                }}
+              >
+                {language.t("home.capabilities.model.local")}
+              </button>
             </section>
 
             <section class="cs-model-dock-section">
@@ -327,6 +406,59 @@ export function HomeModelDock(): JSX.Element {
                   onClick={() => void saveKey()}
                 >
                   {language.t("home.capabilities.model.saveKey")}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </Portal>
+      </Show>
+
+      <Show when={localOpen()}>
+        <Portal>
+          <div class="thesis-overlay" onClick={() => setLocalOpen(false)} />
+          <aside class="thesis-drawer-right cs-cap-drawer" onClick={(e) => e.stopPropagation()}>
+            <header class="cs-cap-drawer-head">
+              <h3>{language.t("home.capabilities.model.local")}</h3>
+              <button
+                type="button"
+                class="cs-cap-icon-btn"
+                onClick={() => setLocalOpen(false)}
+                aria-label={language.t("common.close")}
+              >
+                <IconX size={16} strokeWidth={1.5} />
+              </button>
+            </header>
+            <div class="cs-cap-drawer-body">
+              <p class="cs-cap-drawer-hint">{language.t("home.capabilities.model.localHint")}</p>
+              <div class="cs-cap-drawer-section">
+                <label>{language.t("home.capabilities.model.localName")}</label>
+                <input value={localName()} onInput={(e) => setLocalName(e.currentTarget.value)} />
+                <label>{language.t("home.capabilities.model.localBase")}</label>
+                <input
+                  value={localBase()}
+                  onInput={(e) => setLocalBase(e.currentTarget.value)}
+                  placeholder="http://localhost:11434/v1"
+                />
+                <label>{language.t("home.capabilities.model.localModel")}</label>
+                <input
+                  value={localModel()}
+                  onInput={(e) => setLocalModel(e.currentTarget.value)}
+                  placeholder="qwen2.5:7b"
+                />
+                <label>{language.t("home.capabilities.model.apiKey")}</label>
+                <input
+                  type="password"
+                  autocomplete="off"
+                  value={localKey()}
+                  onInput={(e) => setLocalKey(e.currentTarget.value)}
+                />
+                <button
+                  type="button"
+                  class="cs-cap-drawer-action"
+                  disabled={busy() || !localName().trim() || !localBase().trim() || !localModel().trim()}
+                  onClick={() => void saveLocal()}
+                >
+                  {language.t("home.capabilities.model.localSave")}
                 </button>
               </div>
             </div>

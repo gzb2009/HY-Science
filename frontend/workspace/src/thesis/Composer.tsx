@@ -17,7 +17,7 @@ import {
   IconStop,
   IconX,
 } from "@/thesis/shared/Icon"
-import { IMC_STEPS } from "@/domain/imc-flow"
+import { IMC_STEPS, recipeMark } from "@/domain/imc-flow"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
 import { toast } from "@/thesis/Toast"
 import { SkillsBrowser } from "@/thesis/SkillsBrowser"
@@ -237,6 +237,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   const local = useLocal()
 
   const [text, setText] = createSignal("")
+  const [recipeId, setRecipeId] = createSignal<string | undefined>(undefined)
   const [model, setModel] = createSignal<ModelKey | undefined>(undefined)
   const agent = (): AgentName => "research"
   createEffect(() => local.agent.set(agent()))
@@ -322,6 +323,15 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     })
   })
   const selectedTaskControl = createMemo(() => taskControls.find((item) => item.id === taskControl()))
+  const recipeStatus = createMemo(() => {
+    if (!props.imcFlow || !params.id) return undefined
+    const users = (sync.data.message[params.id] ?? []).filter((item) => item.role === "user")
+    const last = users.at(-1)
+    if (last?.agent === "recipe-executor") return "local" as const
+    const prev = users.at(-2)
+    if (last?.agent === "research" && prev?.agent === "recipe-executor") return "upgrade" as const
+    return undefined
+  })
   createEffect(
     on(
       () => params.id,
@@ -376,8 +386,10 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     if (!pending) return
     const send = uiStore.prefillSend()
     setText(pending)
+    setRecipeId(uiStore.prefillRecipe())
     uiStore.setPrefill(undefined)
     uiStore.setPrefillSend(false)
+    uiStore.setPrefillRecipe(undefined)
     if (textareaRef) {
       textareaRef.focus()
       textareaRef.style.height = "auto"
@@ -1134,6 +1146,15 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
         hybio: true,
         text: `<ui-locale code="${language.locale()}" />`,
       })
+      if (recipeId()) {
+        textParts.push({
+          id: Identifier.ascending("part"),
+          type: "text",
+          hybio: true,
+          text: recipeMark(recipeId()!),
+        })
+        setRecipeId(undefined)
+      }
 
       const promptParts = [...textParts, ...filePartsBase]
 
@@ -1445,6 +1466,13 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                 {language.t("chat.welcome.imc.flow.title")}
                 <IconChevronDown size={11} strokeWidth={1.6} />
               </button>
+              <Show when={recipeStatus()}>
+                <span class="cs-imc-flow-status">
+                  {recipeStatus() === "local"
+                    ? language.t("chat.welcome.imc.flow.local")
+                    : language.t("chat.welcome.imc.flow.upgrade")}
+                </span>
+              </Show>
               <Show when={imcOpen()}>
                 <div class="cs-imc-flow-pop" role="menu">
                   <div class="cs-chat-welcome-flow-grid">
@@ -1458,6 +1486,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                             role="menuitem"
                             onClick={() => {
                               grow(language.t(step[2]))
+                              setRecipeId(step[4])
                               setImcOpen(false)
                               textareaRef?.focus()
                             }}

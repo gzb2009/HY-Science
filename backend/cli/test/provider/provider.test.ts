@@ -26,6 +26,7 @@ import { tmpdir } from "../fixture/fixture"
 import { Instance } from "../../src/project/instance"
 import { Provider } from "../../src/provider/provider"
 import { Env } from "../../src/env"
+import { RecipeRoute } from "../../src/recipe/route"
 
 /* Pinned against the live models.dev catalog. When models.dev delists one of
    these ids, the "pinned catalog models still exist upstream" test below fails
@@ -317,6 +318,41 @@ test("custom provider with npm package", async () => {
       expect(providers["custom-provider"]).toBeDefined()
       expect(providers["custom-provider"].name).toBe("Custom Provider")
       expect(providers["custom-provider"].models["custom-model"]).toBeDefined()
+    },
+  })
+})
+
+test("loads local OpenAI-compatible execution model", async () => {
+  await using tmp = await tmpdir({
+    config: {
+      execution_model: "local-ollama/qwen2.5:7b",
+      provider: {
+        "local-ollama": {
+          name: "Ollama",
+          npm: "@ai-sdk/openai-compatible",
+          models: {
+            "qwen2.5:7b": {
+              name: "Qwen 2.5 7B",
+              tool_call: true,
+              limit: { context: 8192, output: 2048 },
+            },
+          },
+          options: {
+            baseURL: "http://localhost:11434/v1",
+          },
+        },
+      },
+    },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const providers = await Provider.list()
+      expect(providers["local-ollama"]).toBeDefined()
+      expect(providers["local-ollama"].models["qwen2.5:7b"]).toBeDefined()
+      expect(providers["local-ollama"].models["qwen2.5:7b"].capabilities.toolcall).toBe(true)
+      const hit = await RecipeRoute.execution()
+      expect(hit).toEqual({ providerID: "local-ollama", modelID: "qwen2.5:7b" })
     },
   })
 })

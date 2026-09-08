@@ -211,4 +211,16 @@ export const BUILTIN: BuiltinDefinition[] = [
     temperature: 0.5,
     permission: "deny-all",
   },
+  {
+    key: "recipe-executor",
+    name: "recipe-executor",
+    steps: 8,
+    hidden: true,
+    description: "Restricted IMC recipe executor. Fills whitelist params and calls imc_recipe only.",
+    promptFile: "recipe-executor.txt",
+    promptRole: "promptText",
+    mode: "subagent",
+    native: true,
+    permission: { "*": "deny", question: "allow", imc_recipe: "allow" },
+  },
 ]

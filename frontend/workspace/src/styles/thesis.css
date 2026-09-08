@@ -4205,6 +4205,15 @@ html[data-color-scheme="dark"] .thesis-overlay {
 .cs-imc-flow-dock {
   position: relative;
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-imc-flow-status {
+  color: var(--color-text-faint);
+  font-family: var(--font-sans);
+  font-size: 11px;
 }
 
 .cs-imc-flow-trigger {
@@ -4693,7 +4702,8 @@ button.cs-composer-label:hover {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 560px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .cs-font-size-control {
@@ -4714,13 +4724,15 @@ button.cs-composer-label:hover {
 
 .cs-chat-welcome-title {
   margin: 0;
+  width: 100%;
+  overflow: hidden;
   font-family: var(--font-serif);
   font-size: calc(var(--app-font-size, 14px) * 1.85);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.45;
   text-align: center;
-  text-wrap: balance;
+  white-space: nowrap;
   color: var(--color-text);
 }
 
@@ -4730,11 +4742,8 @@ button.cs-composer-label:hover {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.2em;
-  max-width: 16em;
-  margin: 0 0.18em;
-  padding: 0.06em 0.36em 0.1em 0.42em;
-  overflow: hidden;
+  margin: 0 0.16em;
+  padding: 0.04em 0.32em 0.08em;
   border-radius: 7px;
   border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
   background: color-mix(in srgb, var(--color-text) 5.5%, transparent);
@@ -4747,9 +4756,6 @@ button.cs-composer-label:hover {
 }
 
 .cs-chat-welcome-name-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

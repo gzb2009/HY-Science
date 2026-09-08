@@ -73,6 +73,25 @@ test("explore agent denies edit and write", async () => {
   })
 })
 
+test("recipe-executor only allows imc_recipe and question", async () => {
+  await using tmp = await tmpdir()
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const agent = await Agent.get("recipe-executor")
+      expect(agent?.hidden).toBe(true)
+      expect(evalPerm(agent, "imc_recipe")).toBe("allow")
+      expect(evalPerm(agent, "question")).toBe("allow")
+      expect(evalPerm(agent, "bash")).toBe("deny")
+      expect(evalPerm(agent, "read")).toBe("deny")
+      expect(evalPerm(agent, "edit")).toBe("deny")
+      expect(evalPerm(agent, "write")).toBe("deny")
+      expect(evalPerm(agent, "skill")).toBe("deny")
+      expect(evalPerm(agent, "task")).toBe("deny")
+    },
+  })
+})
+
 test("task agent denies todo tools", async () => {
   await using tmp = await tmpdir()
   await Instance.provide({

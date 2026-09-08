@@ -1360,8 +1360,9 @@ function SessionRow(props: {
   )
 }
 
-function launchWelcome(prompt: string) {
+function launchWelcome(prompt: string, recipe?: string) {
   uiStore.setPrefillSend(false)
+  uiStore.setPrefillRecipe(recipe)
   uiStore.setPrefill(prompt)
 }
 
@@ -1382,6 +1383,34 @@ function ChatWelcome(props: {
     const id = props.domain
     return ([1, 2, 3] as const).map((n) => language.t(`chat.welcome.${id}.${n}`))
   })
+  let title: HTMLHeadingElement | undefined
+  const fitTitle = () => {
+    const el = title
+    if (!el) return
+    el.style.removeProperty("font-size")
+    const cap = el.clientWidth
+    if (cap <= 0) return
+    const base = Number.parseFloat(getComputedStyle(el).fontSize)
+    const shrink = (size: number) => {
+      if (el.scrollWidth <= cap || size <= 16) return
+      const next = size - 1
+      el.style.fontSize = `${next}px`
+      shrink(next)
+    }
+    shrink(base)
+  }
+  createEffect(() => {
+    props.name
+    language.t("chat.welcome.title.before")
+    language.t("chat.welcome.title.after")
+    requestAnimationFrame(fitTitle)
+  })
+  onMount(() => {
+    if (!title) return
+    const ro = new ResizeObserver(() => fitTitle())
+    ro.observe(title)
+    onCleanup(() => ro.disconnect())
+  })
   return (
     <div class="thesis-fade-in cs-chat-welcome">
       <div class="cs-chat-welcome-hero">
@@ -1395,7 +1424,7 @@ function ChatWelcome(props: {
           />
         </div>
         <div class="cs-chat-welcome-copy">
-          <h2 class="cs-chat-welcome-title">
+          <h2 class="cs-chat-welcome-title" ref={title}>
             {language.t("chat.welcome.title.before")}
             <DropdownMenu open={switchOpen()} onOpenChange={setSwitchOpen} modal={false}>
               <DropdownMenu.Trigger
@@ -1404,7 +1433,6 @@ function ChatWelcome(props: {
                 aria-label={language.t("chat.welcome.switchProject")}
               >
                 <span class="cs-chat-welcome-name-text">{props.name}</span>
-                <IconChevronDown size={14} strokeWidth={1.8} />
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.Content class="cs-menu cs-chat-welcome-project-menu">
@@ -1425,9 +1453,6 @@ function ChatWelcome(props: {
               </DropdownMenu.Portal>
             </DropdownMenu>
             {language.t("chat.welcome.title.after")}
-            <span class="thesis-blink" style={{ color: "var(--color-text-faint)" }}>
-              _
-            </span>
           </h2>
         </div>
       </div>
@@ -1455,7 +1480,7 @@ function ChatWelcome(props: {
                     <button
                       type="button"
                       class="cs-chat-welcome-flow-card"
-                      onClick={() => launchWelcome(language.t(step[2]))}
+                      onClick={() => launchWelcome(language.t(step[2]), step[4])}
                     >
                       <span class="cs-chat-welcome-flow-mark">
                         <Glyph size={16} strokeWidth={1.6} />

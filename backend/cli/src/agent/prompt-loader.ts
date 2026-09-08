@@ -10,6 +10,7 @@ import PROMPT_BIOLOGY from "./prompt/biology-core-v2.txt"
 import PROMPT_PHYSICS from "./prompt/physics.txt"
 import PROMPT_ML from "./prompt/ml.txt"
 import PROMPT_WRITE from "./prompt/write.txt"
+import PROMPT_RECIPE_EXECUTOR from "./prompt/recipe-executor.txt"
 import { PromptTemplate } from "./prompt-template"
 
 const files: Record<string, string> = {
@@ -25,6 +26,7 @@ const files: Record<string, string> = {
   "physics.txt": PROMPT_PHYSICS,
   "ml.txt": PROMPT_ML,
   "write.txt": PROMPT_WRITE,
+  "recipe-executor.txt": PROMPT_RECIPE_EXECUTOR,
 }
 
 export namespace PromptLoader {

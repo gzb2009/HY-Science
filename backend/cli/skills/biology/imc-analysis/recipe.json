@@ -1,0 +1,199 @@
+{
+  "version": "1.0.0",
+  "recipes": [
+    {
+      "id": "imc.inspect",
+      "title": "Check IMC inputs",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "inspect",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" }
+      },
+      "produces": ["inspect.json"],
+      "timeout_ms": 60000,
+      "keywords": ["检查输入", "inspect panel", "检查 panel"]
+    },
+    {
+      "id": "imc.preprocess",
+      "title": "Preprocess IMC images",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "preprocess",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" }
+      },
+      "produces": ["filtered"],
+      "timeout_ms": 600000,
+      "keywords": ["背景减除", "imc preprocess", "预处理图像"]
+    },
+    {
+      "id": "imc.segment",
+      "title": "Segment cells",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "segment",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" },
+        "segmenter": {
+          "kind": "enum",
+          "choices": ["otsu", "li", "adaptive", "log", "hmax", "stardist", "cellpose", "mesmer"],
+          "default": "otsu"
+        },
+        "nucleus_channel": { "kind": "number", "default": 0 },
+        "min_area": { "kind": "number", "default": 50 }
+      },
+      "produces": ["masks", "cells_segment.csv"],
+      "timeout_ms": 900000,
+      "keywords": ["细胞分割", "imc 分割", "生成 mask", "预处理分割"]
+    },
+    {
+      "id": "imc.qc",
+      "title": "Filter cells",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "qc",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" },
+        "min_intensity_pct": { "kind": "number", "default": 0.01 },
+        "max_area_factor": { "kind": "number", "default": 3 },
+        "qc_method": {
+          "kind": "enum",
+          "choices": ["combined", "area", "dna", "iqr", "mad", "doublet"],
+          "default": "combined"
+        }
+      },
+      "requires": ["cells_segment.csv"],
+      "produces": ["cells_qc.csv"],
+      "timeout_ms": 120000,
+      "keywords": ["细胞过滤", "imc qc", "质控过滤"]
+    },
+    {
+      "id": "imc.cluster",
+      "title": "Cluster cells",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "cluster",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" },
+        "n_pcs": { "kind": "number", "default": 30 },
+        "n_clusters": { "kind": "number" }
+      },
+      "requires": ["cells_qc.csv"],
+      "produces": ["cells_cluster.csv"],
+      "timeout_ms": 300000,
+      "keywords": ["细胞聚类", "imc 聚类", "kmeans 分群"]
+    },
+    {
+      "id": "imc.neighborhood",
+      "title": "Neighborhood and interaction",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "neighborhood",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" },
+        "k": { "kind": "number", "default": 20 },
+        "n_niches": { "kind": "number", "default": 6 }
+      },
+      "requires": ["cells_cluster.csv"],
+      "produces": ["cells_full.csv", "interaction_counts.csv"],
+      "timeout_ms": 300000,
+      "keywords": ["细胞邻域", "细胞互作", "imc 空间"]
+    },
+    {
+      "id": "imc.pcf",
+      "title": "PCF condition compare",
+      "maturity": "ready",
+      "skill": "pcf-analysis",
+      "script": "scripts/pcf_analysis.py",
+      "params": {
+        "input": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out/pcf" },
+        "method": {
+          "kind": "enum",
+          "choices": ["spearman", "pearson", "mutual_information"],
+          "default": "spearman"
+        },
+        "n_mes": { "kind": "number", "default": 6 },
+        "group_var": { "kind": "string" }
+      },
+      "produces": ["cells_with_me.csv"],
+      "timeout_ms": 300000,
+      "keywords": ["pcf", "蛋白相关", "条件比较网络"]
+    },
+    {
+      "id": "imc.run",
+      "title": "End-to-end IMC pipeline",
+      "maturity": "ready",
+      "skill": "imc-analysis",
+      "script": "scripts/imc_pipeline.py",
+      "step": "run",
+      "params": {
+        "input_dir": { "kind": "path", "required": true },
+        "panel": { "kind": "path", "required": true },
+        "output_dir": { "kind": "path", "default": ".hyscience/imc-out" },
+        "segmenter": {
+          "kind": "enum",
+          "choices": ["otsu", "li", "adaptive", "log", "hmax", "stardist", "cellpose", "mesmer"],
+          "default": "otsu"
+        },
+        "nucleus_channel": { "kind": "number", "default": 0 },
+        "min_area": { "kind": "number", "default": 50 },
+        "preprocess": { "kind": "boolean", "default": false }
+      },
+      "produces": ["cells_full.csv", "masks"],
+      "timeout_ms": 1200000,
+      "keywords": ["端到端 imc", "完整 imc 管道", "跑通 imc"]
+    },
+    {
+      "id": "imc.convert",
+      "title": "Convert MCD/QPTIFF",
+      "maturity": "expert_only",
+      "skill": "imc-analysis",
+      "script": "",
+      "keywords": ["mcd", "qptiff", "ome-tiff 转换"]
+    },
+    {
+      "id": "imc.normalize",
+      "title": "Full cell normalization",
+      "maturity": "expert_only",
+      "skill": "imc-analysis",
+      "script": "",
+      "keywords": ["arcsinh", "percentile normalize"]
+    },
+    {
+      "id": "imc.annotate",
+      "title": "Phenotype annotation",
+      "maturity": "expert_only",
+      "skill": "imc-analysis",
+      "script": "",
+      "keywords": ["表型注释", "phenotype annotation"]
+    },
+    {
+      "id": "imc.region",
+      "title": "Region proportion and density",
+      "maturity": "expert_only",
+      "skill": "imc-analysis",
+      "script": "",
+      "keywords": ["区域比例", "密度比较", "region density"]
+    }
+  ]
+}
