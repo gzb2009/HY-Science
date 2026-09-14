@@ -546,7 +546,7 @@ function isDelimited(name: string) {
 }
 
 function isReport(name: string) {
-  return ["md", "markdown", "html", "pdf", "txt"].includes(ext(name))
+  return ["md", "markdown", "html", "pdf", "txt", "docx", "pptx"].includes(ext(name))
 }
 
 function kindLabel(name: string) {
@@ -595,6 +595,8 @@ function downloadMime(name: string) {
   if (e === "json" || e === "jsonl") return "application/json;charset=utf-8"
   if (e === "xlsx") return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   if (e === "xls") return "application/vnd.ms-excel"
+  if (e === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  if (e === "pptx") return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   if (e === "pdf") return "application/pdf"
   if (e === "png") return "image/png"
   if (e === "jpg" || e === "jpeg") return "image/jpeg"
