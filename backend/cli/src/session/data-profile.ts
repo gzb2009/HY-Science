@@ -2,6 +2,7 @@ import path from "path"
 import { Log } from "../util/log"
 import { Identifier } from "../id/id"
 import { MessageV2 } from "./message-v2"
+import { ProcessEnvironment } from "@/process/environment"
 
 /**
  * Data profile — a deterministic, data-aware summary of files the user
@@ -55,7 +56,7 @@ try:
             a = ad.read_h5ad(p, backed="r")
             out = {"status":"ok","kind":"h5ad","backend":"anndata","n_obs":int(a.n_obs),"n_vars":int(a.n_vars),
                    "obs":list(map(str,a.obs.columns))[:30],"var":list(map(str,a.var.columns))[:15],
-                   "obsm":list(a.obsm.keys())[:10],"layers":list(a.layers.keys())[:10],"raw":a.raw is not None}
+                   "obsm":[k for k in a.obsm.keys() if isinstance(k, str)][:10],"layers":[k for k in a.layers.keys() if isinstance(k, str)][:10],"raw":a.raw is not None}
             try:
                 import numpy as np
                 names = np.array([str(v) for v in a.var_names])
@@ -136,7 +137,8 @@ print(json.dumps(out))
     if (!stat) return undefined
     const hit = cache.get(file)
     if (hit && hit.mtime === stat.mtimeMs) return hit.summary
-    const proc = Bun.spawn(["python3", "-c", SCRIPT, file], { stdout: "pipe", stderr: "pipe" })
+    const env = await ProcessEnvironment.resolve("notebook").catch(() => process.env)
+    const proc = Bun.spawn(["python3", "-c", SCRIPT, file], { stdout: "pipe", stderr: "pipe", env })
     const timer = setTimeout(() => proc.kill(), TIMEOUT)
     const text = await new Response(proc.stdout).text().catch(() => "")
     await proc.exited

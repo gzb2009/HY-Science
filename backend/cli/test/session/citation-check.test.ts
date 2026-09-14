@@ -66,6 +66,53 @@ describe("CitationCheck", () => {
     expect(CitationCheck.note(result)).toContain("Unresolvable (already flagged): doi:10.9999/fake.2024.001")
   })
 
+  test("author/year attribution mismatch against the resolved record is a warning", async () => {
+    stub((url) => {
+      if (url.includes("api.crossref.org/works/10.1038")) {
+        return Response.json({
+          message: {
+            title: ["Highly accurate protein structure prediction with AlphaFold"],
+            issued: { "date-parts": [[2021]] },
+            author: [{ family: "Jumper" }, { family: "Evans" }, { family: "Hassabis" }],
+          },
+        })
+      }
+      if (url.includes("esummary.fcgi")) {
+        return Response.json({
+          result: {
+            uids: ["30193111"],
+            "30193111": {
+              title:
+                "A Structured Tumor-Immune Microenvironment in Triple Negative Breast Cancer Revealed by Multiplexed Ion Beam Imaging",
+              pubdate: "2018 Sep 6",
+              authors: [{ name: "Keren L" }, { name: "Bosse M" }, { name: "Angelo M" }],
+            },
+          },
+        })
+      }
+      return new Response("nope", { status: 500 })
+    })
+    const wrong = await CitationCheck.verify(
+      "结构预测见 Smith et al., 2018 (doi:10.1038/s41586-021-03819-2)；MIBI 参考 Keren 2018（PMID 30193111）。",
+    )
+    const alpha = wrong.items.find((item) => item.id === "10.1038/s41586-021-03819-2")!
+    expect(alpha.mismatch).toEqual([
+      { field: "year", claimed: "2018", actual: "2021" },
+      { field: "author", claimed: "Smith", actual: "Jumper, Evans, Hassabis" },
+    ])
+    const keren = wrong.items.find((item) => item.id === "30193111")!
+    expect(keren.mismatch).toEqual([])
+    const findings = CitationCheck.findings(wrong)
+    expect(findings).toHaveLength(2)
+    expect(findings.every((finding) => finding.severity === "warning")).toBe(true)
+    expect(findings[0].message).toContain('cites year "2018" while the record says "2021"')
+    expect(CitationCheck.note(wrong)).toContain("Attribution mismatch")
+
+    clearCache()
+    const plain = await CitationCheck.verify("参考 doi:10.1038/s41586-021-03819-2 与 PMID 30193111。")
+    expect(plain.items.every((item) => item.mismatch?.length === 0)).toBe(true)
+  })
+
   test("network failure is a warning, not a blocking finding", async () => {
     stub(() => new Response("down", { status: 503, headers: { "Retry-After": "0" } }))
     const result = await CitationCheck.verify("doi:10.1000/xyz123")
