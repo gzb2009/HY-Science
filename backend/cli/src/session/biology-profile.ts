@@ -27,6 +27,12 @@ export namespace BiologyProfile {
     return FRAGMENTS[profile]
   }
 
+  /** The theme's "## Review" checklist, for the blind reviewer. */
+  export function review(profile: BiologyProfile) {
+    const match = FRAGMENTS[profile].match(/## Review\n([\s\S]*?)(?=\n## |\n<\/biology-task-profile>)/)
+    return match?.[1].trim()
+  }
+
   /** Explicit override from a hybio marker in the user message, if present. */
   export function fromMarker(text: string): BiologyProfile | undefined {
     const m = text.match(/<biology-profile>\s*([a-z-]+)\s*<\/biology-profile>/i)

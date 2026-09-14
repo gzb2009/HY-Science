@@ -5,6 +5,8 @@ import { MessageV2 } from "./message-v2"
 import { ReviewRecord } from "./review-record"
 import { Instance } from "../project/instance"
 import { CitationCheck } from "./citation-check"
+import { BiologyProfile } from "./biology-profile"
+import { isBiologyTheme } from "@hysci/util/themes"
 import z from "zod"
 
 export namespace SessionReview {
@@ -96,6 +98,14 @@ export namespace SessionReview {
     if (next.length < Math.floor(original.trim().length * 0.4)) return false
     if (/^\s*\{"verdict"/.test(next)) return false
     return next !== original.trim()
+  }
+
+  /** Theme-specific review checklist from the active biology profile, if any. */
+  export function checklist(subdomain: string | undefined) {
+    if (!isBiologyTheme(subdomain)) return ""
+    const items = BiologyProfile.review(subdomain)
+    if (!items) return ""
+    return ['<theme_checklist theme="' + subdomain + '">', items, "</theme_checklist>"].join("\n")
   }
 
   function promptFor(text: string, note = ""): string {
@@ -213,13 +223,14 @@ export namespace SessionReview {
     model: { providerID: string; modelID: string }
   }): Promise<ReviewRecord.Info | undefined> {
     const config = await Config.get()
-    const domain = (() => {
+    const research = (() => {
       try {
-        return Instance.project.research?.domain
+        return Instance.project.research
       } catch {
         return undefined
       }
     })()
+    const domain = research?.domain
     const mode = modeFor(input.agent, config.experimental?.reviewGate, domain)
     if (mode === "off" || !input.agent) return
 
@@ -289,7 +300,9 @@ export namespace SessionReview {
       }
       const child = created
       try {
-        const parts = await SessionPrompt.resolvePromptParts(promptFor(text, CitationCheck.note(citations)))
+        const parts = await SessionPrompt.resolvePromptParts(
+          promptFor(text, [CitationCheck.note(citations), checklist(research?.subdomain)].filter(Boolean).join("\n")),
+        )
         const run = SessionPrompt.prompt({
           messageID: Identifier.ascending("message"),
           sessionID: child.id,

@@ -6,6 +6,7 @@ import { DIRECTION_TITLE, FILES, FOREIGN, KEYWORDS } from "../../src/session/bio
 import { BiologyProfile } from "../../src/session/biology-profile"
 import { DomainScope } from "../../src/session/domain-scope"
 import { SUBDOMAINS } from "../../src/session/task-profile"
+import { SessionReview } from "../../src/session/review"
 import { domainSkillAllowed } from "../../src/skill/domain-preset"
 
 // The theme manifest is the only place a theme may be added. Every layer that
@@ -50,6 +51,24 @@ describe("theme manifest", () => {
       if ((DIRECTIONS as string[]).includes(id)) continue
       expect(DomainScope.id(id)).toBeUndefined()
     }
+  })
+
+  test("every profile fills the six-slot shape and leaves the compute gate to biology-core", async () => {
+    const core = await Bun.file(path.join(root, "src/agent/prompt/biology-core-v2.txt")).text()
+    expect(core).toContain("## Compute gate (every theme)")
+    expect(core).toContain("provenance_record")
+    for (const id of BIOLOGY_THEMES) {
+      const text = BiologyProfile.fragment(id)
+      for (const slot of ["## Ask first", "## Data forms", "## Hard constraints", "## Deliverable", "## Review"]) {
+        expect(text, `${id} lacks ${slot}`).toContain(slot)
+      }
+      expect(text, `${id} repeats the compute gate`).not.toMatch(/BLOCKING before COMPUTE|Load skills first/)
+      expect(BiologyProfile.review(id)?.split("\n").length ?? 0).toBeGreaterThanOrEqual(3)
+      // Each theme stays a fragment, not a second system prompt.
+      if (id !== "single-cell") expect(text.length).toBeLessThan(3_500)
+    }
+    expect(SessionReview.checklist("imc")).toContain("isotope")
+    expect(SessionReview.checklist("general")).toBe("")
   })
 
   test("every profile file on disk belongs to a manifest theme", async () => {

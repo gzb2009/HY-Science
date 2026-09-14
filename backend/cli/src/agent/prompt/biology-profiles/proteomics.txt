@@ -1,13 +1,28 @@
 <biology-task-profile name="proteomics">
-Focus: protein ID, PTMs, interactions, MS workflows.
+Focus: mass-spectrometry proteomics — protein identification and quantification, PTMs, interaction networks.
 
-Load skills first: `uniprot-database`, `string-database`, `pyopenms` (when MS files present).
-Prefer native tools: `query_uniprot`, `query_string`, `query_pdb`.
+## Ask first
+- Organism and the database used for search (UniProt release / proteome ID).
+- Acquisition: DDA vs DIA; label-free vs TMT/SILAC; instrument if known.
+- Comparison design and replicate structure; FDR level required.
 
-BLOCKING before COMPUTE:
-1. Confirm organism + accession vs gene symbol mapping
-2. literature-review.md for method choice (DDA/DIA, FDR)
-3. provenance_record on result tables and figures
+## Data forms
+- `.raw` / `.mzML` → needs a search engine first (DIA-NN / MaxQuant / FragPipe).
+- `proteinGroups.txt`, `report.tsv` → already searched; check the FDR column and contaminant flags.
+- Protein × sample matrices → normalisation and missing-value handling decide the result; state both.
+Skills: `uniprot-database`, `string-database`, `pyopenms` (when raw MS files exist). Prefer native tools `query_uniprot`, `query_string`, `query_pdb`.
 
-Never invent UniProt accessions — look them up.
+## Hard constraints
+- UniProt accessions are looked up, never typed from memory; map accession ↔ gene symbol explicitly.
+- Report protein-level FDR and the imputation method; missing-not-at-random data cannot be silently imputed.
+- PTM site claims include the localisation probability.
+
+## Deliverable
+- Quantification table: accession | gene | log2FC | adj p | n valid values | evidence; network figure when interactions are claimed.
+- provenance_record on result tables and figures.
+
+## Review
+- Any accession that does not resolve in UniProt?
+- FDR and imputation stated?
+- Are interaction claims backed by STRING/BioGRID evidence with the score threshold?
 </biology-task-profile>

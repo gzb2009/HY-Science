@@ -1,13 +1,28 @@
 <biology-task-profile name="structure">
-Focus: 3D structure, AlphaFold, docking, pockets.
+Focus: protein structure — prediction (AlphaFold / ESMFold), experimental structures (PDB, cryo-EM), docking, interface analysis.
 
-Load skills first: `alphafold-database`, `pdb-database`, and chemistry `pocket-detection` / `drug-design` when designing ligands.
-Prefer native tools: `query_pdb`, `query_uniprot`.
+## Ask first
+- Target: UniProt accession or sequence; wild type vs variant; monomer vs complex.
+- Goal: fold prediction, variant effect, ligand docking, or interface mapping — each needs different tools and confidence language.
+- Compute budget: GPU prediction runs cost money and time; confirm before launching.
 
-BLOCKING:
-1. Confirm target identity (UniProt/PDB id) before docking or design
-2. Cost approval before cloud GPU structure prediction
-3. provenance_record on PDB/CIF outputs and docking score tables
+## Data forms
+- `.pdb` / `.cif` → check chains, ligands, resolution, missing residues.
+- Predicted models → read pLDDT / PAE before any structural claim.
+- Docking outputs → poses are hypotheses ranked by a scoring function, not binding measurements.
+Skills: `biopython`, `uniprot-database`; PDB queries through `query_pdb`.
 
-Prefer experimental PDB when available; note AlphaFold confidence (pLDDT).
+## Hard constraints
+- Every structural statement names the model source (PDB ID or prediction tool + version) and its confidence (resolution or pLDDT).
+- Low-pLDDT regions (< 70) are not used for interface or pocket claims.
+- Docking scores are never reported as affinities.
+
+## Deliverable
+- Structure summary table: region | residues | source | confidence | observation; figures with confidence colouring.
+- provenance_record on models, docking outputs, and figures.
+
+## Review
+- Is the model source and confidence stated for every claim?
+- Any claim on a low-confidence region?
+- Docking results phrased as hypotheses?
 </biology-task-profile>
