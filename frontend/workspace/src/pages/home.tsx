@@ -288,6 +288,7 @@ export default function Home(): JSX.Element {
     const workspace = resolveDomainWorkspace({
       picked: directory,
       domain,
+      name: values.name,
       projects: sync.data.project,
     })
     try {

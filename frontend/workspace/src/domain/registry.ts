@@ -34,7 +34,6 @@ export const DOMAINS: DomainInfo[] = [
     subdomain: "imc",
     skills: [
       "imc-analysis",
-      "pcf-analysis",
       "bioimage-analysis",
       "squidpy",
       "pathml",

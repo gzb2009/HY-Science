@@ -283,15 +283,15 @@ export const dict = {
   "dialog.project.new.namePlaceholder": "Project name",
   "dialog.project.new.directory": "Project folder",
   "dialog.project.new.directoryHint":
-    "Choose the parent folder for your data. Each direction gets its own workspace folder; results go in that folder's result/ directory.",
+    "Choose the parent folder for your data. Each project gets its own subfolder and does not overwrite others in the same directory. Results go in that project's result/ folder.",
   "dialog.project.new.directoryPlaceholder": "Click browse to choose a folder",
   "dialog.project.new.directoryRequired": "Choose a project folder",
   "dialog.project.new.browse": "Browse",
-  "dialog.project.new.workspacePreview": "Direction workspace",
+  "dialog.project.new.workspacePreview": "Project workspace",
   "dialog.project.new.resultPreview": "Result folder",
-  "dialog.project.new.resultHint": "Outputs stay in result/ inside this direction workspace.",
+  "dialog.project.new.resultHint": "Outputs stay in result/ inside this project workspace.",
   "dialog.project.new.isolateFailed":
-    "Could not isolate this direction from the parent folder. Try a different folder.",
+    "Could not isolate this project from the parent folder. Try a different folder.",
   "dialog.project.research.label": "Analysis direction",
   "dialog.project.research.hint":
     "Set on the domain page and locked here. Switch domain first if you need another direction.",
@@ -306,7 +306,7 @@ export const dict = {
   "dialog.project.new.agentContextPlaceholder":
     "e.g., This project studies the effects of compound X on gene Y in cell line Z. Always use GRCh38 for genome references…",
   "dialog.project.new.create": "Create",
-  "dialog.project.new.updatedExisting": "This direction workspace already exists — details were updated.",
+  "dialog.project.new.updatedExisting": "Opened this project and updated its details.",
   "home.menu.pin": "Pin project",
   "home.menu.unpin": "Unpin project",
   "home.menu.settings": "Settings",

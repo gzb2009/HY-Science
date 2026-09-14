@@ -66,10 +66,8 @@ import { AgentIcon } from "@/thesis/shared/AgentIcon"
 import { useLanguage } from "@/context/language"
 import { projectPrefs } from "@/thesis/store/projectPrefs"
 import { SessionStatusLight } from "@/thesis/shared/SessionStatusLight"
-import { ReviewStatusCard } from "@/components/session/review-status-card"
 import { DomainSwitchCard } from "@/domain/DomainSwitchCard"
 import { switchFromParts } from "@/domain/switch"
-import { reviewForTurn, reviewState } from "@/utils/review"
 import { InlineRename } from "@/thesis/shared/InlineRename"
 import { decode64 } from "@/utils/base64"
 import { projectLabel } from "@/utils/projectLabel"
@@ -591,7 +589,9 @@ export default function Page(): JSX.Element {
   // preserving their distance from the bottom when they had scrolled up.
   let scrollRef: HTMLDivElement | undefined
   let scrollObserver: ResizeObserver | undefined
+  let contentObserver: ResizeObserver | undefined
   let boundScroll: HTMLDivElement | undefined
+  let boundContent: HTMLDivElement | undefined
   const NEAR_BOTTOM_PX = 120
   let pinnedToBottom = true
   let distanceFromBottom = 0
@@ -620,21 +620,23 @@ export default function Page(): JSX.Element {
     scrollRef = el
     pinnedToBottom = true
     el.addEventListener("scroll", recordScroll, { passive: true })
-    // First callback fires synchronously on observe; ignore it (initial layout)
-    // and only re-anchor on genuine resizes after that.
-    let primed = false
-    scrollObserver = new ResizeObserver(() => {
-      if (!primed) {
-        primed = true
-        return
-      }
-      reanchor()
-    })
+    scrollObserver = new ResizeObserver(reanchor)
     scrollObserver.observe(el)
+  }
+
+  const attachContent = (el: HTMLDivElement) => {
+    if (boundContent === el) return
+    if (contentObserver) contentObserver.disconnect()
+    boundContent = el
+    contentObserver = new ResizeObserver(() => {
+      if (pinnedToBottom) stickToBottom()
+    })
+    contentObserver.observe(el)
   }
 
   onCleanup(() => {
     if (scrollObserver) scrollObserver.disconnect()
+    if (contentObserver) contentObserver.disconnect()
     if (boundScroll) boundScroll.removeEventListener("scroll", recordScroll)
   })
 
@@ -789,13 +791,9 @@ export default function Page(): JSX.Element {
                       "padding-top": "12px",
                     }}
                   >
+                    <div ref={attachContent} class="cs-chat-scroll-inner">
                     <For each={turnMessages()}>
                       {(message, index) => {
-                        const toolCount = (sync.data.part[message.id] ?? []).filter(
-                          (part) => part.type === "tool",
-                        ).length
-                        const review = () => reviewForTurn(messages(), sync.data.review[params.id!] ?? [], message.id)
-                        const reviewStatus = () => reviewState(review())
                         return (
                           <div
                             data-message-id={message.id}
@@ -825,11 +823,6 @@ export default function Page(): JSX.Element {
                                     .replace(/_/g, " ")
                                     .replace(/\b\w/g, (c: string) => c.toUpperCase())}
                                 </span>
-                                <Show when={message.role === "assistant" && message.agent && toolCount > 0}>
-                                  <span style={{ color: "var(--color-text-faint)", "font-weight": "400" }}>
-                                    · {toolCount} tools
-                                  </span>
-                                </Show>
                               </div>
                             </Show>
                             <SessionTurn
@@ -859,7 +852,6 @@ export default function Page(): JSX.Element {
                               onRevealFile={(path) => void openLocalFile(path, "reveal")}
                               onOpenInApp={(path, app) => void openLocalFile(path, "app", app)}
                               hideTools={["task"]}
-                              hideResponse={reviewStatus().blocked}
                               classes={{
                                 root: "min-w-0 w-full relative overflow-x-hidden",
                                 content: "flex flex-col justify-between min-w-0 overflow-x-hidden",
@@ -869,14 +861,6 @@ export default function Page(): JSX.Element {
                             <Show when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}>
                               {(hit) => <DomainSwitchCard hit={hit()} />}
                             </Show>
-                            <Show when={review()}>
-                              {(record) => (
-                                <ReviewStatusCard
-                                  record={record()}
-                                  onInspect={() => uiStore.inspectReview(params.id!, record().messageID)}
-                                />
-                              )}
-                            </Show>
                             {/* Space, not a rule — the bubbles already separate turns. */}
                             <Show when={index() < turnMessages().length - 1}>
                               <div style={{ height: "22px" }} />
@@ -885,6 +869,7 @@ export default function Page(): JSX.Element {
                         )
                       }}
                     </For>
+                    </div>
                   </div>
                 </Match>
                 <Match when={true}>
@@ -1382,6 +1367,34 @@ function ChatWelcome(props: {
     const id = props.domain
     return ([1, 2, 3] as const).map((n) => language.t(`chat.welcome.${id}.${n}`))
   })
+  let title: HTMLHeadingElement | undefined
+  const fitTitle = () => {
+    const el = title
+    if (!el) return
+    el.style.removeProperty("font-size")
+    const cap = el.clientWidth
+    if (cap <= 0) return
+    const base = Number.parseFloat(getComputedStyle(el).fontSize)
+    const shrink = (size: number) => {
+      if (el.scrollWidth <= cap || size <= 16) return
+      const next = size - 1
+      el.style.fontSize = `${next}px`
+      shrink(next)
+    }
+    shrink(base)
+  }
+  createEffect(() => {
+    props.name
+    language.t("chat.welcome.title.before")
+    language.t("chat.welcome.title.after")
+    requestAnimationFrame(fitTitle)
+  })
+  onMount(() => {
+    if (!title) return
+    const ro = new ResizeObserver(() => fitTitle())
+    ro.observe(title)
+    onCleanup(() => ro.disconnect())
+  })
   return (
     <div class="thesis-fade-in cs-chat-welcome">
       <div class="cs-chat-welcome-hero">
@@ -1395,7 +1408,7 @@ function ChatWelcome(props: {
           />
         </div>
         <div class="cs-chat-welcome-copy">
-          <h2 class="cs-chat-welcome-title">
+          <h2 class="cs-chat-welcome-title" ref={title}>
             {language.t("chat.welcome.title.before")}
             <DropdownMenu open={switchOpen()} onOpenChange={setSwitchOpen} modal={false}>
               <DropdownMenu.Trigger
@@ -1404,7 +1417,6 @@ function ChatWelcome(props: {
                 aria-label={language.t("chat.welcome.switchProject")}
               >
                 <span class="cs-chat-welcome-name-text">{props.name}</span>
-                <IconChevronDown size={14} strokeWidth={1.8} />
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.Content class="cs-menu cs-chat-welcome-project-menu">
@@ -1425,9 +1437,6 @@ function ChatWelcome(props: {
               </DropdownMenu.Portal>
             </DropdownMenu>
             {language.t("chat.welcome.title.after")}
-            <span class="thesis-blink" style={{ color: "var(--color-text-faint)" }}>
-              _
-            </span>
           </h2>
         </div>
       </div>
