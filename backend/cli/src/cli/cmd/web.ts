@@ -93,7 +93,7 @@ export const WebCommand = cmd({
       UI.empty()
     }
 
-    const server = Server.listen(opts)
+    const server = Server.listen({ ...opts, web: true })
 
     const base = `http://localhost:${server.port}`
     UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, base)

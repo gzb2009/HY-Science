@@ -132,7 +132,8 @@ export function AppInterface(props: { defaultUrl?: string }) {
 
   const defaultServerUrl = () => {
     if (props.defaultUrl) return props.defaultUrl
-    if (usableStored()) return usableStored()
+    const kept = usableStored()
+    if (kept) return kept
     if (location.hostname.includes(URLS.host)) return "http://127.0.0.1:4096"
     if (import.meta.env.DEV) return localDevUrl()
 

@@ -1207,7 +1207,7 @@ export namespace Config {
             .enum(["off", "annotate", "enforce"])
             .optional()
             .describe(
-              "Run a blind reviewer and persist a structured ReviewRecord. 'annotate' is fail-open; 'enforce' rejects successful completion on FLAGGED or ERROR. Defaults to annotate for research/biology/ml when unset.",
+              "Run a blind reviewer and persist a structured ReviewRecord. 'annotate' silently corrects flagged issues before delivery; 'enforce' rejects completion if correction fails. Defaults to annotate for research/biology/ml when unset.",
             ),
           reviewTimeoutMs: z
             .number()

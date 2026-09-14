@@ -2,7 +2,7 @@ import { BusEvent } from "@/bus/bus-event"
 import { Bus } from "@/bus"
 import { Log } from "../util/log"
 import { describeRoute, generateSpecs, validator, resolver, openAPIRouteHandler } from "hono-openapi"
-import { Hono } from "hono"
+import { Hono, type Context } from "hono"
 import { cors } from "hono/cors"
 import { streamSSE } from "hono/streaming"
 import { serveWebAsset } from "../web/serve"
@@ -63,6 +63,25 @@ export namespace Server {
   let _url: URL | undefined
   let _corsWhitelist: string[] = []
   let _server: Bun.Server<unknown> | undefined
+  let _serveWeb = false
+  const LIVE_UI = "http://localhost:4444"
+
+  function headlessUi(c: Context) {
+    const accept = c.req.header("accept") ?? ""
+    if (accept.includes("text/html")) {
+      return new Response(
+        `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${LIVE_UI}"><title>HYscience API</title></head><body><p>这里是 API，不是界面。请打开 <a href="${LIVE_UI}">${LIVE_UI}</a>。</p><script>location.replace(${JSON.stringify(LIVE_UI)}+location.pathname+location.search+location.hash)</script></body></html>`,
+        {
+          status: 404,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+          },
+        },
+      )
+    }
+    return c.json({ error: "headless-api", ui: LIVE_UI }, 404)
+  }
 
   // Per-process secret marking trusted in-process calls (Server.internalFetch).
   // Generated fresh each run, kept in memory, never sent to any client — a
@@ -659,6 +678,10 @@ export namespace Server {
           // try to JSON.parse `<!doctype`) and never proxy upstream.
           if (c.req.path.startsWith("/api/")) return c.notFound()
 
+          // `hyscience serve` is API-only. Hosting the last vite snapshot on
+          // :4096 made a stale UI look current while :4444 had the live app.
+          if (!_serveWeb) return headlessUi(c)
+
           const local = await serveWebAsset(c)
           if (local) {
             local.headers.set("Content-Security-Policy", csp)
@@ -696,8 +719,9 @@ export namespace Server {
     return result
   }
 
-  export function listen(opts: { port: number; cors?: string[] }) {
+  export function listen(opts: { port: number; cors?: string[]; web?: boolean }) {
     _corsWhitelist = opts.cors ?? []
+    _serveWeb = opts.web === true
 
     const fetch = App().fetch
     const args = {
@@ -719,7 +743,7 @@ export namespace Server {
     if (!server) throw new Error(`Failed to start server on port ${opts.port}`)
     // Chrome/Safari resolve localhost to ::1 first. IPv4-only bind makes
     // http://localhost:4096 fail with TypeError: Failed to fetch.
-    tryServe(server.port, "::1")
+    if (server.port) tryServe(server.port, "::1")
 
     _url = server.url
     _server = server
