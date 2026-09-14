@@ -108,9 +108,10 @@ export function AppInterface(props: { defaultUrl?: string }) {
   })()
 
   const localDevUrl = () => {
-    const host = import.meta.env.VITE_HYSCIENCE_SERVER_HOST === "localhost" || !import.meta.env.VITE_HYSCIENCE_SERVER_HOST
-      ? "127.0.0.1"
-      : import.meta.env.VITE_HYSCIENCE_SERVER_HOST
+    const host =
+      import.meta.env.VITE_HYSCIENCE_SERVER_HOST === "localhost" || !import.meta.env.VITE_HYSCIENCE_SERVER_HOST
+        ? "127.0.0.1"
+        : import.meta.env.VITE_HYSCIENCE_SERVER_HOST
     const port = import.meta.env.VITE_HYSCIENCE_SERVER_PORT ?? "4096"
     return `http://${host}:${port}`
   }

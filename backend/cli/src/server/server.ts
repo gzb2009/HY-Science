@@ -737,9 +737,7 @@ export namespace Server {
       }
     }
     const server =
-      opts.port === 0
-        ? (tryServe(4096, "127.0.0.1") ?? tryServe(0, "127.0.0.1"))
-        : tryServe(opts.port, "127.0.0.1")
+      opts.port === 0 ? (tryServe(4096, "127.0.0.1") ?? tryServe(0, "127.0.0.1")) : tryServe(opts.port, "127.0.0.1")
     if (!server) throw new Error(`Failed to start server on port ${opts.port}`)
     // Chrome/Safari resolve localhost to ::1 first. IPv4-only bind makes
     // http://localhost:4096 fail with TypeError: Failed to fetch.

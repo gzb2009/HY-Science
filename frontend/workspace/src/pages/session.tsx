@@ -792,83 +792,86 @@ export default function Page(): JSX.Element {
                     }}
                   >
                     <div ref={attachContent} class="cs-chat-scroll-inner">
-                    <For each={turnMessages()}>
-                      {(message, index) => {
-                        return (
-                          <div
-                            data-message-id={message.id}
-                            class={`cs-chat-turn${message.role === "assistant" ? " hys-turn-card" : ""}`}
-                            style={{
-                              "min-width": 0,
-                              width: "100%",
-                              "max-width": message.role === "assistant" ? "100%" : "100%",
-                            }}
-                          >
-                            <Show when={message.role === "assistant" && message.agent}>
-                              <div
-                                class="hys-turn-card-header"
-                                style={{
-                                  padding: "6px 12px 2px",
-                                  "font-family": "var(--font-sans)",
-                                  "font-size": "11px",
-                                  "font-weight": "600",
-                                  color: "var(--color-text-muted)",
-                                  display: "flex",
-                                  "align-items": "center",
-                                  gap: "8px",
-                                }}
-                              >
-                                <span>
-                                  {((message.agent as string) || "assistant")
-                                    .replace(/_/g, " ")
-                                    .replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                </span>
-                              </div>
-                            </Show>
-                            <SessionTurn
-                              sessionID={params.id!}
-                              messageID={message.id}
-                              lastUserMessageID={lastUserMessage()?.id}
-                              stepsExpanded={stepsExpanded()[message.id] ?? false}
-                              onStepsExpandedToggle={() => toggleSteps(message.id)}
-                              onRevertMessage={(id) => void revertTo(id)}
-                              onOpenFile={(path) => void openFile(path)}
-                              onPreviewFile={(path) => void previewImage(path)}
-                              renderFilePreview={(file) =>
-                                file.kind === "png" || file.kind === "jpg" || file.kind === "svg" ? (
-                                  <ArtifactImageThumb
-                                    directory={sync.data.path.directory || sdk.directory}
-                                    file={file}
-                                  />
-                                ) : file.kind === "pdf" ? (
-                                  <ArtifactPdfThumb directory={sync.data.path.directory || sdk.directory} file={file} />
-                                ) : file.kind === "csv" || file.kind === "tsv" ? (
-                                  <ArtifactTableThumb
-                                    directory={sync.data.path.directory || sdk.directory}
-                                    file={file}
-                                  />
-                                ) : undefined
-                              }
-                              onRevealFile={(path) => void openLocalFile(path, "reveal")}
-                              onOpenInApp={(path, app) => void openLocalFile(path, "app", app)}
-                              hideTools={["task"]}
-                              classes={{
-                                root: "min-w-0 w-full relative overflow-x-hidden",
-                                content: "flex flex-col justify-between min-w-0 overflow-x-hidden",
-                                container: "w-full min-w-0",
+                      <For each={turnMessages()}>
+                        {(message, index) => {
+                          return (
+                            <div
+                              data-message-id={message.id}
+                              class={`cs-chat-turn${message.role === "assistant" ? " hys-turn-card" : ""}`}
+                              style={{
+                                "min-width": 0,
+                                width: "100%",
+                                "max-width": message.role === "assistant" ? "100%" : "100%",
                               }}
-                            />
-                            <Show when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}>
-                              {(hit) => <DomainSwitchCard hit={hit()} />}
-                            </Show>
-                            {/* Space, not a rule — the bubbles already separate turns. */}
-                            <Show when={index() < turnMessages().length - 1}>
-                              <div style={{ height: "22px" }} />
-                            </Show>
-                          </div>
-                        )
-                      }}
-                    </For>
+                            >
+                              <Show when={message.role === "assistant" && message.agent}>
+                                <div
+                                  class="hys-turn-card-header"
+                                  style={{
+                                    padding: "6px 12px 2px",
+                                    "font-family": "var(--font-sans)",
+                                    "font-size": "11px",
+                                    "font-weight": "600",
+                                    color: "var(--color-text-muted)",
+                                    display: "flex",
+                                    "align-items": "center",
+                                    gap: "8px",
+                                  }}
+                                >
+                                  <span>
+                                    {((message.agent as string) || "assistant")
+                                      .replace(/_/g, " ")
+                                      .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                  </span>
+                                </div>
+                              </Show>
+                              <SessionTurn
+                                sessionID={params.id!}
+                                messageID={message.id}
+                                lastUserMessageID={lastUserMessage()?.id}
+                                stepsExpanded={stepsExpanded()[message.id] ?? false}
+                                onStepsExpandedToggle={() => toggleSteps(message.id)}
+                                onRevertMessage={(id) => void revertTo(id)}
+                                onOpenFile={(path) => void openFile(path)}
+                                onPreviewFile={(path) => void previewImage(path)}
+                                renderFilePreview={(file) =>
+                                  file.kind === "png" || file.kind === "jpg" || file.kind === "svg" ? (
+                                    <ArtifactImageThumb
+                                      directory={sync.data.path.directory || sdk.directory}
+                                      file={file}
+                                    />
+                                  ) : file.kind === "pdf" ? (
+                                    <ArtifactPdfThumb
+                                      directory={sync.data.path.directory || sdk.directory}
+                                      file={file}
+                                    />
+                                  ) : file.kind === "csv" || file.kind === "tsv" ? (
+                                    <ArtifactTableThumb
+                                      directory={sync.data.path.directory || sdk.directory}
+                                      file={file}
+                                    />
+                                  ) : undefined
+                                }
+                                onRevealFile={(path) => void openLocalFile(path, "reveal")}
+                                onOpenInApp={(path, app) => void openLocalFile(path, "app", app)}
+                                hideTools={["task"]}
+                                classes={{
+                                  root: "min-w-0 w-full relative overflow-x-hidden",
+                                  content: "flex flex-col justify-between min-w-0 overflow-x-hidden",
+                                  container: "w-full min-w-0",
+                                }}
+                              />
+                              <Show when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}>
+                                {(hit) => <DomainSwitchCard hit={hit()} />}
+                              </Show>
+                              {/* Space, not a rule — the bubbles already separate turns. */}
+                              <Show when={index() < turnMessages().length - 1}>
+                                <div style={{ height: "22px" }} />
+                              </Show>
+                            </div>
+                          )
+                        }}
+                      </For>
                     </div>
                   </div>
                 </Match>
@@ -1083,7 +1086,9 @@ function SessionsSidebar(props: {
         const nameHit = !q || group.name.toLowerCase().includes(q)
         const sessions = nameHit
           ? group.sessions
-          : group.sessions.filter((row) => row.title.toLowerCase().includes(q) || (row.session.title || "").toLowerCase().includes(q))
+          : group.sessions.filter(
+              (row) => row.title.toLowerCase().includes(q) || (row.session.title || "").toLowerCase().includes(q),
+            )
         return { ...group, sessions }
       })
       .filter((group) => !q || group.sessions.length > 0 || group.name.toLowerCase().includes(q))
@@ -1178,7 +1183,11 @@ function SessionsSidebar(props: {
                       <IconChevronRight size={14} strokeWidth={1.5} />
                     </Show>
                   </button>
-                  <IconFolder size={14} strokeWidth={1.5} style={{ color: "var(--color-text-faint)", "flex-shrink": 0 }} />
+                  <IconFolder
+                    size={14}
+                    strokeWidth={1.5}
+                    style={{ color: "var(--color-text-faint)", "flex-shrink": 0 }}
+                  />
                   <Show when={group.pinned}>
                     <span class="cs-star-amber">
                       <IconStarFilled size={13} strokeWidth={1.5} />
@@ -1288,9 +1297,7 @@ function SessionRow(props: {
   const sync = useSync()
   const language = useLanguage()
   const displayTitle = createMemo(
-    () =>
-      props.title ??
-      getSessionDisplayTitle(props.session, sync.data.message[props.session.id], sync.data.part),
+    () => props.title ?? getSessionDisplayTitle(props.session, sync.data.message[props.session.id], sync.data.part),
   )
   const fullTitle = createMemo(
     () => firstUserMessageText(sync.data.message[props.session.id], sync.data.part) || displayTitle(),
@@ -1313,10 +1320,7 @@ function SessionRow(props: {
       }}
     >
       <SessionStatusLight sessionID={props.session.id} running={props.readonly ? props.busy : undefined} />
-      <Show
-        when={!props.readonly}
-        fallback={<span class="cs-session-title">{displayTitle()}</span>}
-      >
+      <Show when={!props.readonly} fallback={<span class="cs-session-title">{displayTitle()}</span>}>
         <InlineRename
           class="cs-session-title"
           inputClass="cs-inline-rename-input cs-session-title-input"

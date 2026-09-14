@@ -48,7 +48,11 @@ export function domainFolderName(domain: DomainId) {
 }
 
 export function folderSlug(name: string | undefined, domain: DomainId) {
-  const raw = (name ?? "").trim().replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim()
+  const raw = (name ?? "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
   return raw || domain
 }
 
@@ -77,7 +81,12 @@ function reopenExisting(input: { picked: string; domain: DomainId; name?: string
 }
 
 /** Isolated worktree for one named project. Result lives at `<workspace>/result`. */
-export function resolveDomainWorkspace(input: { picked: string; domain: DomainId; name?: string; projects?: ProjectRef[] }) {
+export function resolveDomainWorkspace(input: {
+  picked: string
+  domain: DomainId
+  name?: string
+  projects?: ProjectRef[]
+}) {
   const picked = projectRoot(normalize(input.picked))
   if (!picked) return ""
   const projects = input.projects ?? []

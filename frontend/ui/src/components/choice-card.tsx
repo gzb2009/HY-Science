@@ -25,7 +25,11 @@ function sameAnswers(current: string | undefined, next: string[]) {
     .filter(Boolean)
     .sort()
     .join("、")
-  const right = [...next].map((item) => item.trim()).filter(Boolean).sort().join("、")
+  const right = [...next]
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .sort()
+    .join("、")
   return left.length > 0 && left === right
 }
 
@@ -45,7 +49,12 @@ export function ChoiceCard(props: {
   const [open, setOpen] = createSignal(!props.review)
   const [custom, setCustom] = createSignal("")
   const [picked, setPicked] = createSignal<string[]>(
-    props.answer ? props.answer.split(/[、,]/).map((item) => item.trim()).filter(Boolean) : [],
+    props.answer
+      ? props.answer
+          .split(/[、,]/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [],
   )
 
   const title = createMemo(() => props.question)
@@ -79,7 +88,11 @@ export function ChoiceCard(props: {
   }
 
   return (
-    <div data-component="choice-card" data-open={open() ? "true" : undefined} data-review={props.review ? "true" : undefined}>
+    <div
+      data-component="choice-card"
+      data-open={open() ? "true" : undefined}
+      data-review={props.review ? "true" : undefined}
+    >
       <Show
         when={open()}
         fallback={

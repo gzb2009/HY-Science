@@ -135,9 +135,9 @@ describe("AgentRouter v2 regex fallback", () => {
       text: "按这个 PCF 设计偏 B 的 50 marker panel，输出 Excel",
       history: ["PCF是PhenoCycler-Fusion，Akoya 前身 CODEX"],
     })
-    expect(AgentRouter.assayOntology("按这个 PCF 设计偏 B 的 50 marker panel，输出 Excel", "PCF是PhenoCycler-Fusion")).toBe(
-      "phenocycler",
-    )
+    expect(
+      AgentRouter.assayOntology("按这个 PCF 设计偏 B 的 50 marker panel，输出 Excel", "PCF是PhenoCycler-Fusion"),
+    ).toBe("phenocycler")
     expect(contract.knownContext).toContain("phenocycler chemistry")
     expect(contract.missingPremises).not.toContain(AgentRouter.IMC_CONFIRM)
   })

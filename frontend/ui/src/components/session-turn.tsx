@@ -147,11 +147,7 @@ function ResultFileCards(props: {
           <div data-slot="session-turn-result-files-chips">
             <For each={chips()}>
               {(file) => (
-                <ResultFileTile
-                  file={file}
-                  onOpenFile={props.onOpenFile}
-                  onPreviewFile={props.onPreviewFile}
-                />
+                <ResultFileTile file={file} onOpenFile={props.onOpenFile} onPreviewFile={props.onPreviewFile} />
               )}
             </For>
           </div>
@@ -221,7 +217,10 @@ function ResultFileTile(props: {
                 when={props.preview}
                 fallback={
                   <div data-slot="session-turn-result-file-placeholder">
-                    <FileIcon node={{ path: props.file.name, type: "file" }} style={{ width: "30px", height: "30px" }} />
+                    <FileIcon
+                      node={{ path: props.file.name, type: "file" }}
+                      style={{ width: "30px", height: "30px" }}
+                    />
                     <span>{ext()}</span>
                   </div>
                 }
@@ -883,23 +882,26 @@ export function SessionTurn(
                             aria-expanded={props.stepsExpanded}
                             aria-disabled={!canExpand()}
                           >
-                            <Show when={live() || awaitingChoice()} fallback={
-                              <svg
-                                width="10"
-                                height="10"
-                                viewBox="0 0 10 10"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                data-slot="session-turn-trigger-icon"
-                              >
-                                <path
-                                  d="M8.125 1.875H1.875L5 8.125L8.125 1.875Z"
-                                  fill="currentColor"
-                                  stroke="currentColor"
-                                  stroke-linejoin="round"
-                                />
-                              </svg>
-                            }>
+                            <Show
+                              when={live() || awaitingChoice()}
+                              fallback={
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 10 10"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  data-slot="session-turn-trigger-icon"
+                                >
+                                  <path
+                                    d="M8.125 1.875H1.875L5 8.125L8.125 1.875Z"
+                                    fill="currentColor"
+                                    stroke="currentColor"
+                                    stroke-linejoin="round"
+                                  />
+                                </svg>
+                              }
+                            >
                               <AgentStreamIcon />
                             </Show>
                             <span data-slot="session-turn-status-text">
@@ -997,48 +999,48 @@ export function SessionTurn(
                             </section>
                           </Show>
                           <Show when={showResponseCard() || resultFiles().length > 0}>
-                          <div data-slot="session-turn-response">
-                            <For each={cardSections()}>
-                              {(section, index) => (
-                                <section data-slot="session-turn-result-section" data-kind={section.kind}>
-                                  <Markdown
-                                    data-slot="session-turn-markdown"
-                                    data-diffs={hasDiffs()}
-                                    text={formatSectionForDisplay(section)}
-                                    cacheKey={`${responsePartId() ?? "response"}:${index()}:${section.kind}`}
-                                  />
-                                </section>
-                              )}
-                            </For>
-                            <Show when={resultFiles().length > 0}>
-                              <ResultFileCards
-                                files={resultFiles()}
-                                onOpenFile={props.onOpenFile}
-                                onPreviewFile={props.onPreviewFile}
-                                renderFilePreview={props.renderFilePreview}
-                              />
-                            </Show>
-                            <Show when={showResponseCard()}>
-                              <div data-slot="session-turn-response-copy-wrapper">
-                                <Tooltip
-                                  value={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")}
-                                  placement="top"
-                                  gutter={8}
-                                >
-                                  <IconButton
-                                    icon={copied() ? "check" : "copy"}
-                                    variant="secondary"
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={(event) => {
-                                      event.stopPropagation()
-                                      handleCopy()
-                                    }}
-                                    aria-label={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")}
-                                  />
-                                </Tooltip>
-                              </div>
-                            </Show>
-                          </div>
+                            <div data-slot="session-turn-response">
+                              <For each={cardSections()}>
+                                {(section, index) => (
+                                  <section data-slot="session-turn-result-section" data-kind={section.kind}>
+                                    <Markdown
+                                      data-slot="session-turn-markdown"
+                                      data-diffs={hasDiffs()}
+                                      text={formatSectionForDisplay(section)}
+                                      cacheKey={`${responsePartId() ?? "response"}:${index()}:${section.kind}`}
+                                    />
+                                  </section>
+                                )}
+                              </For>
+                              <Show when={resultFiles().length > 0}>
+                                <ResultFileCards
+                                  files={resultFiles()}
+                                  onOpenFile={props.onOpenFile}
+                                  onPreviewFile={props.onPreviewFile}
+                                  renderFilePreview={props.renderFilePreview}
+                                />
+                              </Show>
+                              <Show when={showResponseCard()}>
+                                <div data-slot="session-turn-response-copy-wrapper">
+                                  <Tooltip
+                                    value={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")}
+                                    placement="top"
+                                    gutter={8}
+                                  >
+                                    <IconButton
+                                      icon={copied() ? "check" : "copy"}
+                                      variant="secondary"
+                                      onMouseDown={(e) => e.preventDefault()}
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        handleCopy()
+                                      }}
+                                      aria-label={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")}
+                                    />
+                                  </Tooltip>
+                                </div>
+                              </Show>
+                            </div>
                           </Show>
                         </div>
                         <Accordion

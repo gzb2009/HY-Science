@@ -99,7 +99,9 @@ export default function General() {
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-raised-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-8 pb-8 max-w-[760px]">
           <h2 class="text-16-medium text-text-strong">General</h2>
-          <p class="text-13-regular text-text-weak">Your account, licensing, and appearance. Models are set in the workbench Model dock.</p>
+          <p class="text-13-regular text-text-weak">
+            Your account, licensing, and appearance. Models are set in the workbench Model dock.
+          </p>
         </div>
       </div>
 

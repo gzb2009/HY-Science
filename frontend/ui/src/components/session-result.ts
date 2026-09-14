@@ -44,7 +44,8 @@ function resultRole(name: string, parentDir?: string): ResultFile["role"] {
   return "supporting"
 }
 
-const RESULT_EXTS = /\.(xlsx|xls|csv|tsv|md|markdown|png|jpg|jpeg|webp|svg|gif|pdf|json|jsonl|py|r|sh|h5ad|rds|docx|pptx)$/i
+const RESULT_EXTS =
+  /\.(xlsx|xls|csv|tsv|md|markdown|png|jpg|jpeg|webp|svg|gif|pdf|json|jsonl|py|r|sh|h5ad|rds|docx|pptx)$/i
 
 /** Assistant messages belonging to the latest user turn (after the last user message). */
 export function assistantMessagesForLastTurn(messages: { id: string; role: string }[]): { id: string }[] {
@@ -224,7 +225,14 @@ export function collectResultFiles(input: {
       const state = tool.state as
         | {
             metadata?: {
-              artifacts?: { path?: string; name?: string; mime?: string; size?: number; verified?: boolean; how?: string }[]
+              artifacts?: {
+                path?: string
+                name?: string
+                mime?: string
+                size?: number
+                verified?: boolean
+                how?: string
+              }[]
             }
           }
         | undefined
@@ -630,7 +638,10 @@ export function collectDecisionCards(input: {
           : undefined
       for (const [index, item] of questions.entries()) {
         const question = item?.question?.trim() || item?.header?.trim()
-        const answer = (answers[index] ?? []).map((value) => value.trim()).filter(Boolean).join("、")
+        const answer = (answers[index] ?? [])
+          .map((value) => value.trim())
+          .filter(Boolean)
+          .join("、")
         if (!question || !answer) continue
         cards.push({
           messageID: msg.id,
@@ -652,7 +663,14 @@ export function collectDecisionCards(input: {
 }
 
 export function resultFileVisual(file: ResultFile) {
-  return file.kind === "png" || file.kind === "jpg" || file.kind === "svg" || file.kind === "pdf" || file.kind === "csv" || file.kind === "tsv"
+  return (
+    file.kind === "png" ||
+    file.kind === "jpg" ||
+    file.kind === "svg" ||
+    file.kind === "pdf" ||
+    file.kind === "csv" ||
+    file.kind === "tsv"
+  )
 }
 
 export function resultFileGlyph(kind: ResultFile["kind"]) {

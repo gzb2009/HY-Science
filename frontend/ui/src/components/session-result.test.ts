@@ -436,8 +436,12 @@ describe("splitTextAroundQuestion", () => {
 
 describe("resultFile chip", () => {
   test("office and code files use the chip, not the thumbnail grid", () => {
-    expect(resultFileVisual({ name: "panel.docx", path: "a.docx", kind: "docx", role: "primary", verified: true })).toBe(false)
-    expect(resultFileVisual({ name: "plot.png", path: "a.png", kind: "png", role: "primary", verified: true })).toBe(true)
+    expect(
+      resultFileVisual({ name: "panel.docx", path: "a.docx", kind: "docx", role: "primary", verified: true }),
+    ).toBe(false)
+    expect(resultFileVisual({ name: "plot.png", path: "a.png", kind: "png", role: "primary", verified: true })).toBe(
+      true,
+    )
     expect(resultFileGlyph("docx")).toEqual({ mark: "W", tone: "word" })
     expect(resultFileGlyph("xlsx")).toEqual({ mark: "X", tone: "excel" })
     expect(resultFileTypeLabel("docx", "zh")).toBe("Word 文档")
@@ -463,9 +467,15 @@ describe("resultFile chip", () => {
 describe("resultFileCtaName", () => {
   test("uses panel as the table label", () => {
     expect(resultFileCtaName("prostate_tls_panel.xlsx")).toBe("panel")
-    expect(resultFileCtaKind({ name: "panel.xlsx", path: "result/panel.xlsx", kind: "xlsx", role: "primary", verified: true })).toBe(
-      "table",
-    )
+    expect(
+      resultFileCtaKind({
+        name: "panel.xlsx",
+        path: "result/panel.xlsx",
+        kind: "xlsx",
+        role: "primary",
+        verified: true,
+      }),
+    ).toBe("table")
   })
 
   test("marks panel files as primary deliverables", () => {
@@ -495,8 +505,8 @@ describe("isUserStopError", () => {
   test("treats abort as a stop, not a failure", () => {
     expect(isUserStopError({ name: "MessageAbortedError", data: { message: "The operation was aborted." } })).toBe(true)
     expect(isUserStopError("Tool execution aborted")).toBe(true)
-    expect(isUserStopError({ name: "StreamGuardTimeoutError", data: { message: "Reasoning exceeded the limit" } })).toBe(
-      false,
-    )
+    expect(
+      isUserStopError({ name: "StreamGuardTimeoutError", data: { message: "Reasoning exceeded the limit" } }),
+    ).toBe(false)
   })
 })

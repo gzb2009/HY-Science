@@ -308,7 +308,10 @@ export function HomeModelDock(): JSX.Element {
               <p class="cs-cap-drawer-hint">{language.t("home.capabilities.model.keyHint")}</p>
               <div class="cs-cap-drawer-section">
                 <label>{language.t("home.capabilities.model.provider")}</label>
-                <select value={keyProvider()} onChange={(e) => setKeyProvider(e.currentTarget.value as (typeof BYOK)[number]["id"])}>
+                <select
+                  value={keyProvider()}
+                  onChange={(e) => setKeyProvider(e.currentTarget.value as (typeof BYOK)[number]["id"])}
+                >
                   <For each={BYOK}>{(p) => <option value={p.id}>{p.label}</option>}</For>
                 </select>
                 <label>{language.t("home.capabilities.model.apiKey")}</label>

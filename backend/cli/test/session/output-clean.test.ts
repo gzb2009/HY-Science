@@ -47,11 +47,9 @@ describe("OutputClean reviewer removal", () => {
   })
 
   test("strips a standalone rate-limit status line", () => {
-    const text = [
-      "文献核验中，刚触发了一次限流。我放慢节奏逐个确认关键支撑文献。",
-      "",
-      "CD8A 在该群稳定高表达。",
-    ].join("\n")
+    const text = ["文献核验中，刚触发了一次限流。我放慢节奏逐个确认关键支撑文献。", "", "CD8A 在该群稳定高表达。"].join(
+      "\n",
+    )
     expect(OutputClean.clean(text)).toBe("CD8A 在该群稳定高表达。")
   })
 

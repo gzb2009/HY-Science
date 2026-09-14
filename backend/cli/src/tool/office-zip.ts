@@ -70,7 +70,16 @@ export function zipStore(files: { name: string; data: Uint8Array }[]) {
     offset += localSize
   }
   const centralSize = centrals.reduce((sum, part) => sum + part.length, 0)
-  const end = [u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(centralSize), u32(offset), u16(0)]
+  const end = [
+    u32(0x06054b50),
+    u16(0),
+    u16(0),
+    u16(files.length),
+    u16(files.length),
+    u32(centralSize),
+    u32(offset),
+    u16(0),
+  ]
   const parts = [...locals, ...centrals, ...end]
   const bytes = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0))
   let cursor = 0

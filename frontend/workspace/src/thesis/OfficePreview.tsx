@@ -80,7 +80,11 @@ function Grid(props: { rows: string[][]; sheet?: boolean }): JSX.Element {
 }
 
 function Notes(props: { name?: string; rows: string[][] }): JSX.Element {
-  const lines = () => props.rows.flat().map((cell) => decode(cell)).filter(Boolean)
+  const lines = () =>
+    props.rows
+      .flat()
+      .map((cell) => decode(cell))
+      .filter(Boolean)
   return (
     <section class="hy-office-notes">
       <Show when={props.name}>
@@ -99,10 +103,15 @@ export function OfficePreview(props: { preview?: OfficePreviewData; compact?: bo
         <Show when={preview()?.kind === "xlsx"}>
           <For each={preview()?.sheets ?? []}>
             {(sheet) => (
-              <Show when={notes(sheet.rows)} fallback={<section class="hy-office-sheet">
-                <div class="hy-office-sheet-tab">{decode(sheet.name)}</div>
-                <Grid rows={sheet.rows} sheet />
-              </section>}>
+              <Show
+                when={notes(sheet.rows)}
+                fallback={
+                  <section class="hy-office-sheet">
+                    <div class="hy-office-sheet-tab">{decode(sheet.name)}</div>
+                    <Grid rows={sheet.rows} sheet />
+                  </section>
+                }
+              >
                 <Notes name={sheet.name} rows={sheet.rows} />
               </Show>
             )}
@@ -111,10 +120,7 @@ export function OfficePreview(props: { preview?: OfficePreviewData; compact?: bo
         <Show when={preview()?.kind === "docx"}>
           <For each={preview()?.blocks ?? []}>
             {(block) => (
-              <Show
-                when={block.type === "table"}
-                fallback={<p data-type={block.type}>{decode(block.text ?? "")}</p>}
-              >
+              <Show when={block.type === "table"} fallback={<p data-type={block.type}>{decode(block.text ?? "")}</p>}>
                 <Show when={notes(block.rows ?? [])} fallback={<Grid rows={block.rows ?? []} />}>
                   <Notes rows={block.rows ?? []} />
                 </Show>

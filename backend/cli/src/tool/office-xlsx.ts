@@ -33,7 +33,10 @@ const STYLES = [
 ].join("")
 
 function sheetName(name: string | undefined, index: number) {
-  const raw = plain(name ?? `Sheet${index + 1}`).replace(/[:\\/?*\[\]]/g, " ").trim() || `Sheet${index + 1}`
+  const raw =
+    plain(name ?? `Sheet${index + 1}`)
+      .replace(/[:\\/?*\[\]]/g, " ")
+      .trim() || `Sheet${index + 1}`
   return raw.slice(0, 31)
 }
 
@@ -100,9 +103,7 @@ export function buildXlsx(sheets: Sheet[]) {
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
     "<sheets>",
-    ...names.map(
-      (name, index) => `<sheet name="${escapeXml(name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`,
-    ),
+    ...names.map((name, index) => `<sheet name="${escapeXml(name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`),
     "</sheets>",
     "</workbook>",
   ].join("")

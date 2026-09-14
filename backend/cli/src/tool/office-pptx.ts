@@ -17,10 +17,10 @@ function slideXml(slide: Slide, index: number) {
   const body = [
     textPara(slide.title || `Slide ${index + 1}`, 2800),
     ...lines.map((line) => textPara(line, 1600)),
-    ...(slide.table?.headers ?? []).length
-      ? [textPara((slide.table?.headers ?? []).join(" | "), 1400)]
-      : [],
-    ...(slide.table?.rows ?? []).map((row) => textPara(row.map((cell) => (cell == null ? "" : plain(cell))).join(" | "), 1400)),
+    ...((slide.table?.headers ?? []).length ? [textPara((slide.table?.headers ?? []).join(" | "), 1400)] : []),
+    ...(slide.table?.rows ?? []).map((row) =>
+      textPara(row.map((cell) => (cell == null ? "" : plain(cell))).join(" | "), 1400),
+    ),
   ].join("")
   return [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
@@ -29,7 +29,7 @@ function slideXml(slide: Slide, index: number) {
     '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>',
     "<p:grpSpPr/>",
     '<p:sp><p:nvSpPr><p:cNvPr id="2" name="Content"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>',
-    "<p:spPr><a:xfrm><a:off x=\"457200\" y=\"274320\"/><a:ext cx=\"8229600\" cy=\"4572000\"/></a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></p:spPr>",
+    '<p:spPr><a:xfrm><a:off x="457200" y="274320"/><a:ext cx="8229600" cy="4572000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>',
     `<p:txBody><a:bodyPr/><a:lstStyle/>${body}</p:txBody>`,
     "</p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>",
   ].join("")

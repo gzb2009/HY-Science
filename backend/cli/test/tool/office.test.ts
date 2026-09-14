@@ -58,10 +58,7 @@ describe("buildXlsx", () => {
   })
 
   test("roundtrips excel word and powerpoint for in-app preview", () => {
-    const xlsx = officePreview(
-      "panel.xlsx",
-      buildXlsx([{ name: "Panel", headers: ["Marker"], rows: [["CD3"]] }]),
-    )
+    const xlsx = officePreview("panel.xlsx", buildXlsx([{ name: "Panel", headers: ["Marker"], rows: [["CD3"]] }]))
     expect(xlsx?.kind).toBe("xlsx")
     expect(xlsx?.sheets?.[0]?.rows[1]?.[0]).toBe("CD3")
 

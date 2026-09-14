@@ -654,7 +654,9 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
     <div data-component="tool-part-wrapper" data-permission={showPermission()} data-question={showQuestion()}>
       <Switch>
         <Match
-          when={part.state.status === "error" && !isUserStopError(part.state.error ?? "") ? part.state.error : undefined}
+          when={
+            part.state.status === "error" && !isUserStopError(part.state.error ?? "") ? part.state.error : undefined
+          }
         >
           {(error) => {
             const cleaned = error().replace("Error: ", "")

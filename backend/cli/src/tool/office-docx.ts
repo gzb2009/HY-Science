@@ -8,7 +8,7 @@ export type DocBlock =
   | { type: "table"; headers?: string[]; rows: Cell[][] }
 
 function run(text: string, shade?: boolean) {
-  const color = shade ? "<w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr>" : ""
+  const color = shade ? '<w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr>' : ""
   return `<w:r>${color}<w:t xml:space="preserve">${escapeXml(plain(text))}</w:t></w:r>`
 }
 
@@ -26,7 +26,7 @@ function table(headers: string[] | undefined, rows: Cell[][]) {
   const head = headers?.length ? `<w:tr>${headers.map((item) => cell(item, true)).join("")}</w:tr>` : ""
   const body = rows.map((row) => `<w:tr>${row.map((item) => cell(item)).join("")}</w:tr>`).join("")
   return [
-    "<w:tbl><w:tblPr><w:tblW w:w=\"5000\" w:type=\"pct\"/>",
+    '<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>',
     '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="D0D5DD"/><w:left w:val="single" w:sz="4" w:color="D0D5DD"/><w:bottom w:val="single" w:sz="4" w:color="D0D5DD"/><w:right w:val="single" w:sz="4" w:color="D0D5DD"/><w:insideH w:val="single" w:sz="4" w:color="D0D5DD"/><w:insideV w:val="single" w:sz="4" w:color="D0D5DD"/></w:tblBorders>',
     `</w:tblPr>${head}${body}</w:tbl>`,
   ].join("")

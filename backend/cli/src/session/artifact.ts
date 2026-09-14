@@ -13,7 +13,8 @@ export namespace SessionArtifact {
     how?: string
   }
 
-  const EXTENSIONS = /\.(?:xlsx|xls|csv|tsv|md|markdown|png|jpg|jpeg|webp|svg|gif|pdf|json|jsonl|py|r|sh|h5ad|rds|docx|pptx)$/i
+  const EXTENSIONS =
+    /\.(?:xlsx|xls|csv|tsv|md|markdown|png|jpg|jpeg|webp|svg|gif|pdf|json|jsonl|py|r|sh|h5ad|rds|docx|pptx)$/i
 
   /** Only tools that can create deliverables — not read-only exploration. */
   const OUTPUT_TOOLS = new Set(["bash", "write", "edit", "office", "notebook", "rkernel"])

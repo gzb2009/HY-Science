@@ -290,8 +290,7 @@ export const dict = {
   "dialog.project.new.workspacePreview": "Project workspace",
   "dialog.project.new.resultPreview": "Result folder",
   "dialog.project.new.resultHint": "Outputs stay in result/ inside this project workspace.",
-  "dialog.project.new.isolateFailed":
-    "Could not isolate this project from the parent folder. Try a different folder.",
+  "dialog.project.new.isolateFailed": "Could not isolate this project from the parent folder. Try a different folder.",
   "dialog.project.research.label": "Analysis direction",
   "dialog.project.research.hint":
     "Set on the domain page and locked here. Switch domain first if you need another direction.",
@@ -734,8 +733,7 @@ export const dict = {
     "Run IMC QC and normalization: denoise, remove background, and filter at the cell level. Confirm the mask and QC thresholds first.",
   "chat.welcome.imc.flow.p4": "Run IMC clustering and annotation: group segmented cells and assign phenotypes.",
   "chat.welcome.imc.flow.p5": "Run IMC spatial analysis: neighborhood, interaction, and patch analysis.",
-  "chat.welcome.imc.flow.p6":
-    "Run IMC downstream stats: compare cell proportions and densities across tissue regions.",
+  "chat.welcome.imc.flow.p6": "Run IMC downstream stats: compare cell proportions and densities across tissue regions.",
   "chat.welcome.single-cell.1":
     "Run QC, normalization, and clustering on a scRNA-seq dataset, then identify major cell types.",
   "chat.welcome.single-cell.2":
