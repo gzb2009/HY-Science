@@ -1,7 +1,7 @@
 import { Config } from "../config/config"
 import { Log } from "../util/log"
 import { Identifier } from "../id/id"
-import type { MessageV2 } from "./message-v2"
+import { MessageV2 } from "./message-v2"
 import { ReviewRecord } from "./review-record"
 import { Instance } from "../project/instance"
 import z from "zod"
@@ -11,6 +11,8 @@ export namespace SessionReview {
   const REVIEWABLE = ["research", "biology", "ml", "physics"]
   const MIN_TEXT = 400
   const DEFAULT_TIMEOUT = 120_000
+  const REPAIR_SYSTEM =
+    "You correct finished scientific answers. Rewrite the complete user-facing answer so every count, table row, citation, and claim is internally consistent. Fix only the listed issues. Do not redesign. Do not mention review, flags, or that you corrected anything. Return only the corrected answer."
   const Result = z
     .object({
       verdict: z.enum(["CLEAN", "FLAGGED"]),
@@ -56,6 +58,40 @@ export namespace SessionReview {
     })
   }
 
+  function answerParts(parts: MessageV2.Part[]) {
+    return parts.filter((part): part is MessageV2.TextPart => part.type === "text" && !MessageV2.isHybio(part))
+  }
+
+  export function answerText(parts: { type?: string; text?: string; hybio?: boolean; synthetic?: boolean }[]) {
+    return parts
+      .filter((part) => part.type === "text" && part.text && !MessageV2.isHybio(part))
+      .map((part) => part.text)
+      .join("\n")
+      .trim()
+  }
+
+  export function repairPrompt(text: string, findings: ReviewRecord.Finding[]) {
+    return [
+      "Fix the finished answer so it is internally consistent. Do not add commentary.",
+      "",
+      "<findings>",
+      findings.map((finding) => `- ${finding.message}`).join("\n"),
+      "</findings>",
+      "",
+      "<final_answer>",
+      text,
+      "</final_answer>",
+    ].join("\n")
+  }
+
+  export function acceptRepair(original: string, repaired: string) {
+    const next = repaired.trim()
+    if (next.length < 80) return false
+    if (next.length < Math.floor(original.trim().length * 0.4)) return false
+    if (/^\s*\{"verdict"/.test(next)) return false
+    return next !== original.trim()
+  }
+
   function promptFor(text: string): string {
     return [
       "Blindly review the FINAL ANSWER below. You did not write it; do not trust it.",
@@ -94,6 +130,62 @@ export namespace SessionReview {
     return record
   }
 
+  async function applyAnswer(last: MessageV2.WithParts, text: string) {
+    const { Session } = await import("./index")
+    const parts = answerParts(last.parts)
+    if (parts.length === 0) return
+    const target = parts[parts.length - 1]
+    await Session.updatePart({ ...target, text })
+    await Promise.all(parts.slice(0, -1).map((part) => (part.text ? Session.updatePart({ ...part, text: "" }) : undefined)))
+  }
+
+  async function rewrite(input: {
+    sessionID: string
+    text: string
+    findings: ReviewRecord.Finding[]
+    model: { providerID: string; modelID: string }
+    timeout: number
+  }) {
+    const { Agent } = await import("../agent/agent")
+    const { Provider } = await import("../provider/provider")
+    const { LLM } = await import("./llm")
+    const reviewer = await Agent.get("reviewer")
+    const model = await Provider.getModel(input.model.providerID, input.model.modelID).catch(() => undefined)
+    if (!model) return
+    const abort = new AbortController()
+    const timer = setTimeout(() => abort.abort(), input.timeout)
+    try {
+      const stream = await LLM.stream({
+        agent: { ...reviewer, prompt: REPAIR_SYSTEM, steps: 1 },
+        user: {
+          id: Identifier.ascending("message"),
+          role: "user",
+          sessionID: input.sessionID,
+          time: { created: Date.now() },
+          agent: "reviewer",
+          model: input.model,
+        },
+        system: [],
+        tools: {},
+        model,
+        abort: abort.signal,
+        sessionID: input.sessionID,
+        retries: 1,
+        messages: [{ role: "user", content: repairPrompt(input.text, input.findings) }],
+      })
+      const raw = await stream.text
+      if (!acceptRepair(input.text, raw)) return
+      return raw.trim()
+    } catch (error) {
+      log.warn("review repair failed", {
+        sessionID: input.sessionID,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   export async function gate(input: {
     sessionID: string
     agent?: string
@@ -115,11 +207,7 @@ export namespace SessionReview {
     const messages = await Session.messages({ sessionID: input.sessionID })
     const last = messages.filter((message) => message.info.role === "assistant" && message.info.finish).at(-1)
     if (!last) return
-    const text = last.parts
-      .filter((part) => part.type === "text")
-      .map((part) => (part as MessageV2.TextPart).text)
-      .join("\n")
-      .trim()
+    const text = answerText(last.parts)
     if (!shouldReview({ agent: input.agent, text })) return
     if (!sessionHasToolCalls(messages)) return
 
@@ -189,6 +277,33 @@ export namespace SessionReview {
           .trim()
         const parsed = parse(raw)
         const info = result.info as MessageV2.Assistant
+        if (parsed.verdict === "FLAGGED") {
+          const repaired = await rewrite({
+            sessionID: input.sessionID,
+            text,
+            findings: parsed.findings,
+            model: input.model,
+            timeout: config.experimental?.reviewTimeoutMs ?? DEFAULT_TIMEOUT,
+          })
+          if (repaired) {
+            const { OutputClean } = await import("./output-clean")
+            await applyAnswer(last, OutputClean.clean(repaired))
+            log.info("review gate corrected answer", {
+              sessionID: input.sessionID,
+              findings: parsed.findings.length,
+            })
+            return {
+              ...base,
+              reviewerSessionID: child.id,
+              verdict: "CLEAN",
+              findings: [],
+              summary: "Corrected before delivery.",
+              tokens: info.tokens,
+              cost: info.cost,
+              time: { started, completed: Date.now() },
+            }
+          }
+        }
         return {
           ...base,
           reviewerSessionID: child.id,

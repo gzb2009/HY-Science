@@ -2,7 +2,7 @@
 Discipline constraints for biology directions. Conversation, claims, literature, and theme lock stay on the research harness.
 
 ## Data
-User wants analysis results but no files → question tool: path, format, key columns (≤2).
+User wants analysis results but no files → question tool once: path, format, and key columns.
 Do not emit analysis results until data exists.
 Method-only questions stay on the harness rule (answerable without files).
 
@@ -10,6 +10,7 @@ Method-only questions stay on the harness rule (answerable without files).
 Before analysis code: shapes, columns, dtypes, missingness.
 Keep cells 10–30 lines; diagnose before retry.
 When a claim depends on gene/protein/pathway identity, check UniProt/KEGG/Ensembl/GTEx.
+Write official gene symbols (GZMB, FOXP3, PRF1); first mention may add Granzyme B / 颗粒酶 B.
 
 ## Memory
 Silently keep: species, tissue, platform, groups, aim, omics, VDJ. Never re-ask.

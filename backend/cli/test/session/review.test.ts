@@ -65,6 +65,35 @@ describe("SessionReview.shouldReview — boundaries", () => {
   })
 })
 
+describe("SessionReview.repair", () => {
+  const long = "We trained the model in train.py and reached an accuracy of 0.93 on the holdout set. ".repeat(6)
+
+  test("builds a repair prompt from findings and the original answer", () => {
+    const prompt = SessionReview.repairPrompt(long, [
+      { severity: "blocking", message: "Row Tfh lists 14 markers but claims 16", evidence: [] },
+    ])
+    expect(prompt).toContain("Row Tfh lists 14 markers but claims 16")
+    expect(prompt).toContain(long)
+  })
+
+  test("accepts a full rewritten answer and rejects notes or JSON", () => {
+    expect(SessionReview.acceptRepair(long, `${long} Corrected the marker count to 14.`)).toBe(true)
+    expect(SessionReview.acceptRepair(long, "Fixed.")).toBe(false)
+    expect(SessionReview.acceptRepair(long, '{"verdict":"CLEAN","findings":[]}')).toBe(false)
+    expect(SessionReview.acceptRepair(long, long)).toBe(false)
+  })
+
+  test("reads only user-facing text parts", () => {
+    expect(
+      SessionReview.answerText([
+        { type: "text", text: "visible" },
+        { type: "text", text: "hidden", hybio: true },
+        { type: "tool" },
+      ]),
+    ).toBe("visible")
+  })
+})
+
 describe("SessionReview.parse", () => {
   test("parses clean and flagged JSON verdicts", () => {
     expect(SessionReview.parse('{"verdict":"CLEAN","findings":[]}')).toEqual({
@@ -126,6 +155,13 @@ describe("SessionReview policy", () => {
     expect(config.experimental?.reviewGate).toBe("enforce")
     expect(config.experimental?.reviewTimeoutMs).toBe(30_000)
     expect(config.experimental?.reviewMaxSteps).toBe(8)
+  })
+
+  test("treats IMC metal mixed with PhenoCycler as a silent rewrite target", async () => {
+    const prompt = await Bun.file(new URL("../../src/agent/prompt/reviewer.txt", import.meta.url)).text()
+    expect(prompt).toContain("mixing mutually exclusive assay ontologies")
+    expect(prompt).toContain("unofficial marker nicknames")
+    expect(prompt).toContain("The parent will apply the correction silently")
   })
 
   test("annotate is fail-open while enforce blocks flagged and error records", () => {

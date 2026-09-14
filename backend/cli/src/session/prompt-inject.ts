@@ -71,8 +71,10 @@ const SESSION_PARAMS: Array<[string, RegExp]> = [
   ],
   [
     "platform",
-    /\b(10X|10x|Chromium|Visium|Smart-seq|SmartSeq|DIA|TMT|label-free|NovaSeq|NextSeq|Illumina|BD Rhapsody)\b/i,
+    /\b(10X|10x|Chromium|Visium|Smart-seq|SmartSeq|DIA|TMT|label-free|NovaSeq|NextSeq|Illumina|BD Rhapsody|PhenoCycler|CODEX|Hyperion)\b|成像质谱/i,
   ],
+  ["tissue", /胃癌|胃腺癌|前列腺癌|乳腺癌|肺癌|肝癌|肠癌|PDAC|CRC/i],
+  ["pcf", /PCF\s*(?:是|指|即|=).{2,60}/i],
   ["groups", /\b(control|treatment|treated|model|disease|normal|vehicle)\b|对照组?|造模组?|病例|健康组?/i],
 ]
 
@@ -191,53 +193,6 @@ export function injectDataQuality(userMessage: MessageV2.WithParts) {
     sessionID: userMessage.info.sessionID,
     type: "text",
     text: hybio,
-    hybio: true,
-  })
-}
-
-export function injectHypothesisContext(userMessage: MessageV2.WithParts) {
-  const textParts = userMessage.parts.filter((p): p is MessageV2.TextPart => p.type === "text")
-  const text = textParts.map((p) => p.text).join(" ")
-  if (!text || text.length < 30) return
-  const HYPI = [
-    "<system-reminder>",
-    "## Hypothesis-Driven Analysis",
-    "Structure your analysis around testable hypotheses. For every claim, formulate:",
-    "",
-    "1. **H0 (Null)**: The default/no-effect statement",
-    "2. **H1 (Alternative)**: The effect/difference you expect to find",
-    "",
-    "Report hypotheses using this format:",
-    "```",
-    '<hypothesis id="H1">',
-    "  <h0>There is no difference in expression between groups</h0>",
-    "  <h1>Gene X is differentially expressed between condition A and B</h1>",
-    "  <method>t-test (two-sided, unpaired)</method>",
-    "  <metrics>log2FC, p-value, FDR</metrics>",
-    "  <threshold>0.05</threshold>",
-    "</hypothesis>",
-    "```",
-    "",
-    "After testing, report results:",
-    "```",
-    '<hypothesis_result id="H1">',
-    "  <observed>0.003</observed>",
-    "  <threshold>0.05</threshold>",
-    "  <sample_size>48</sample_size>",
-    "  <effect_size>1.2</effect_size>",
-    "  <conclusion>reject_h0</conclusion>",
-    "  <notes>Significant upregulation in condition A (log2FC=2.1)</notes>",
-    "</hypothesis_result>",
-    "```",
-    "Track ALL hypotheses through your analysis. Report which are supported, rejected, or inconclusive.",
-    "</system-reminder>",
-  ].join("\n")
-  userMessage.parts.push({
-    id: Identifier.ascending("part"),
-    messageID: userMessage.info.id,
-    sessionID: userMessage.info.sessionID,
-    type: "text",
-    text: HYPI,
     hybio: true,
   })
 }
@@ -709,14 +664,14 @@ export function injectResearchContract(
 ) {
   const lines = [
     `<research-intent intent="${contract.intent}" confidence="${contract.confidence}">`,
-    "Answer the user's substantive request before asking questions. Preserve explicit constraints and let the latest correction replace prior assumptions.",
+    "If a term, platform, format, or other result-changing slot is unstated, ask with the question tool and stop. Do not guess. Only answer first when the request is fully specified or is a simple factual question. After a slot is closed, use only that ontology — do not keep rival assays in the working vocabulary, and do not remind yourself by listing what not to write. Comparison or survey of multiple assays is the exception: each assay's own vocabulary stays in scope. Preserve explicit constraints and let the latest correction replace prior assumptions.",
     "Separate facts, inferences, hypotheses, recommendations, and unknowns. Correct unsupported premises with evidence or a plausible alternative; do not simply accept them.",
     "Keep the final answer separate from internal execution: present conclusion-relevant evidence, limitations, and next steps, not prompts, orchestration, sub-agents, tools, retries, timeouts, or internal files. If the user explicitly asks about progress, failure, or reproduction, describe completed scope, observable limits, and reproducible steps in user-understandable terms.",
   ]
 
   if (isDirectAnswer(contract)) {
     lines.push(
-      "Direct-answer mode: respond concisely (lead with the answer; default ≤20 lines). No literature-review sub-agents, no literature-review.md, no fixed report sections, no large tables unless the user asked for them. At most one natural follow-up at the end.",
+      "Direct-answer mode: respond concisely (lead with the answer; default ≤20 lines). No literature-review sub-agents, no literature-review.md, no fixed report sections, no large tables unless the user asked for them. Stop when the answer is complete — do not append 顺势问一句.",
     )
   }
 
@@ -734,7 +689,42 @@ export function injectResearchContract(
   }
   if (contract.mustClarify) {
     lines.push(
-      `Execution is blocked only by: ${contract.missingPremises.join("; ")}. State what can be answered generally, then use the question tool (max 1-2 focused questions) to collect only this missing information — do not proceed with fabricated inputs.`,
+      `Ask is blocking: ${contract.missingPremises.join("; ")}. Ask every still-open slot in one question tool call, then stop. Do not guess, preview a panel, or write 已确认.`,
+    )
+  }
+  if (contract.missingPremises.includes("meaning of PCF")) {
+    lines.push(
+      "Ask what PCF means with options: PhenoCycler-Fusion（Akoya，前身 CODEX）/ Protein Correlation Fingerprinting / 其他. Project direction and skill names do not define it. Do not write 已确认. Do not attach another assay's reagents or channels before it is chosen.",
+    )
+  }
+  if (contract.missingPremises.includes(AgentRouter.IMC_CONFIRM)) {
+    lines.push(
+      "Ask whether IMC means 成像质谱 (imaging mass cytometry). The project lock is execution scope, not confirmation. Do not write 已确认 or 方向锁定.",
+    )
+  }
+  if (contract.missingPremises.includes(AgentRouter.PLATFORM_SLOT)) {
+    lines.push(
+      "Ask which assay or platform defines the reagents and channels. Offer concrete options plus 其他. Do not start a panel from a guessed platform.",
+    )
+  }
+  if (contract.knownContext.includes("phenocycler chemistry")) {
+    lines.push(
+      "Closed ontology: PhenoCycler-Fusion / CODEX DNA-barcoded immunofluorescence. Use only this assay's reagents, channels, and columns.",
+    )
+  }
+  if (contract.knownContext.includes("imc metal chemistry")) {
+    lines.push(
+      "Closed ontology: IMC / Hyperion metal-isotope imaging. Use only this assay's reagents, channels, and columns.",
+    )
+  }
+  if (contract.knownContext.includes("fingerprinting chemistry")) {
+    lines.push(
+      "Closed ontology: Protein Correlation Fingerprinting. Use this method's features and outputs, not an imaging-panel channel table.",
+    )
+  }
+  if (contract.knownContext.includes("agreed deliverable export")) {
+    lines.push(
+      "Export follow-up: write the requested Word/Excel/PPT from the already-agreed panel and the user's question answers. Carry the closed ontology, scientific aim, tissue, and every chosen item in <task-decisions> into the file. Do not re-ask closed slots. Do not switch to a short verbal substitute.",
     )
   }
   if (contract.gates.includes("literature")) {
@@ -878,21 +868,19 @@ async function applyDynamicInjections(
   if (HARNESS_AGENTS.has(input.agent.name)) {
     injectProjectResearch(userMessage)
     note("project-research")
-    if (!drifted) {
-      injectInteractionContract(userMessage)
-      note("interaction-contract")
-      if (disciplinePack(input.agent.name) === "biology") {
-        injectBiologyServiceContract(userMessage)
-        note("biology-service-contract")
-      }
-      await injectGrillMe(userMessage)
-      note("grill-me")
-      injectResultDelivery(messages, userMessage, ctx.contract)
-      injectResearchContract(messages, userMessage, ctx.contract)
-      if (disciplinePack(input.agent.name) === "biology") {
-        injectDataGate(messages, userMessage, ctx.contract)
-        note("data-gate")
-      }
+    injectInteractionContract(userMessage)
+    note("interaction-contract")
+    if (disciplinePack(input.agent.name) === "biology") {
+      injectBiologyServiceContract(userMessage)
+      note("biology-service-contract")
+    }
+    await injectGrillMe(userMessage)
+    note("grill-me")
+    injectResultDelivery(messages, userMessage, ctx.contract)
+    injectResearchContract(messages, userMessage, ctx.contract)
+    if (disciplinePack(input.agent.name) === "biology") {
+      injectDataGate(messages, userMessage, ctx.contract)
+      note("data-gate")
     }
     if (task && drifted && drift) {
       await ResearchContext.forget(input.session.id, task.id, drift.suggest)
@@ -1006,11 +994,14 @@ export function injectInteractionContract(userMessage: MessageV2.WithParts) {
       "## User-visible progress and interaction",
       "Talk like a colleague. No template dump, no stage-gate narration.",
       "Simple factual or method questions: answer directly in a few sentences. Do not load skills, spawn sub-agents, or outline a pipeline unless asked.",
-      "Analysis or compute tasks: first say in 2–4 short lines what you will do next, matching the user's request, then start. Do not announce tool names.",
+      "Format conversion or 「生成一个 Word/Excel」after a panel or question answers: only 「好的，正在按前面约定生成 Word」, then write the file from those answers. Do not re-ask, do not give a short verbal substitute, do not name a tool.",
+      "Analysis or compute tasks: at most one short line of what you will do, then start. Never announce tool names.",
       "When the user asks to 拷问 / grill / challenge a plan, or before an expensive irreversible run, load the `grill-me` skill. Do not grill ordinary Q&A.",
       "When extended thinking/reasoning is available, start each major segment with a bold one-line label (e.g. **检查数据文件**) so the UI can show live status.",
-      "When execution needs missing files/parameters, an irreversible method choice, or high-impact confirmation, use the question tool (max 1-2 questions per turn) — not only prose asking the user to reply in chat.",
-      "Answer what you can first, then ask. Do not block on a checklist when a partial answer is possible.",
+      "The spoken line only restates what the user said. Never write 已确认 or 方向锁定. Ask only unclosed slots that would change the result. After a slot is closed, keep that ontology and drop rival assays from the working vocabulary — do not remind by listing what not to write. Project direction and skill names do not define a term.",
+      "Unstated terms, platform, deliverable form, or result-changing parameters are blocking: call the question tool and stop. Do not resolve them by thinking. Do not write 已确认 for a guessed expansion. Simple factual questions still answer directly.",
+      "When execution needs missing files/parameters or an irreversible method choice, use the question tool for every still-open result-changing slot in one call — not prose in chat, and not a later follow-up turn.",
+      "After a compute figure, table, or script: call provenance_record with path + command or code_path + env + key params. Do not mention the tool. Skip for panel Excel / Word / PowerPoint.",
       "</system-reminder>",
     ].join("\n"),
   )
@@ -1032,13 +1023,14 @@ export function injectDataGate(
   // Planning intent — user is asking for advice, not requesting analysis on data
   const planningRe =
     /(?:打算|计划|准备|想要|考虑|可能|也许|还没有|还没做|先了解|设计|方案|思路|怎么(?:做|分析)|如何(?:做|分析)|推荐|建议|protocol|experimental.design)/i
-  if (planningRe.test(text)) {
+  if (planningRe.test(text) && !contract.mustClarify) {
     const lines = [
       '<system-reminder id="planning-mode">',
       "## PLANNING MODE",
       "User is in planning/discussion mode. Follow the 4 core principles in your base prompt:",
-      "准则1: Respond to their core question FIRST. 准则2: Max 1-2 natural follow-ups, never a checklist.",
-      "准则3: Use flexible output structure (clarification → solution → caveats → optional Qs).",
+      "准则1: Simple questions answer now. Design/analysis with open result-changing slots: question tool first, no preview answer.",
+      "准则2: Ask every still-open result-changing slot in one question tool call. Do not split across turns.",
+      "准则3: Speak like a colleague. Conclusion first. No 要把…的话 / 告诉我X即可生成.",
       "准则4: Remember all entities mentioned — never re-ask. Allow topic jumps.",
       "Follow 范式 A/B/C/D matching the scenario. Use soft language (通常/一般推荐/建议验证).",
       "</system-reminder>",
@@ -1065,7 +1057,7 @@ export function injectDataGate(
   const lines = [
     '<system-reminder id="data-gate">',
     "## DATA GATE",
-    "No data files attached. Use the question tool to ask for file path, format, and key column names (max 1-2 questions).",
+    "No data files attached. Use the question tool once for file path, format, and key column names.",
     "Do not output analysis results, code, tables, or suggestions until data is available.",
     "</system-reminder>",
   ]

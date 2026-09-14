@@ -23,7 +23,7 @@ const SCRNA =
 const SCRNA_RUN = /单细胞分析|单细胞细胞/
 const KNOW =
   /区别|差异|对比|比较|检索|搜索|查阅|文献|论文|调研|综述|概述|介绍|原理|机制|优缺点|哪个|什么是|是什么|what is|how does|compared to|difference between|versus|\bvs\.?\b|review|survey/i
-const ASK = /能不能|可不可以|可以做|会不会|能做吗|也能做|可以分析|can you|could you/i
+const ASK = /能不能|可不可以|可以做|会不会|能做吗|也能做|可以分析|你能|can you|could you/i
 const RUN =
   /帮我做|给我做|请做|请分析|跑一下|分析一下|做一下|开始跑|开始分析|执行分析|执行.{0,8}代码|跑代码|analyze this|run this|process this/i
 
@@ -33,7 +33,7 @@ const DIRECTION: Record<DirectionId, Direction> = {
   imc: {
     title: "IMC 分析",
     focus:
-      "成像质谱（IMC / Hyperion / CODEX / MIBI）蛋白质成像：分割、表型、邻域、区域组成、蛋白共表达。执行范围不包括 scRNA-seq、空间转录组或基因组变异分析。",
+      "IMC / Hyperion / MIBI imaging analysis jobs: segmentation, phenotyping, neighborhood, region composition.",
     files: /\.(mcd)$/i,
     foreign: {
       "single-cell": SCRNA,
@@ -113,15 +113,6 @@ export namespace DomainScope {
     return undefined
   }
 
-  export function title(subdomain: string | undefined) {
-    return TITLES[subdomain ?? ""] ?? "通用研究"
-  }
-
-  export function focus(subdomain: string | undefined) {
-    const key = id(subdomain)
-    return key ? DIRECTION[key].focus : undefined
-  }
-
   export function drift(
     subdomain: string | undefined,
     input: { text: string; filenames: string[] },
@@ -132,8 +123,12 @@ export namespace DomainScope {
     const files = matchForeignFiles(key, input.filenames)
     const suggest = matchForeign(key, blob) ?? files
     if (!suggest) return undefined
-    if (KNOW.test(input.text) && !RUN.test(input.text)) return undefined
-    const kind = RUN.test(input.text) || files ? "execute" : ASK.test(input.text) ? "ask" : "execute"
+    const discuss = /设计|对比|比较|文献|调研|方案/.test(input.text)
+    const hard = /跑一下|开始跑|开始分析|执行分析|执行.{0,8}代码|跑代码|analyze this|run this|process this/i.test(
+      input.text,
+    )
+    if ((KNOW.test(input.text) || discuss) && !hard && !files) return undefined
+    const kind = hard || files ? "execute" : ASK.test(input.text) ? "ask" : RUN.test(input.text) ? "execute" : "ask"
     return hit(key, suggest, kind)
   }
 
@@ -153,20 +148,11 @@ export namespace DomainScope {
     const key = id(subdomain)
     if (!key) return undefined
     const item = DIRECTION[key]
-    const others = Object.keys(TITLES)
-      .filter((name) => name !== key)
-      .map((name) => TITLES[name])
-      .join("、")
     return [
       `<project-research subdomain="${key}">`,
-      `BLOCKING direction lock: ${item.title}.`,
-      `This project's execution scope is ${item.title}. The direction was chosen when the project was created — it is not inferred from which skills are loaded.`,
-      `Skills are shared tools. scanpy / anndata / spatial libraries may be used when they serve ${item.title}.`,
-      `In scope for execution: ${item.focus}`,
-      `Allowed in any depth: literature retrieval, comparison, and method discussion of ${others}.`,
-      `Not allowed: starting an analysis job whose subject is another direction. Do not collect those data paths or launch that job here.`,
-      `「能不能做」means capability, not permission to start. Explain and compare; do not collect files or launch jobs.`,
-      `If the user asks to run off-theme analysis: refuse; say this project is locked to ${item.title}; tell them to 切换领域 to the matching direction (or 通用研究).`,
+      `Project direction: ${item.title}. This names the default analysis pipeline, not a definition of any term.`,
+      `Hard limit: do not start a bash/notebook analysis job whose subject is another direction.`,
+      `Not limited: literature, comparison, methods, panel design, Office deliverables, and other-platform knowledge.`,
       `</project-research>`,
     ].join("\n")
   }
@@ -199,10 +185,9 @@ export namespace DomainScope {
     }
     return [
       "<system-reminder>",
-      `BLOCKING off-theme execution: current direction is ${item.currentTitle}; this message is a ${item.suggestTitle} analysis job.`,
-      `Do not start a ${item.suggestTitle} analysis job. Shared skills are fine when they serve ${item.currentTitle}.`,
+      `Do not start a ${item.suggestTitle} bash/notebook job in this ${item.currentTitle} project.`,
       notice(item),
-      `Literature, comparison, and method discussion of ${item.suggestTitle} remain allowed — this block is execution only.`,
+      `Literature, comparison, methods, panel design, and Office deliverables remain allowed.`,
       "</system-reminder>",
     ].join("\n")
   }

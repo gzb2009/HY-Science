@@ -25,6 +25,16 @@ describe("DomainScope", () => {
     expect(DomainScope.lock("general")).toBeUndefined()
   })
 
+  test("treats the IMC lock as a direction hint, not a chemistry definition", () => {
+    const lock = DomainScope.lock("imc")
+    expect(lock).toContain("Project direction: IMC 分析")
+    expect(lock).toContain("Hard limit")
+    expect(lock).toContain("Not limited")
+    expect(lock).not.toContain("金属核素")
+    expect(lock).not.toContain("成像质谱")
+    expect(lock).not.toContain("BLOCKING direction lock")
+  })
+
   test("treats capability questions as discussion, not a run", () => {
     const hit = DomainScope.drift("imc", { text: "能不能做单细胞测序的分析", filenames: [] })
     expect(hit?.suggest).toBe("single-cell")
@@ -44,6 +54,7 @@ describe("DomainScope", () => {
     expect(DomainScope.drift("imc", { text: "单细胞测序是什么", filenames: [] })).toBeUndefined()
     expect(DomainScope.drift("imc", { text: "写一份单细胞测序的文献调研", filenames: [] })).toBeUndefined()
     expect(DomainScope.drift("imc", { text: "帮我检索 Seurat 和 IMC 邻域方法的比较", filenames: [] })).toBeUndefined()
+    expect(DomainScope.drift("imc", { text: "帮我设计一个 Visium 空间转录组 panel", filenames: [] })).toBeUndefined()
   })
 
   test("blocks running the other direction and points to a switch", () => {
@@ -53,9 +64,9 @@ describe("DomainScope", () => {
     expect(DomainScope.notice(hit!)).toContain("切换领域")
   })
 
-  test("polite run requests still count as execution", () => {
-    expect(DomainScope.drift("imc", { text: "能不能帮我做单细胞测序分析", filenames: [] })?.kind).toBe("execute")
-    expect(DomainScope.drift("imc", { text: "你能给我做单细胞测序的分析吗", filenames: [] })?.kind).toBe("execute")
+  test("polite capability phrasing does not arm the exec gate", () => {
+    expect(DomainScope.drift("imc", { text: "能不能帮我做单细胞测序分析", filenames: [] })?.kind).toBe("ask")
+    expect(DomainScope.drift("imc", { text: "你能给我做单细胞测序的分析吗", filenames: [] })?.kind).toBe("ask")
     expect(DomainScope.drift("imc", { text: "能执行单细胞分析的代码吗", filenames: [] })?.kind).toBe("execute")
   })
 
