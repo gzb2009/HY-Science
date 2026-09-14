@@ -414,15 +414,17 @@ export namespace SessionPrompt {
           }
         }
 
-        if (lastUser.agent && RSITrajectory.ARTIFACT_AGENTS.includes(lastUser.agent as any)) {
-          RSITrajectory.pipeline(sessionID).catch(() => {})
-        }
-        Hypothesis.scanSession(sessionID, msgs).catch(() => {})
-        Reproducibility.compile(sessionID, msgs).catch(() => {})
-        ELN.scanSession(sessionID, msgs).catch(() => {})
-        KnowledgeGraph.scan(sessionID, msgs).catch(() => {})
-        ExportReport.generateAndSave(sessionID).catch(() => {})
         ProjectMemory.rememberSession(sessionID, msgs).catch(() => {})
+        if ((await Config.get()).experimental?.sciencePipelines) {
+          if (lastUser.agent && RSITrajectory.ARTIFACT_AGENTS.includes(lastUser.agent as any)) {
+            RSITrajectory.pipeline(sessionID).catch(() => {})
+          }
+          Hypothesis.scanSession(sessionID, msgs).catch(() => {})
+          Reproducibility.compile(sessionID, msgs).catch(() => {})
+          ELN.scanSession(sessionID, msgs).catch(() => {})
+          KnowledgeGraph.scan(sessionID, msgs).catch(() => {})
+          ExportReport.generateAndSave(sessionID).catch(() => {})
+        }
         break
       }
 

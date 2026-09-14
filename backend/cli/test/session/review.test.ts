@@ -164,6 +164,17 @@ describe("SessionReview policy", () => {
     expect(prompt).toContain("The parent will apply the correction silently")
   })
 
+  test("corrected records keep their findings visible", () => {
+    const findings = [
+      { severity: "blocking" as const, message: "Marker count 12 vs table rows 14", evidence: [] },
+      { severity: "warning" as const, message: "GrzB is not an official symbol", evidence: [] },
+    ]
+    expect(SessionReview.correctedSummary(findings)).toBe(
+      "Corrected before delivery (2 issues): Marker count 12 vs table rows 14",
+    )
+    expect(SessionReview.correctedSummary([findings[0]])).toContain("(1 issue)")
+  })
+
   test("annotate is fail-open while enforce blocks flagged and error records", () => {
     expect(SessionReview.decide(record("annotate", "FLAGGED")).verdict).toBe("FLAGGED")
     expect(SessionReview.decide(record("enforce", "CLEAN")).verdict).toBe("CLEAN")

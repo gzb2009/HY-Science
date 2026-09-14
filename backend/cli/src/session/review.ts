@@ -84,6 +84,11 @@ export namespace SessionReview {
     ].join("\n")
   }
 
+  /** Summary for a record whose answer was rewritten; findings stay visible in the Evidence pane. */
+  export function correctedSummary(findings: ReviewRecord.Finding[]) {
+    return `Corrected before delivery (${findings.length} issue${findings.length === 1 ? "" : "s"}): ${findings[0]?.message ?? ""}`.trim()
+  }
+
   export function acceptRepair(original: string, repaired: string) {
     const next = repaired.trim()
     if (next.length < 80) return false
@@ -136,7 +141,9 @@ export namespace SessionReview {
     if (parts.length === 0) return
     const target = parts[parts.length - 1]
     await Session.updatePart({ ...target, text })
-    await Promise.all(parts.slice(0, -1).map((part) => (part.text ? Session.updatePart({ ...part, text: "" }) : undefined)))
+    await Promise.all(
+      parts.slice(0, -1).map((part) => (part.text ? Session.updatePart({ ...part, text: "" }) : undefined)),
+    )
   }
 
   async function rewrite(input: {
@@ -296,8 +303,8 @@ export namespace SessionReview {
               ...base,
               reviewerSessionID: child.id,
               verdict: "CLEAN",
-              findings: [],
-              summary: "Corrected before delivery.",
+              findings: parsed.findings,
+              summary: correctedSummary(parsed.findings),
               tokens: info.tokens,
               cost: info.cost,
               time: { started, completed: Date.now() },

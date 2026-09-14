@@ -1203,6 +1203,12 @@ export namespace Config {
             .positive()
             .optional()
             .describe("Timeout in milliseconds for model context protocol (MCP) requests"),
+          sciencePipelines: z
+            .boolean()
+            .optional()
+            .describe(
+              "Run the heuristic post-turn pipelines (hypothesis scan, reproducibility bundle, ELN, knowledge graph, RSI trajectory, markdown export report). They write files only and are not shown in the UI; off by default.",
+            ),
           reviewGate: z
             .enum(["off", "annotate", "enforce"])
             .optional()
