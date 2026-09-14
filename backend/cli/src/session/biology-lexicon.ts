@@ -7,8 +7,10 @@
  * their regexes from these tables instead of hand-writing them.
  */
 
-export type Direction = "imc" | "single-cell" | "spatial" | "genomics"
-export type Profile = Direction | "proteomics" | "structure" | "chemo"
+import { THEMES, isDirection, type BiologyTheme, type Direction } from "@hysci/util/themes"
+
+export type { Direction }
+export type Profile = BiologyTheme
 
 const union = (parts: string[]) => parts.join("|")
 
@@ -191,13 +193,10 @@ export const FOREIGN: Record<Direction | "general", RegExp> = {
   general: /\b(smiles|docking|alphafold|fine-?tun(e|ing)|lora)\b|分子对接|大模型微调/i,
 }
 
-export const DIRECTION_TITLE: Record<Direction | "general", string> = {
-  imc: "IMC 分析",
-  "single-cell": "单细胞分析",
-  spatial: "空间转录组",
-  genomics: "基因组分析",
-  general: "通用研究",
-}
+export const DIRECTION_TITLE = Object.fromEntries(THEMES.map((theme) => [theme.id, theme.title])) as Record<
+  Direction | "general",
+  string
+>
 
 /** Antibody-catalog / flow nicknames → official HGNC symbols. */
 export const MARKER_ALIAS: [RegExp, string][] = [
@@ -219,7 +218,6 @@ export namespace BiologyLexicon {
     return MARKER_ALIAS.reduce((next, [pattern, symbol]) => next.replace(pattern, symbol), text)
   }
   export function direction(value: string | undefined): Direction | undefined {
-    if (value === "imc" || value === "single-cell" || value === "spatial" || value === "genomics") return value
-    return undefined
+    return isDirection(value) ? value : undefined
   }
 }

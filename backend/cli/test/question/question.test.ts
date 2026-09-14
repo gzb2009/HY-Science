@@ -319,7 +319,7 @@ test("ask parks a busy session as waiting and reply restores the prior phase", a
 
       await Question.reply({ requestID: ids[0], answers: [["IMC"]] })
       // One question still open → stay parked.
-      expect(SessionStatus.get(sessionID).type === "busy" && SessionStatus.get(sessionID).phase).toBe("waiting")
+      expect(SessionStatus.get(sessionID)).toEqual({ type: "busy", phase: "waiting", step: 3 })
 
       await Question.reply({ requestID: ids[1], answers: [["IMC"]] })
       expect(SessionStatus.get(sessionID)).toEqual({ type: "busy", phase: "processing", step: 3 })

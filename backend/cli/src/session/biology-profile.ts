@@ -6,8 +6,9 @@ import PROMPT_PROTEOMICS from "../agent/prompt/biology-profiles/proteomics.txt"
 import PROMPT_STRUCTURE from "../agent/prompt/biology-profiles/structure.txt"
 import PROMPT_CHEMO from "../agent/prompt/biology-profiles/chemo.txt"
 import { FILES as EXT, KEYWORDS } from "./biology-lexicon"
+import { BIOLOGY_THEMES, type BiologyTheme } from "@hysci/util/themes"
 
-export type BiologyProfile = "genomics" | "single-cell" | "imc" | "spatial" | "proteomics" | "structure" | "chemo"
+export type BiologyProfile = BiologyTheme
 
 const FRAGMENTS: Record<BiologyProfile, string> = {
   genomics: PROMPT_GENOMICS,
@@ -28,11 +29,10 @@ export namespace BiologyProfile {
 
   /** Explicit override from a hybio marker in the user message, if present. */
   export function fromMarker(text: string): BiologyProfile | undefined {
-    const m = text.match(
-      /<biology-profile>\s*(genomics|single-cell|imc|spatial|proteomics|structure|chemo)\s*<\/biology-profile>/i,
-    )
+    const m = text.match(/<biology-profile>\s*([a-z-]+)\s*<\/biology-profile>/i)
     if (!m) return undefined
-    return m[1].toLowerCase() as BiologyProfile
+    const id = m[1].toLowerCase()
+    return (BIOLOGY_THEMES as string[]).includes(id) ? (id as BiologyProfile) : undefined
   }
 
   export function detect(input: { text?: string; filenames?: string[] }): BiologyProfile | undefined {
