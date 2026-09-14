@@ -609,8 +609,9 @@
   }
 
   &[data-question="true"] {
-    background: var(--background-base);
-    border: 1px solid var(--border-weak-base);
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 }
 
@@ -648,10 +649,9 @@
 [data-component="question-prompt"] {
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  background-color: var(--surface-inset-base);
-  border-radius: 0 0 6px 6px;
-  gap: 12px;
+  padding: 0;
+  background: transparent;
+  gap: 8px;
 
   [data-slot="question-tabs"] {
     display: flex;
@@ -772,35 +772,6 @@
 
       [data-component="button"] {
         height: auto;
-      }
-    }
-  }
-
-  [data-slot="question-review"] {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    [data-slot="review-title"] {
-      display: none;
-    }
-
-    [data-slot="review-item"] {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 13px;
-
-      [data-slot="review-label"] {
-        color: var(--text-weak);
-      }
-
-      [data-slot="review-value"] {
-        color: var(--text-strong);
-
-        &[data-answered="false"] {
-          color: var(--text-weak);
-        }
       }
     }
   }
