@@ -13,6 +13,7 @@ import { MetaAnalysis } from "./meta-analysis"
 import { CausalInference } from "./causal"
 import { ActiveLearn } from "./active-learn"
 import { DataQuality } from "./data-quality"
+import { DataProfile } from "./data-profile"
 import { TaskProfile } from "./task-profile"
 import { PromptLoader } from "../agent/prompt-loader"
 import { DomainScope } from "./domain-scope"
@@ -887,6 +888,8 @@ async function applyDynamicInjections(
     if (disciplinePack(input.agent.name) === "biology") {
       injectDataGate(messages, userMessage, ctx.contract)
       note("data-gate")
+      await DataProfile.inject(userMessage, Instance.directory).catch(() => undefined)
+      note("data-profile")
     }
     if (task && drifted && drift) {
       await ResearchContext.forget(input.session.id, task.id, drift.suggest)
