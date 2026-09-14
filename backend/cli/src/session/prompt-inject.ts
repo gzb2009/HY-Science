@@ -38,6 +38,7 @@ import RESULT_DELIVERY from "../session/prompt/result-delivery.txt"
 import DIRECT_ANSWER_DELIVERY from "../session/prompt/direct-answer-delivery.txt"
 import LITERATURE_REPORT_DELIVERY from "../session/prompt/literature-report-delivery.txt"
 import BIOLOGY_SERVICE_CONTRACT from "../agent/prompt/biology-service-contract.txt"
+import { CANCER, PLATFORM_NAMED } from "./biology-lexicon"
 
 const log = Log.create({ service: "prompt-inject" })
 const HARNESS_AGENTS = new Set(["research", "biology", "physics", "ml"])
@@ -69,11 +70,8 @@ const SESSION_PARAMS: Array<[string, RegExp]> = [
     "modality",
     /\b(single-cell|scRNA|snRNA|spatial|proteom|DIA|TMT|metabolom|TCR|multi-omics)\b|单细胞|空间|蛋白组|代谢组|免疫组|多组学/i,
   ],
-  [
-    "platform",
-    /\b(10X|10x|Chromium|Visium|Smart-seq|SmartSeq|DIA|TMT|label-free|NovaSeq|NextSeq|Illumina|BD Rhapsody|PhenoCycler|CODEX|Hyperion)\b|成像质谱/i,
-  ],
-  ["tissue", /胃癌|胃腺癌|前列腺癌|乳腺癌|肺癌|肝癌|肠癌|PDAC|CRC/i],
+  ["platform", PLATFORM_NAMED],
+  ["tissue", CANCER],
   ["pcf", /PCF\s*(?:是|指|即|=).{2,60}/i],
   ["groups", /\b(control|treatment|treated|model|disease|normal|vehicle)\b|对照组?|造模组?|病例|健康组?/i],
 ]

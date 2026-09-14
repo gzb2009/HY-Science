@@ -5,6 +5,7 @@ import PROMPT_SPATIAL from "../agent/prompt/biology-profiles/spatial.txt"
 import PROMPT_PROTEOMICS from "../agent/prompt/biology-profiles/proteomics.txt"
 import PROMPT_STRUCTURE from "../agent/prompt/biology-profiles/structure.txt"
 import PROMPT_CHEMO from "../agent/prompt/biology-profiles/chemo.txt"
+import { FILES as EXT, KEYWORDS } from "./biology-lexicon"
 
 export type BiologyProfile = "genomics" | "single-cell" | "imc" | "spatial" | "proteomics" | "structure" | "chemo"
 
@@ -18,28 +19,7 @@ const FRAGMENTS: Record<BiologyProfile, string> = {
   chemo: PROMPT_CHEMO,
 }
 
-const EXT: Record<BiologyProfile, RegExp> = {
-  imc: /\.(mcd)$/i,
-  spatial: /\.(zarr)$/i,
-  genomics: /\.(vcf|bcf|bam|sam|cram|fastq|fq|fasta|fa|fna|bed|gtf|gff3?)(\.gz)?$/i,
-  "single-cell": /\.(h5ad|loom|h5seurat)$/i,
-  proteomics: /\.(mzml|mzxml|raw|mgf)$/i,
-  structure: /\.(pdb|cif|mmcif)$/i,
-  chemo: /\.(sdf|mol|mol2|smi|smiles)$/i,
-}
-
 const SINGLE_CELL_TABLE = /(?:^|[/_-])(?:cluster[_-]?)?markers?(?:[_-].*)?\.(csv|tsv)$/i
-
-const KEYWORDS: Record<BiologyProfile, RegExp> = {
-  imc: /\b(imc|imaging.?mass|hyperion|mcd)\b|成像质谱/i,
-  spatial: /\b(spatial|visium|merfish|xenium|stereo.?seq|slide.?seq|squidpy)\b|空间转录组/i,
-  genomics: /\b(variant|gwas|wgs|wes|fastq|alignment|bwa|gatk|vcf|crispr)\b/i,
-  "single-cell":
-    /\b(single[- ]?cell|scrna|sc-rna|h5ad|scanpy|seurat|umap|leiden|cell[- ]?type|marker gene|cluster markers?)\b|单细胞|(?:细胞|亚群).{0,8}注释/i,
-  proteomics: /\b(proteom|mass.?spec|peptide|mzml|maxquant|diann)\b/i,
-  structure: /\b(alphafold|pdb|protein structure|docking|folding|cryo-?em)\b/i,
-  chemo: /\b(smiles|ligand|chembl|rdkit|qsar|admet|small molecule|compound library)\b/i,
-}
 
 export namespace BiologyProfile {
   export function fragment(profile: BiologyProfile) {

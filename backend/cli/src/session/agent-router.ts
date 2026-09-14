@@ -3,6 +3,8 @@
  * deterministic interaction contract (interpret) used by prompt injection.
  */
 
+import { AIM, ASSAY, BIOLOGY_FILE, IMC_CONFIRMED, IMC_TOKEN, PLATFORM_ANY, SPECIES, TISSUE } from "./biology-lexicon"
+
 export namespace AgentRouter {
   export type Intent =
     | "literature_review"
@@ -150,22 +152,16 @@ export namespace AgentRouter {
   const METHOD_ONLY = /(?:怎么|如何|how (?:to|should)|原理|区别|优缺点)/i
   const PANEL_OR_ASSAY = /(?:panel|marker|清单|assay|抗体[盘组]|panel设计)/i
   const DESIGN_VERB = /(?:设计|做|写|给|输出|交付)/i
-  const AIM_SAID =
-    /(?:通用|全景|全免疫|广谱|均衡|balanced|atlas|偏\s*[TBtb]|偏B|偏T|偏髓系|B细胞为主|T细胞为主|髓系为主|肿瘤实质|基质为主|stromal|myeloid-focused|T-focused|B-focused|研究问题是|目的是|看的是)/i
+  const AIM_SAID = AIM
 
-  const IMC_CONFIRMED = /成像质谱|imaging\s*mass\s*cytometr|\bhyperion\b/i
-  const IMC_TOKEN = /\bIMC\b/i
   export const IMC_CONFIRM = "confirm IMC is imaging mass cytometry (成像质谱)"
   export const PLATFORM_SLOT = "assay or platform that defines reagents and channels"
   export const SPECIES_SLOT = "species (human / mouse / other)"
   export const TISSUE_SLOT = "tissue or cancer type"
   const COMPARE = /(?:区别|差异|对比|比较|versus|\bvs\.?\b|compared to|difference between)/i
-  const PLATFORM_SAID =
-    /(?:phenocycler|\bcodex\b|\bhyperion\b|\bcytof\b|\bmibi\b|\bvisium\b|\bxenium\b|\bmerfish\b|\bseqfish\b|\b10x\b|smart-?seq|flow\s*cytometr|成像质谱|光谱流式|空间转录组|scrna-?seq|scatac|snrna|cycif|ibex)/i
-  const SPECIES_SAID =
-    /(?:人类|人源|小鼠|大鼠|斑马鱼|食蟹猴|猕猴|\bhuman\b|\bmouse\b|\brat\b|zebrafish|macaque|rhesus)|(?:人(?:胃癌|肺癌|乳腺癌|肝癌|胰腺癌|组织|样本))/i
-  const TISSUE_SAID =
-    /胃癌|肺癌|乳腺癌|肝癌|胰腺癌|前列腺癌|前列腺肿瘤|结直肠|食管癌|卵巢癌|宫颈癌|胶质瘤|黑色素瘤|癌种|组织类型|\btumor\b|\bcancer\b|carcinoma|gastric|NSCLC|PDAC|PBMC|脾脏|淋巴结|骨髓/i
+  const PLATFORM_SAID = PLATFORM_ANY
+  const SPECIES_SAID = SPECIES
+  const TISSUE_SAID = TISSUE
 
   export function isComparison(text: string) {
     return COMPARE.test(text) && !DESIGN_VERB.test(text)
@@ -189,15 +185,12 @@ export namespace AgentRouter {
     return hits
   }
 
-  export function assayOntology(
-    text: string,
-    history = "",
-  ): "phenocycler" | "imc" | "fingerprinting" | undefined {
+  export function assayOntology(text: string, history = ""): "phenocycler" | "imc" | "fingerprinting" | undefined {
     if (isComparison(text)) return undefined
     const blob = `${history}\n${text}`
-    if (/phenocycler|(?:pcf|面板|panel|平台).{0,24}(?:codex|akoya)|前身\s*CODEX/i.test(blob)) return "phenocycler"
-    if (/protein correlation fingerprint|指纹法|correlation fingerprint/i.test(blob)) return "fingerprinting"
-    if (/(?:这次|面板|panel|平台|assay).{0,16}(?:成像质谱|hyperion)|成像质谱（IMC）|IMC\s*panel/i.test(blob)) return "imc"
+    if (ASSAY.phenocycler.test(blob)) return "phenocycler"
+    if (ASSAY.fingerprinting.test(blob)) return "fingerprinting"
+    if (ASSAY.imc.test(blob)) return "imc"
     return undefined
   }
 
@@ -340,7 +333,7 @@ export namespace AgentRouter {
 
   // ===== PUBLIC API =====
   function domainFromFilenames(names: string[]): string | undefined {
-    if (names.some((n) => /\.(vcf|bcf|bam|fastq|fq|h5ad|loom|pdb|cif|mzml|sdf|mol)/i.test(n))) return "biology"
+    if (names.some((n) => BIOLOGY_FILE.test(n))) return "biology"
     if (names.some((n) => /\.(pt|pth|onnx|safetensors|ckpt|weights)/i.test(n))) return "ml"
     if (names.some((n) => /\.(dat|inp|msh|geo|stl)/i.test(n))) return "physics"
     return undefined

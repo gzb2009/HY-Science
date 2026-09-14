@@ -1,4 +1,6 @@
-export type DirectionId = "imc" | "single-cell" | "spatial" | "genomics"
+import { BiologyLexicon, DIRECTION_TITLE, FILES, FOREIGN, type Direction as DirectionId } from "./biology-lexicon"
+
+export type { DirectionId }
 
 export type Drift = {
   current: DirectionId
@@ -8,18 +10,11 @@ export type Drift = {
   kind: "execute" | "ask"
 }
 
-type Foreign = Partial<Record<DirectionId | "general", RegExp>>
-
 type Direction = {
   title: string
   focus: string
-  foreign: Foreign
-  files?: RegExp
 }
 
-/** Full scRNA pipelines — not bare「单细胞」, which IMC also uses for protein cells. */
-const SCRNA =
-  /\b(scrna|sc-?rna|scrna-seq|10x(?:\s+genomics)?|chromium|seurat|scanpy|h5ad)\b|单细胞转录组|单细胞测序|单细胞 rna/i
 const SCRNA_RUN = /单细胞分析|单细胞细胞/
 const KNOW =
   /区别|差异|对比|比较|检索|搜索|查阅|文献|论文|调研|综述|概述|介绍|原理|机制|优缺点|哪个|什么是|是什么|what is|how does|compared to|difference between|versus|\bvs\.?\b|review|survey/i
@@ -31,63 +26,30 @@ const HOLD = new Map<string, Drift>()
 
 const DIRECTION: Record<DirectionId, Direction> = {
   imc: {
-    title: "IMC 分析",
-    focus:
-      "IMC / Hyperion / MIBI imaging analysis jobs: segmentation, phenotyping, neighborhood, region composition.",
-    files: /\.(mcd)$/i,
-    foreign: {
-      "single-cell": SCRNA,
-      spatial: /\b(visium|merfish|xenium|stereo.?seq|slide.?seq|spatial.?transcriptom)\b|空间转录组/i,
-      genomics: /\b(wgs|wes|gwas|vcf|bwa|gatk|crispr screen)\b|\.vcf\b|\.bam\b|全基因组|外显子组|变异检测/i,
-      general: /\b(smiles|docking|alphafold|fine-?tun(e|ing)|lora)\b|分子对接|大模型微调/i,
-    },
+    title: DIRECTION_TITLE.imc,
+    focus: "IMC / Hyperion / MIBI imaging analysis jobs: segmentation, phenotyping, neighborhood, region composition.",
   },
   "single-cell": {
-    title: "单细胞分析",
+    title: DIRECTION_TITLE["single-cell"],
     focus:
       "scRNA-seq / 单细胞：质控、整合、聚类、注释、差异基因、轨迹、细胞通讯。执行范围不包括 IMC 成像、空间转录组平台分析或基因组变异分析。",
-    files: /\.(h5ad|loom|h5seurat)$/i,
-    foreign: {
-      imc: /\b(imc|imaging.?mass|hyperion|codex|mibi)\b|\.mcd\b|成像质谱/i,
-      spatial: /\b(visium|merfish|xenium|stereo.?seq|slide.?seq|spatial.?transcriptom)\b|空间转录组/i,
-      genomics: /\b(wgs|wes|gwas|vcf|bwa|gatk)\b|\.vcf\b|\.bam\b|全基因组|外显子组|变异检测/i,
-      general: /\b(smiles|docking|alphafold|fine-?tun(e|ing)|lora)\b|分子对接|大模型微调/i,
-    },
   },
   spatial: {
-    title: "空间转录组",
+    title: DIRECTION_TITLE.spatial,
     focus:
       "空间转录组（Visium / Stereo-seq / MERFISH 等）：空间邻域、配体受体、去卷积、与单细胞参考整合。执行范围不包括 IMC 蛋白成像或基因组变异分析。",
-    foreign: {
-      imc: /\b(imc|imaging.?mass|hyperion|codex|mibi)\b|\.mcd\b|成像质谱/i,
-      "single-cell": SCRNA,
-      genomics: /\b(wgs|wes|gwas|vcf|bwa|gatk)\b|\.vcf\b|\.bam\b|全基因组|外显子组|变异检测/i,
-      general: /\b(smiles|docking|alphafold|fine-?tun(e|ing)|lora)\b|分子对接|大模型微调/i,
-    },
   },
   genomics: {
-    title: "基因组分析",
+    title: DIRECTION_TITLE.genomics,
     focus: "基因组：比对、变异、注释、GWAS、表达定量、富集。执行范围不包括 IMC 成像、单细胞聚类或空间转录组平台分析。",
-    files: /\.(vcf|bcf|bam|sam|cram|fastq|fq)(\.gz)?$/i,
-    foreign: {
-      imc: /\b(imc|imaging.?mass|hyperion|codex|mibi)\b|\.mcd\b|成像质谱/i,
-      "single-cell": SCRNA,
-      spatial: /\b(visium|merfish|xenium|stereo.?seq|slide.?seq|spatial.?transcriptom)\b|空间转录组/i,
-      general: /\b(smiles|docking|alphafold|fine-?tun(e|ing)|lora)\b|分子对接|大模型微调/i,
-    },
   },
 }
 
-const TITLES: Record<string, string> = {
-  imc: "IMC 分析",
-  "single-cell": "单细胞分析",
-  spatial: "空间转录组",
-  genomics: "基因组分析",
-  general: "通用研究",
-}
+const TITLES: Record<string, string> = DIRECTION_TITLE
 
 function matchForeign(key: DirectionId, blob: string) {
-  for (const [suggest, pattern] of Object.entries(DIRECTION[key].foreign)) {
+  for (const [suggest, pattern] of Object.entries(FOREIGN)) {
+    if (suggest === key) continue
     if (pattern.test(blob)) return suggest
   }
   if (key !== "single-cell" && SCRNA_RUN.test(blob) && (RUN.test(blob) || ASK.test(blob))) return "single-cell"
@@ -96,9 +58,9 @@ function matchForeign(key: DirectionId, blob: string) {
 function matchForeignFiles(key: DirectionId, filenames: string[]) {
   const names = filenames.join("\n")
   if (!names) return undefined
-  for (const [id, item] of Object.entries(DIRECTION)) {
+  for (const id of Object.keys(DIRECTION) as DirectionId[]) {
     if (id === key) continue
-    if (item.files?.test(names)) return id
+    if (FILES[id].test(names)) return id
   }
 }
 
@@ -108,9 +70,7 @@ function hit(key: DirectionId, suggest: string, kind: Drift["kind"]): Drift {
 
 export namespace DomainScope {
   export function id(subdomain: string | undefined): DirectionId | undefined {
-    if (subdomain === "imc" || subdomain === "single-cell" || subdomain === "spatial" || subdomain === "genomics")
-      return subdomain
-    return undefined
+    return BiologyLexicon.direction(subdomain)
   }
 
   export function drift(

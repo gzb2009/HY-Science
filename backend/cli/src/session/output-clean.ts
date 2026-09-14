@@ -1,5 +1,6 @@
 import { MessageV2 } from "./message-v2"
 import { Session } from "."
+import { BiologyLexicon } from "./biology-lexicon"
 
 /**
  * Output cleaner — strips reviewer residuals, redundant file references,
@@ -35,24 +36,6 @@ export namespace OutputClean {
     /^\s*(?:正在|已|准备)?\s*(?:重试|重跑|重新运行|retrying|retried|rerunning)\s*(?:内部|该|the)?\s*(?:任务|步骤|workflow|task|operation)?[。！!]*\s*$/i,
     /^\s*(?:文献核验中|刚触发了一次限流|放慢节奏|rate.?limit).*$/i,
   ]
-
-  // Antibody-catalog / flow nicknames that are not official symbols.
-  const MARKER_ALIAS: [RegExp, string][] = [
-    [/(?<![A-Za-z0-9])(?:Gr(?:z|zm|m)|Gzm)B(?![A-Za-z0-9])/gi, "GZMB"],
-    [/(?<![A-Za-z0-9])GranB(?![A-Za-z0-9])/g, "GZMB"],
-    [/(?<![A-Za-z0-9])GzmA(?![A-Za-z0-9])/g, "GZMA"],
-    [/(?<![A-Za-z0-9])GzmK(?![A-Za-z0-9])/g, "GZMK"],
-    [/(?<![A-Za-z0-9])FoxP3(?![A-Za-z0-9])/g, "FOXP3"],
-    [/(?<![A-Za-z0-9])Foxp3(?![A-Za-z0-9])/g, "FOXP3"],
-    [/(?<![A-Za-z0-9])T-?bet(?![A-Za-z0-9])/gi, "TBX21"],
-    [/(?<![A-Za-z0-9])TCF1(?![A-Za-z0-9])/g, "TCF7"],
-    [/(?<![A-Za-z0-9])Gata3(?![A-Za-z0-9])/g, "GATA3"],
-    [/(?<![A-Za-z0-9])RORgt(?![A-Za-z0-9])/gi, "RORC"],
-  ]
-
-  function rewriteMarkers(text: string) {
-    return MARKER_ALIAS.reduce((next, [pattern, symbol]) => next.replace(pattern, symbol), text)
-  }
 
   const CONVERSION = /转成|转为|转换成|导出为|导出成/
   const OFFICE = /Word|Excel|PowerPoint|\bPPT\b|docx|xlsx|pptx/i
@@ -103,7 +86,7 @@ export namespace OutputClean {
       .filter((line) => !INTERNAL_EXECUTION_PATTERNS.some((pattern) => pattern.test(line)))
       .join("\n")
 
-    result = rewriteMarkers(result)
+    result = BiologyLexicon.normalizeMarkers(result)
 
     // 5. Collapse multiple blank lines
     result = result.replace(/\n{3,}/g, "\n\n")
