@@ -291,6 +291,22 @@
   }
 }
 
+[data-component="tool-output"][data-kernel-output] {
+  border-top: 1px solid var(--border-weak-base, rgba(127, 127, 127, 0.18));
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-weak, inherit);
+
+  &[data-failed="true"] {
+    color: var(--text-critical-base, #c0392b);
+  }
+}
+
 [data-component="tool-output"] {
   white-space: pre;
   padding: 8px 12px;
