@@ -70,12 +70,6 @@ function setImagePreview(value: ImagePreview | undefined) {
   setImagePreviewRaw(value)
 }
 
-function inspectReview(sessionID: string, messageID: string) {
-  setReviewSelection({ sessionID, messageID })
-  setRightPaneTab("evidence")
-  setRightPaneOpen(true)
-}
-
 export const uiStore = {
   helpOpen,
   setHelpOpen,
@@ -101,5 +95,4 @@ export const uiStore = {
   setPrefillSend,
   reviewSelection,
   setReviewSelection,
-  inspectReview,
 }

@@ -36,6 +36,7 @@ import { ensureDirectory } from "@/utils/projectResult"
 import { Binary } from "@hysci/util/binary"
 import { produce } from "solid-js/store"
 import { mergesContext, startsTask, taskControls, type TaskControl } from "@/thesis/task-control"
+import { isUserStopError } from "@hysci/ui/session-result"
 
 const BYOK_URL = URLS.dashboard
 
@@ -685,12 +686,52 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   const sessionStatus = createMemo(() => {
     const id = sessionPending()
     if (!id) return undefined
-    return (sync.data.session_status?.[id] as { type?: string } | undefined)?.type
+    return sync.data.session_status?.[id] as { type?: string; phase?: string } | undefined
   })
   const isWorking = () => {
     const s = sessionStatus()
-    return s !== undefined && s !== "idle"
+    if (!s || s.type === "idle") return false
+    if (s.type === "busy" && s.phase === "finalizing") return false
+    return true
   }
+  const pendingQuestions = createMemo(() => {
+    const sid = sessionPending()
+    if (!sid) return []
+    return sync.data.question?.[sid] ?? []
+  })
+  const awaitingQuestion = () => pendingQuestions().length > 0
+  const turnLocked = () => (isWorking() || inflight()) && !awaitingQuestion()
+  const stillGenerating = createMemo(() => {
+    if (!isWorking()) return false
+    const sid = sessionPending()
+    if (!sid) return true
+    const msgs = sync.data.message[sid] ?? []
+    let lastUser = -1
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i]?.role === "user") {
+        lastUser = i
+        break
+      }
+    }
+    const assistants = lastUser >= 0 ? msgs.slice(lastUser + 1) : []
+    let textClosed = false
+    for (const msg of assistants) {
+      for (const part of sync.data.part[msg.id] ?? []) {
+        if (part.type === "tool") {
+          const status = "state" in part ? part.state?.status : undefined
+          if (status === "pending" || status === "running") return true
+        }
+        if (part.type === "reasoning" && !("time" in part && part.time && "end" in part.time && part.time.end)) {
+          return true
+        }
+        if (part.type === "text" && "text" in part && String(part.text ?? "").trim()) {
+          textClosed = Boolean((part as { time?: { end?: number } }).time?.end)
+        }
+      }
+    }
+    return !textClosed
+  })
+  const streaming = () => stillGenerating() && !awaitingQuestion()
 
   const restore = (prompt: string) => {
     const body = prompt.trim()
@@ -994,6 +1035,21 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
       openSetupDialog(dialog)
       return
     }
+    const waiting = pendingQuestions()[0]
+    if (waiting && trimmed) {
+      setText("")
+      if (textareaRef) textareaRef.style.height = "auto"
+      try {
+        await sdk.client.question.reply({
+          requestID: waiting.id,
+          answers: waiting.questions.map((_, index) => (index === 0 ? [trimmed] : [])),
+        })
+      } catch (e: any) {
+        toast.error("could not reply", e?.message ?? String(e))
+      }
+      return
+    }
+
     const payload: QueuedPrompt = {
       id: Identifier.ascending("message"),
       text: trimmed,
@@ -1011,7 +1067,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     if (textareaRef) textareaRef.style.height = "auto"
 
     // Mid-turn sends queue; the drain effect below fires them when idle.
-    if (isWorking() || inflight()) {
+    if (turnLocked()) {
       setQueue((q) => [...q, payload])
       return
     }
@@ -1167,6 +1223,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
           mergeTaskContext: mergesContext(p.taskControl),
         } as any)
         .catch((e: any) => {
+          if (isUserStopError(e)) return
           console.error("session.prompt failed", e)
           toast.error("send failed", e?.message ?? String(e))
         })
@@ -1177,6 +1234,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
 
       models.recent.push(p.model)
     } catch (e: any) {
+      if (isUserStopError(e)) return
       console.error("session.prompt failed", e)
       toast.error("send failed", e?.message ?? String(e))
     } finally {
@@ -1187,7 +1245,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   // Drain the queue: whenever the session is idle and nothing is in flight,
   // send the next queued prompt.
   createEffect(() => {
-    if (isWorking() || inflight() || submitting()) return
+    if (turnLocked() || submitting() || awaitingQuestion()) return
     const next = queue()[0]
     if (!next) return
     setQueue((q) => q.slice(1))
@@ -1304,51 +1362,14 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
             </div>
           </Show>
           <Show when={queue().length > 0}>
-            <div
-              style={{
-                display: "flex",
-                "flex-wrap": "wrap",
-                "align-items": "center",
-                gap: "6px",
-                "margin-bottom": "2px",
-              }}
-            >
-              <span
-                style={{
-                  "font-family": FONT_MONO,
-                  "font-size": "10px",
-                  color: "var(--color-text-faint)",
-                  "letter-spacing": "0.08em",
-                  "text-transform": "lowercase",
-                }}
-              >
-                queued · {queue().length}
-              </span>
+            <div class="cs-composer-queue" aria-label="Queued messages">
+              <span class="cs-composer-queue-label">Next · {queue().length}</span>
               <For each={queue()}>
-                {(q) => (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      "align-items": "center",
-                      gap: "6px",
-                      border: "1px solid var(--color-border)",
-                      "border-radius": "4px",
-                      padding: "3px 8px",
-                      "font-family": FONT_SANS,
-                      "font-size": "12px",
-                      color: "var(--color-text-muted)",
-                      background: "var(--color-bg-elevated)",
-                      "max-width": "340px",
-                    }}
-                  >
+                {(q, index) => (
+                  <span class="cs-composer-queue-item" data-next={index() === 0 ? "true" : undefined}>
                     <span
+                      class="cs-composer-queue-text"
                       title="click to edit — moves back into the input"
-                      style={{
-                        overflow: "hidden",
-                        "text-overflow": "ellipsis",
-                        "white-space": "nowrap",
-                        cursor: "pointer",
-                      }}
                       onClick={() => {
                         if (text().trim().length > 0) {
                           toast.info("input not empty", "clear the input to pull a queued message back")
@@ -1364,15 +1385,10 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                     <button
                       type="button"
                       aria-label="remove from queue"
+                      class="cs-composer-queue-remove"
                       onClick={() => {
                         setQueue((qs) => qs.filter((x) => x.id !== q.id))
                         restore(q.text)
-                      }}
-                      style={{
-                        all: "unset",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        color: "var(--color-text-faint)",
                       }}
                     >
                       <IconX size={11} strokeWidth={1.5} />
@@ -2151,7 +2167,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
 
             <span style={{ flex: 1 }} />
 
-            <Show when={isWorking() || inflight()}>
+            <Show when={streaming()}>
               <span
                 style={{
                   "font-family": FONT_MONO,
@@ -2182,12 +2198,12 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                   color: "var(--color-text-faint)",
                 }}
               >
-                {isWorking() || inflight() ? "↵ to queue · ⇧↵ newline" : "↵ to send · ⇧↵ newline"}
+                {turnLocked() ? "↵ to queue · ⇧↵ newline" : "↵ to send · ⇧↵ newline"}
               </span>
             </Show>
 
             <Show
-              when={isWorking() || inflight()}
+              when={streaming()}
               fallback={
                 <button
                   onClick={() => void submit()}
