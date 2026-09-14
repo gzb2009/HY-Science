@@ -94,3 +94,11 @@ describe("theme manifest", () => {
     expect(domainSkillAllowed("nonsense", "matplotlib")).toBe(true)
   })
 })
+
+test("workspace zh titles match the manifest", async () => {
+  const zh = await Bun.file(path.join(root, "../../frontend/workspace/src/i18n/zh.ts")).text()
+  for (const theme of PRIMARY_THEMES) {
+    const match = zh.match(new RegExp(`"domain\\.${theme.id}\\.title": "([^"]+)"`))
+    expect(match?.[1], `zh title for ${theme.id}`).toBe(theme.title)
+  }
+})

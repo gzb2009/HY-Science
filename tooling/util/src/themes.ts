@@ -11,7 +11,8 @@ export type ResearchDomain = "general" | "biology" | "physics" | "ml"
 
 /**
  * primary  — has a UI card, a direction lock, a profile fragment and a skill set.
- * detected — only reachable through keyword / file detection; no UI card, no lock.
+ * detected — reserved for themes reachable only through keyword / file detection
+ *            (none today; proteomics / structure / chemo were removed as out of scope).
  */
 export type ThemeExposure = "primary" | "detected"
 
@@ -49,7 +50,7 @@ export const SHARED_SKILLS = [
 export const THEMES = [
   {
     id: "imc",
-    title: "IMC 分析",
+    title: "空间蛋白成像",
     researchDomain: "biology",
     subdomain: "imc",
     exposure: "primary",
@@ -138,30 +139,6 @@ export const THEMES = [
       "geo-database",
       "ena-database",
     ],
-  },
-  {
-    id: "proteomics",
-    title: "蛋白质组",
-    researchDomain: "biology",
-    subdomain: "proteomics",
-    exposure: "detected",
-    skills: ["uniprot-database", "string-database", "biopython"],
-  },
-  {
-    id: "structure",
-    title: "结构生物学",
-    researchDomain: "biology",
-    subdomain: "structure",
-    exposure: "detected",
-    skills: ["biopython", "uniprot-database"],
-  },
-  {
-    id: "chemo",
-    title: "化学信息学",
-    researchDomain: "biology",
-    subdomain: "chemo",
-    exposure: "detected",
-    skills: ["rdkit", "chembl-database"],
   },
   {
     id: "general",

@@ -104,9 +104,6 @@ export const FILES: Record<Profile, RegExp> = {
   spatial: /\.(zarr)$/i,
   genomics: /\.(vcf|bcf|bam|sam|cram|fastq|fq|fasta|fa|fna|bed|gtf|gff3?)(\.gz)?$/i,
   "single-cell": /\.(h5ad|loom|h5seurat)$/i,
-  proteomics: /\.(mzml|mzxml|raw|mgf)$/i,
-  structure: /\.(pdb|cif|mmcif)$/i,
-  chemo: /\.(sdf|mol|mol2|smi|smiles)$/i,
 }
 
 /** Any file extension that marks a biology workspace. */
@@ -168,14 +165,11 @@ export const ASSAY = {
 
 /** Keyword detection per profile (text only; file extensions live in FILES). */
 export const KEYWORDS: Record<Profile, RegExp> = {
-  imc: platformRe(["imc"]),
+  imc: platformRe(["imc", "phenocycler"]),
   spatial: /\b(spatial|visium|merfish|xenium|stereo.?seq|slide.?seq|squidpy)\b|空间转录组/i,
   genomics: /\b(variant|gwas|wgs|wes|fastq|alignment|bwa|gatk|vcf|crispr)\b/i,
   "single-cell":
     /\b(single[- ]?cell|scrna|sc-rna|h5ad|scanpy|seurat|umap|leiden|cell[- ]?type|marker gene|cluster markers?)\b|单细胞|(?:细胞|亚群).{0,8}注释/i,
-  proteomics: /\b(proteom|mass.?spec|peptide|mzml|maxquant|diann)\b/i,
-  structure: /\b(alphafold|pdb|protein structure|docking|folding|cryo-?em)\b/i,
-  chemo: /\b(smiles|ligand|chembl|rdkit|qsar|admet|small molecule|compound library)\b/i,
 }
 
 /**
@@ -185,7 +179,7 @@ export const KEYWORDS: Record<Profile, RegExp> = {
  * 「单细胞」, which IMC also uses for protein-level cells.
  */
 export const FOREIGN: Record<Direction | "general", RegExp> = {
-  imc: /\b(imc|imaging.?mass|hyperion|codex|mibi)\b|\.mcd\b|成像质谱/i,
+  imc: /\b(imc|imaging.?mass|hyperion|codex|phenocycler|akoya|cycif|mibi)\b|\.mcd\b|成像质谱|空间蛋白/i,
   "single-cell":
     /\b(scrna|sc-?rna|scrna-seq|10x(?:\s+genomics)?|chromium|seurat|scanpy|h5ad)\b|单细胞转录组|单细胞测序|单细胞 rna/i,
   spatial: /\b(visium|merfish|xenium|stereo.?seq|slide.?seq|spatial.?transcriptom)\b|空间转录组/i,

@@ -11,7 +11,7 @@ describe("DomainScope", () => {
     const hit = DomainScope.drift("imc", { text: "帮我做全基因组变异检测，分析这个 VCF", filenames: ["cohort.vcf"] })
     expect(hit?.suggest).toBe("genomics")
     expect(hit?.kind).toBe("execute")
-    expect(hit?.currentTitle).toBe("IMC 分析")
+    expect(hit?.currentTitle).toBe("空间蛋白成像")
   })
 
   test("flags spatial transcriptomics inside an IMC project", () => {
@@ -27,7 +27,7 @@ describe("DomainScope", () => {
 
   test("treats the IMC lock as a direction hint, not a chemistry definition", () => {
     const lock = DomainScope.lock("imc")
-    expect(lock).toContain("Project direction: IMC 分析")
+    expect(lock).toContain("Project direction: 空间蛋白成像")
     expect(lock).toContain("Hard limit")
     expect(lock).toContain("Not limited")
     expect(lock).not.toContain("金属核素")

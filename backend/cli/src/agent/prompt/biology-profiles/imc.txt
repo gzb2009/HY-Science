@@ -1,5 +1,6 @@
 <biology-task-profile name="imc">
-Focus: Imaging Mass Cytometry (Hyperion) and sibling metal-tag imaging (MIBI). Protein-level, ~40 channels, single-cell after segmentation. Not scRNA-seq; not suspension CyTOF.
+Focus: multiplex protein imaging — IMC (Hyperion, default pipeline), CODEX / PhenoCycler, MIBI, CyCIF. Protein-level, 30–60 channels, single-cell after segmentation. Not scRNA-seq; not suspension CyTOF.
+Platform decides reagent vocabulary: metal isotopes for IMC / MIBI, oligo-barcoded antibodies and cycles for CODEX / PhenoCycler, fluorophores and rounds for CyCIF. Never mix them in one panel table.
 
 ## Ask first
 Only slots that change the result and are not already stated or stored:

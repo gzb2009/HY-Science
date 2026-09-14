@@ -27,7 +27,8 @@ const HOLD = new Map<string, Drift>()
 const DIRECTION: Record<DirectionId, Direction> = {
   imc: {
     title: DIRECTION_TITLE.imc,
-    focus: "IMC / Hyperion / MIBI imaging analysis jobs: segmentation, phenotyping, neighborhood, region composition.",
+    focus:
+      "空间蛋白成像（IMC / Hyperion、CODEX / PhenoCycler、MIBI、CyCIF）：分割、表型、邻域、区域组成。执行范围不包括 scRNA-seq 流程、空间转录组平台分析或基因组变异分析。",
   },
   "single-cell": {
     title: DIRECTION_TITLE["single-cell"],

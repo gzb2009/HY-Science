@@ -2,9 +2,6 @@ import PROMPT_GENOMICS from "../agent/prompt/biology-profiles/genomics.txt"
 import PROMPT_SINGLE_CELL from "../agent/prompt/biology-profiles/single-cell.txt"
 import PROMPT_IMC from "../agent/prompt/biology-profiles/imc.txt"
 import PROMPT_SPATIAL from "../agent/prompt/biology-profiles/spatial.txt"
-import PROMPT_PROTEOMICS from "../agent/prompt/biology-profiles/proteomics.txt"
-import PROMPT_STRUCTURE from "../agent/prompt/biology-profiles/structure.txt"
-import PROMPT_CHEMO from "../agent/prompt/biology-profiles/chemo.txt"
 import { FILES as EXT, KEYWORDS } from "./biology-lexicon"
 import { BIOLOGY_THEMES, type BiologyTheme } from "@hysci/util/themes"
 
@@ -15,9 +12,6 @@ const FRAGMENTS: Record<BiologyProfile, string> = {
   "single-cell": PROMPT_SINGLE_CELL,
   imc: PROMPT_IMC,
   spatial: PROMPT_SPATIAL,
-  proteomics: PROMPT_PROTEOMICS,
-  structure: PROMPT_STRUCTURE,
-  chemo: PROMPT_CHEMO,
 }
 
 const SINGLE_CELL_TABLE = /(?:^|[/_-])(?:cluster[_-]?)?markers?(?:[_-].*)?\.(csv|tsv)$/i
