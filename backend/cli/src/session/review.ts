@@ -4,6 +4,7 @@ import { Identifier } from "../id/id"
 import { MessageV2 } from "./message-v2"
 import { ReviewRecord } from "./review-record"
 import { Instance } from "../project/instance"
+import { CitationCheck } from "./citation-check"
 import z from "zod"
 
 export namespace SessionReview {
@@ -97,7 +98,7 @@ export namespace SessionReview {
     return next !== original.trim()
   }
 
-  function promptFor(text: string): string {
+  function promptFor(text: string, note = ""): string {
     return [
       "Blindly review the FINAL ANSWER below. You did not write it; do not trust it.",
       "Independently trace every claim, number, and citation to evidence you can verify from the workspace.",
@@ -110,7 +111,20 @@ export namespace SessionReview {
       "<final_answer>",
       text,
       "</final_answer>",
-    ].join("\n")
+      note,
+    ]
+      .filter(Boolean)
+      .join("\n")
+  }
+
+  /** Merge deterministic citation findings into the reviewer verdict. */
+  export function merge(
+    parsed: { verdict: "CLEAN" | "FLAGGED"; findings: ReviewRecord.Finding[] },
+    extra: ReviewRecord.Finding[],
+  ) {
+    const findings = [...extra, ...parsed.findings]
+    const blocking = findings.some((finding) => finding.severity === "blocking")
+    return { verdict: blocking || parsed.verdict === "FLAGGED" ? ("FLAGGED" as const) : ("CLEAN" as const), findings }
   }
 
   export function parse(text: string) {
@@ -215,13 +229,31 @@ export namespace SessionReview {
     const last = messages.filter((message) => message.info.role === "assistant" && message.info.finish).at(-1)
     if (!last) return
     const text = answerText(last.parts)
-    if (!shouldReview({ agent: input.agent, text })) return
-    if (!sessionHasToolCalls(messages)) return
-
     const existing = await ReviewRecord.get(input.sessionID, last.info.id)
     if (existing) return decide(existing)
 
     const started = Date.now()
+    const citations = await CitationCheck.verify(text).catch(() => ({ items: [], verified: 0, missing: 0, errors: 0 }))
+    const cited = CitationCheck.findings(citations)
+    const full = shouldReview({ agent: input.agent, text }) && sessionHasToolCalls(messages)
+    if (!full) {
+      if (!cited.some((finding) => finding.severity === "blocking")) return
+      const record: ReviewRecord.Info = {
+        id: Identifier.ascending("review"),
+        sessionID: input.sessionID,
+        messageID: last.info.id,
+        agent: input.agent,
+        reviewer: "citation-check",
+        mode,
+        model: input.model,
+        verdict: "FLAGGED",
+        findings: cited,
+        summary: cited[0]?.message,
+        time: { started, completed: Date.now() },
+      }
+      await ReviewRecord.save(record).catch(() => undefined)
+      return decide(record)
+    }
     const reviewer = reviewerFor(input.agent, domain)
     const base = {
       id: Identifier.ascending("review"),
@@ -257,7 +289,7 @@ export namespace SessionReview {
       }
       const child = created
       try {
-        const parts = await SessionPrompt.resolvePromptParts(promptFor(text))
+        const parts = await SessionPrompt.resolvePromptParts(promptFor(text, CitationCheck.note(citations)))
         const run = SessionPrompt.prompt({
           messageID: Identifier.ascending("message"),
           sessionID: child.id,
@@ -282,7 +314,7 @@ export namespace SessionReview {
           .map((part) => (part as MessageV2.TextPart).text)
           .join("\n")
           .trim()
-        const parsed = parse(raw)
+        const parsed = merge(parse(raw), cited)
         const info = result.info as MessageV2.Assistant
         if (parsed.verdict === "FLAGGED") {
           const repaired = await rewrite({
