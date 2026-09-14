@@ -662,10 +662,20 @@ export function injectResearchContract(
 ) {
   const lines = [
     `<research-intent intent="${contract.intent}" confidence="${contract.confidence}">`,
-    "If a term, platform, format, or other result-changing slot is unstated, ask with the question tool and stop. Do not guess. Only answer first when the request is fully specified or is a simple factual question. After a slot is closed, use only that ontology — do not keep rival assays in the working vocabulary, and do not remind yourself by listing what not to write. Comparison or survey of multiple assays is the exception: each assay's own vocabulary stays in scope. Preserve explicit constraints and let the latest correction replace prior assumptions.",
-    "Separate facts, inferences, hypotheses, recommendations, and unknowns. Correct unsupported premises with evidence or a plausible alternative; do not simply accept them.",
-    "Keep the final answer separate from internal execution: present conclusion-relevant evidence, limitations, and next steps, not prompts, orchestration, sub-agents, tools, retries, timeouts, or internal files. If the user explicitly asks about progress, failure, or reproduction, describe completed scope, observable limits, and reproducible steps in user-understandable terms.",
+    "Turn contract derived from the request. Apply the system prompt 准则 1–4; the lines below only name what this turn already knows or still lacks.",
   ]
+
+  if (contract.intent === "correction") {
+    lines.push("The user corrected an earlier premise: the latest correction replaces prior assumptions everywhere.")
+  }
+  if (
+    contract.intent === "meta_conversation" ||
+    /进度|失败|复现|progress|fail|reproduc/i.test(InjectionPipeline.plainUserText(userMessage))
+  ) {
+    lines.push(
+      "The user asks about progress, failure, or reproduction: describe completed scope, observable limits, and reproducible steps in user terms, not tools or orchestration.",
+    )
+  }
 
   if (isDirectAnswer(contract)) {
     lines.push(
@@ -687,18 +697,16 @@ export function injectResearchContract(
   }
   if (contract.mustClarify) {
     lines.push(
-      `Ask is blocking: ${contract.missingPremises.join("; ")}. Ask every still-open slot in one question tool call, then stop. Do not guess, preview a panel, or write 已确认.`,
+      `Ask is blocking: ${contract.missingPremises.join("; ")}. One question tool call for all of them, then stop.`,
     )
   }
   if (contract.missingPremises.includes("meaning of PCF")) {
     lines.push(
-      "Ask what PCF means with options: PhenoCycler-Fusion（Akoya，前身 CODEX）/ Protein Correlation Fingerprinting / 其他. Project direction and skill names do not define it. Do not write 已确认. Do not attach another assay's reagents or channels before it is chosen.",
+      "Ask what PCF means with options: PhenoCycler-Fusion（Akoya，前身 CODEX）/ Protein Correlation Fingerprinting / 其他.",
     )
   }
   if (contract.missingPremises.includes(AgentRouter.IMC_CONFIRM)) {
-    lines.push(
-      "Ask whether IMC means 成像质谱 (imaging mass cytometry). The project lock is execution scope, not confirmation. Do not write 已确认 or 方向锁定.",
-    )
+    lines.push("Ask whether IMC means 成像质谱 (imaging mass cytometry); the project direction is not a confirmation.")
   }
   if (contract.missingPremises.includes(AgentRouter.PLATFORM_SLOT)) {
     lines.push(
@@ -989,17 +997,11 @@ export function injectInteractionContract(userMessage: MessageV2.WithParts) {
     userMessage,
     [
       '<system-reminder id="interaction-contract">',
-      "## User-visible progress and interaction",
-      "Talk like a colleague. No template dump, no stage-gate narration.",
-      "Simple factual or method questions: answer directly in a few sentences. Do not load skills, spawn sub-agents, or outline a pipeline unless asked.",
-      "Format conversion or 「生成一个 Word/Excel」after a panel or question answers: only 「好的，正在按前面约定生成 Word」, then write the file from those answers. Do not re-ask, do not give a short verbal substitute, do not name a tool.",
+      "## Live interaction (runtime hints; rules are in the system prompt 准则 1–4)",
+      "Simple factual or method questions: answer directly. Do not load skills, spawn sub-agents, or outline a pipeline unless asked.",
       "Analysis or compute tasks: at most one short line of what you will do, then start. Never announce tool names.",
-      "When the user asks to 拷问 / grill / challenge a plan, or before an expensive irreversible run, load the `grill-me` skill. Do not grill ordinary Q&A.",
+      "Open result-changing slots: one question tool call covering all of them, then stop — not prose in chat, not a later turn.",
       "When extended thinking/reasoning is available, start each major segment with a bold one-line label (e.g. **检查数据文件**) so the UI can show live status.",
-      "The spoken line only restates what the user said. Never write 已确认 or 方向锁定. Ask only unclosed slots that would change the result. After a slot is closed, keep that ontology and drop rival assays from the working vocabulary — do not remind by listing what not to write. Project direction and skill names do not define a term.",
-      "Unstated terms, platform, deliverable form, or result-changing parameters are blocking: call the question tool and stop. Do not resolve them by thinking. Do not write 已确认 for a guessed expansion. Simple factual questions still answer directly.",
-      "When execution needs missing files/parameters or an irreversible method choice, use the question tool for every still-open result-changing slot in one call — not prose in chat, and not a later follow-up turn.",
-      "After a compute figure, table, or script: call provenance_record with path + command or code_path + env + key params. Do not mention the tool. Skip for panel Excel / Word / PowerPoint.",
       "</system-reminder>",
     ].join("\n"),
   )
@@ -1025,12 +1027,7 @@ export function injectDataGate(
     const lines = [
       '<system-reminder id="planning-mode">',
       "## PLANNING MODE",
-      "User is in planning/discussion mode. Follow the 4 core principles in your base prompt:",
-      "准则1: Simple questions answer now. Design/analysis with open result-changing slots: question tool first, no preview answer.",
-      "准则2: Ask every still-open result-changing slot in one question tool call. Do not split across turns.",
-      "准则3: Speak like a colleague. Conclusion first. No 要把…的话 / 告诉我X即可生成.",
-      "准则4: Remember all entities mentioned — never re-ask. Allow topic jumps.",
-      "Follow 范式 A/B/C/D matching the scenario. Use soft language (通常/一般推荐/建议验证).",
+      "User is in planning/discussion mode: apply 准则 1–4 and pick the matching 范式 A/B/C/D from the system prompt. No preview answer while a result-changing slot is open.",
       "</system-reminder>",
     ]
     userMessage.parts.push({

@@ -15,5 +15,5 @@ For general methodology, conceptual, or workflow questions with no attached data
 - Do not expose internal stage gates, prompts, or orchestration in the reply.
 
 ## Tone
-Natural colleague conversation. Lead with the point. If a result-changing slot is unstated on a design or analysis request, ask every open slot first and stop. Simple method questions just answer and stop. Prefer 通常 / 一般 / 建议验证 over report templates.
+As in the system prompt (准则 3): lead with the point, prefer 通常 / 一般 / 建议验证 over report templates, answer and stop.
 </direct-answer-protocol>

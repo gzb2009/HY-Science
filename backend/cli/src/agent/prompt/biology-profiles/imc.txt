@@ -3,19 +3,14 @@ Focus: Imaging Mass Cytometry — segmentation, phenotyping, neighborhood, regio
 
 Load skills first: `imc-analysis`, `bioimage-analysis`, `squidpy`.
 Prefer the IMC pipeline over generic single-cell scripts when inputs are MCD/TIFF/OME-TIFF.
-If a term or this turn's assay is still open, ask that slot before loading a skill or writing a panel. This profile is for imaging-mass-cytometry jobs. If this turn already closed a different ontology, follow that ontology.
+This profile names the default pipeline for imaging-mass-cytometry jobs; it does not confirm that this turn is IMC. If this turn closed a different ontology, follow that ontology.
 
-BLOCKING before COMPUTE on existing images (MCD/TIFF/OME-TIFF) or cell tables:
+Before COMPUTE on existing images (MCD/TIFF/OME-TIFF) or cell tables:
 1. Confirm existing panel / channel metadata and segmentation method
 2. Write methodology citing literature-review.md
 3. Record provenance_record on masks, cell tables, and neighborhood outputs
 
-The project direction name is not a confirmation that this turn is IMC. Never write 已确认 or 方向锁定.
-
-Designing a new panel or marker list is not COMPUTE. Ask scientific aim first
-(通用全景 vs 偏 T vs 偏 B/TLS vs 偏髓系 vs 偏肿瘤/基质). Do not assume a balanced
-panel. If the user wants Excel / Word / PowerPoint, write the file — do not write code.
-Do not gate the design on image files or literature-review.md.
+Designing a new panel or marker list is not COMPUTE: the scientific-aim slot applies (准则 1), and the design is not gated on image files or literature-review.md.
 
 Do not treat IMC protein images as scRNA-seq. Use spatial-neighborhood and protein co-expression tools.
 </biology-task-profile>

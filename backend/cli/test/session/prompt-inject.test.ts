@@ -128,7 +128,7 @@ describe("prompt-inject", () => {
     Inject.injectBiologyServiceContract(msg)
     const hp = msg.parts.filter((p: any) => p.hybio)
     expect(hp.length).toBe(1)
-    expect((hp[0] as any).text).toContain("Service Boundaries And Scientific Rigor")
+    expect((hp[0] as any).text).toContain("Biology-specific rigor")
   })
 
   test("injectDisciplinePack loads the biology pack without harness copy", () => {
@@ -308,7 +308,7 @@ describe("prompt-inject", () => {
     const text = (msg.parts.find((part: any) => part.hybio) as any).text
     expect(text).toContain("Ask is blocking")
     expect(text).toContain("meaning of PCF")
-    expect(text).toContain("Ask every still-open slot")
+    expect(text).toContain("One question tool call for all of them")
     expect(text).not.toContain("Answer the user's substantive request before asking")
   })
 
@@ -383,7 +383,7 @@ describe("prompt-inject", () => {
     Inject.injectResearchContract([prev, msg], msg)
     const text = (msg.parts.find((part: any) => part.hybio) as any).text
     expect(text).toContain('intent="correction"')
-    expect(text).toContain("latest correction replace prior assumptions")
+    expect(text).toContain("latest correction replaces prior assumptions")
   })
 
   test("injectResearchContract does not coordinate an ordinary long question", () => {
@@ -399,7 +399,6 @@ describe("prompt-inject", () => {
     pushUserText(msg, "请说明这次文献检索的进度和当前限制。")
     Inject.injectResearchContract([msg], msg)
     const text = (msg.parts.find((part: any) => part.hybio) as any).text
-    expect(text).toContain("Keep the final answer separate from internal execution")
     expect(text).toContain("progress, failure, or reproduction")
     expect(text).toContain("completed scope, observable limits, and reproducible steps")
   })
