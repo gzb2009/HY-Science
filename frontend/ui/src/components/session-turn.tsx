@@ -569,6 +569,8 @@ export function SessionTurn(
     const s = status()
     if (s.type === "idle") return false
     if (s.type === "busy" && "phase" in s && s.phase === "finalizing") return false
+    // A pending question parks the loop: the turn is the user's, not the model's.
+    if (s.type === "busy" && "phase" in s && s.phase === "waiting") return false
     return isLastUserMessage()
   })
   const pendingQuestionPart = createMemo(() => findPromptPart(nextQuestion()))
@@ -686,12 +688,21 @@ export function SessionTurn(
     root.style.setProperty("--session-turn-sticky-height", `${next}px`)
   }
 
+  // While a question is open the clock stops at the moment it was asked.
+  const askedAt = createMemo(() => {
+    const found = pendingQuestionPart()
+    if (!found) return
+    const state = found.part.state as { time?: { start?: number } } | undefined
+    return state?.time?.start ?? lastAssistantMessage()?.time.created
+  })
+
   function duration() {
     const msg = message()
     if (!msg) return ""
     const completed = lastAssistantMessage()?.time.completed
     const from = DateTime.fromMillis(msg.time.created)
-    const to = completed ? DateTime.fromMillis(completed) : DateTime.now()
+    const paused = awaitingChoice() ? askedAt() : undefined
+    const to = completed ? DateTime.fromMillis(completed) : paused ? DateTime.fromMillis(paused) : DateTime.now()
     const interval = Interval.fromDateTimes(from, to)
     const unit: DurationUnit[] = interval.length("seconds") > 60 ? ["minutes", "seconds"] : ["seconds"]
 
@@ -783,8 +794,8 @@ export function SessionTurn(
 
     update()
 
-    // Keep ticking while generating or waiting on a question card.
-    if (!working() && !awaitingChoice()) return
+    // Tick only while the model is actually generating; a pending question freezes the clock.
+    if (!working()) return
 
     const timer = setInterval(update, 1000)
     onCleanup(() => clearInterval(timer))
@@ -883,7 +894,7 @@ export function SessionTurn(
                             aria-disabled={!canExpand()}
                           >
                             <Show
-                              when={live() || awaitingChoice()}
+                              when={live()}
                               fallback={
                                 <svg
                                   width="10"

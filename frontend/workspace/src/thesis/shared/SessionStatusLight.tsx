@@ -1,5 +1,6 @@
 import { createMemo, type JSX } from "solid-js"
 import { useSync } from "@/context/sync"
+import { sessionRunning } from "@/utils/sessionActivity"
 
 const GRID_SIZE = 9
 const CELLS = Array.from({ length: GRID_SIZE }, (_, i) => i)
@@ -13,8 +14,7 @@ export function SessionStatusLight(props: SessionStatusLightProps): JSX.Element 
   const sync = useSync()
   const running = createMemo(() => {
     if (props.running !== undefined) return props.running
-    const type = sync.data.session_status[props.sessionID]?.type
-    return type === "busy" || type === "retry"
+    return sessionRunning(sync.data.session_status[props.sessionID])
   })
   const flicker = () => running()
 

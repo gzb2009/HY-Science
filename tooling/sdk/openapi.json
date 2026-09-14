@@ -12801,7 +12801,8 @@
                   "subtask",
                   "compacting",
                   "pruning",
-                  "finalizing"
+                  "finalizing",
+                  "waiting"
                 ]
               },
               "step": {

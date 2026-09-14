@@ -606,7 +606,7 @@ export type SessionStatus =
       /**
        * Current session loop phase
        */
-      phase?: "processing" | "subtask" | "compacting" | "pruning" | "finalizing"
+      phase?: "processing" | "subtask" | "compacting" | "pruning" | "finalizing" | "waiting"
       /**
        * Current loop step
        */

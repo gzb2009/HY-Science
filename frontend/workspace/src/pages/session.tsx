@@ -19,6 +19,7 @@ import { produce } from "solid-js/store"
 import { Binary } from "@hysci/util/binary"
 import { base64Encode } from "@hysci/util/encode"
 import type { Project } from "@hysci/sdk/v2/client"
+import { sessionRunning } from "@/utils/sessionActivity"
 import { SessionTurn } from "@hysci/ui/session-turn"
 import { DropdownMenu } from "@hysci/ui/dropdown-menu"
 import { useSync } from "@/context/sync"
@@ -421,11 +422,10 @@ export default function Page(): JSX.Element {
         pinned: projectPrefs.isFavorite(project.worktree),
         current: isCurrent,
         sessions: list.map((session) => {
-          const status = child.session_status[session.id]?.type
           return {
             session,
             title: getSessionDisplayTitle(session, child.message[session.id], child.part),
-            busy: status === "busy" || status === "retry",
+            busy: sessionRunning(child.session_status[session.id]),
           }
         }),
       }

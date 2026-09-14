@@ -43,7 +43,8 @@ function kernelRenderer(name: "notebook" | "rkernel", lang: "python" | "r", labe
     render(props) {
       const code = () => String(props.input?.code ?? "")
       const output = () => stripAnsi(String(props.output || props.metadata?.output || ""))
-      const failed = () => props.metadata?.ok === false || /\[ERROR\]|Traceback \(most recent call last\)/.test(output())
+      const failed = () =>
+        props.metadata?.ok === false || /\[ERROR\]|Traceback \(most recent call last\)/.test(output())
       const envelope = () => readEnvelope(props.metadata)
       const lines = () => code().split("\n").length
       return (
