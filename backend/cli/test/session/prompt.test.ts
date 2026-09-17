@@ -57,4 +57,14 @@ describe("SessionPrompt.turnComplete", () => {
       }),
     ).toBe(true)
   })
+
+  test("a newer user message after a finished assistant is not complete", () => {
+    expect(
+      SessionPrompt.turnComplete({
+        userID: "msg_3",
+        assistant: { id: "msg_2", finish: "stop" },
+        parts: [{ type: "text", text: "done" }],
+      }),
+    ).toBe(false)
+  })
 })

@@ -736,9 +736,14 @@ export namespace Server {
         return undefined
       }
     }
-    const server =
-      opts.port === 0 ? (tryServe(4096, "127.0.0.1") ?? tryServe(0, "127.0.0.1")) : tryServe(opts.port, "127.0.0.1")
-    if (!server) throw new Error(`Failed to start server on port ${opts.port}`)
+    const fallback = opts.port === 0 && !opts.web
+    const preferred = opts.port === 0 ? 4096 : opts.port
+    const server = tryServe(preferred, "127.0.0.1") ?? (fallback ? tryServe(0, "127.0.0.1") : undefined)
+    if (!server) {
+      throw new Error(
+        `Failed to start server on port ${preferred}. Stop the other hyscience on that port so you do not get a second UI.`,
+      )
+    }
     // Chrome/Safari resolve localhost to ::1 first. IPv4-only bind makes
     // http://localhost:4096 fail with TypeError: Failed to fetch.
     if (server.port) tryServe(server.port, "::1")

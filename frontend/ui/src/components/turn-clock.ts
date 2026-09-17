@@ -13,7 +13,8 @@ export function turnClockEnd(input: {
   return input.lastActivity ?? input.created
 }
 
-export function partStamp(part: { time?: { start?: number; end?: number } } | undefined) {
-  if (!part?.time) return 0
-  return Math.max(part.time.end ?? 0, part.time.start ?? 0)
+export function partStamp(part: { time?: { start?: number; end?: number } } | object | undefined) {
+  const time = part && "time" in part ? (part as { time?: { start?: number; end?: number } }).time : undefined
+  if (!time) return 0
+  return Math.max(time.end ?? 0, time.start ?? 0)
 }

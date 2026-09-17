@@ -150,11 +150,13 @@ describe("SessionReview policy", () => {
         reviewGate: "enforce",
         reviewTimeoutMs: 30_000,
         reviewMaxSteps: 8,
+        reviewRetryMax: 2,
       },
     })
     expect(config.experimental?.reviewGate).toBe("enforce")
     expect(config.experimental?.reviewTimeoutMs).toBe(30_000)
     expect(config.experimental?.reviewMaxSteps).toBe(8)
+    expect(config.experimental?.reviewRetryMax).toBe(2)
   })
 
   test("treats IMC metal mixed with PhenoCycler as a silent rewrite target", async () => {
@@ -180,5 +182,15 @@ describe("SessionReview policy", () => {
     expect(SessionReview.decide(record("enforce", "CLEAN")).verdict).toBe("CLEAN")
     expect(() => SessionReview.decide(record("enforce", "FLAGGED"))).toThrow(SessionReview.BlockedError)
     expect(() => SessionReview.decide(record("enforce", "ERROR"))).toThrow(SessionReview.BlockedError)
+  })
+
+  test("retries only while blocking findings remain under the cap", () => {
+    const blocking = [{ severity: "blocking" as const, message: "same isotope twice", evidence: [] }]
+    const warning = [{ severity: "warning" as const, message: "spot vs cell type", evidence: [] }]
+    expect(SessionReview.shouldRetry({ attempt: 0, max: 2, findings: blocking })).toBe(true)
+    expect(SessionReview.shouldRetry({ attempt: 2, max: 2, findings: blocking })).toBe(false)
+    expect(SessionReview.shouldRetry({ attempt: 0, max: 2, findings: warning })).toBe(false)
+    expect(SessionReview.retryPrompt(blocking, 0, 2)).toContain("same isotope twice")
+    expect(SessionReview.retryPrompt(blocking, 0, 2)).toContain("<review-retry>")
   })
 })

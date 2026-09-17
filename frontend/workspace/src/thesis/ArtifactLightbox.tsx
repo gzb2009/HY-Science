@@ -12,10 +12,10 @@ type Pdfjs = {
       numPages: number
       getPage(page: number): Promise<{
         getViewport(options: { scale: number }): { width: number; height: number }
-        render(options: {
-          canvasContext: CanvasRenderingContext2D
-          viewport: { width: number; height: number }
-        }): { promise: Promise<void>; cancel(): void }
+        render(options: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }): {
+          promise: Promise<void>
+          cancel(): void
+        }
       }>
       destroy(): Promise<void>
     }>
@@ -146,12 +146,7 @@ export function ArtifactLightbox(props: { artifact: ImagePreview; onClose: () =>
             </Show>
           </Show>
           <Show when={!failed() && kind() === "pdf"}>
-            <PdfStage
-              data={data()}
-              page={page()}
-              zoom={zoom()}
-              onPages={setPages}
-            />
+            <PdfStage data={data()} page={page()} zoom={zoom()} onPages={setPages} />
           </Show>
         </div>
       </div>

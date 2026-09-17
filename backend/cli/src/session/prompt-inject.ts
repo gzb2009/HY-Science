@@ -572,16 +572,18 @@ export async function injectProjectMemory(userMessage: MessageV2.WithParts) {
   if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text.includes(key))) return
   const textParts = userMessage.parts.filter((p): p is MessageV2.TextPart => p.type === "text")
   const text = textParts.map((p) => p.text).join(" ")
-  if (!text || text.length < 30) return
-  const entries = await ProjectMemory.recall(text, 3)
-  if (entries.length === 0) return
+  const snapshot = await ProjectMemory.index()
+  if (!snapshot && (!text || text.length < 30)) return
+  const entries = text.length >= 30 ? await ProjectMemory.recall(text, 3) : []
   const formatted = ProjectMemory.formatRecall(entries)
+  const body = [snapshot, formatted].filter(Boolean).join("\n\n")
+  if (!body) return
   userMessage.parts.push({
     id: Identifier.ascending("part"),
     messageID: userMessage.info.id,
     sessionID: userMessage.info.sessionID,
     type: "text",
-    text: formatted,
+    text: body,
     hybio: true,
   })
 }

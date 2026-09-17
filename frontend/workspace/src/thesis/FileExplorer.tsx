@@ -2290,6 +2290,7 @@ function previewOverlay(visible = true): JSX.CSSProperties {
     "place-items": "center",
     padding: "28px",
     opacity: visible ? 1 : 0,
+    "pointer-events": visible ? "auto" : "none",
     transition: "opacity 150ms ease",
   } as JSX.CSSProperties
 }

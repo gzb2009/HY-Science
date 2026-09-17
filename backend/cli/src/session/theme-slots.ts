@@ -460,6 +460,22 @@ export namespace ThemeSlots {
     if (theme === "imc") return imcFindings(text)
     if (theme === "single-cell") return scrnaFindings(text, extras?.markerClusters)
     if (theme === "spatial") return spatialFindings(text)
+    if (theme === "genomics") return genomicsFindings(text)
+    return []
+  }
+
+  function genomicsFindings(text: string): ReviewRecord.Finding[] {
+    const hg38 = /GRCh38|hg38/i.test(text)
+    const hg19 = /GRCh37|hg19/i.test(text)
+    if (hg38 && hg19) {
+      return [
+        {
+          severity: "blocking",
+          message: "Answer mixes GRCh38/hg38 with GRCh37/hg19 coordinates.",
+          evidence: ["reference genome"],
+        },
+      ]
+    }
     return []
   }
 }

@@ -188,6 +188,19 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     setTaskControlOpen(false)
     setImcOpen(false)
   })
+  createEffect(
+    on(
+      () => params.dir,
+      () => {
+        setModelOpen(false)
+        setEffortOpen(false)
+        setSkillsOpen(false)
+        setTaskControlOpen(false)
+        setImcOpen(false)
+      },
+      { defer: true },
+    ),
+  )
   const [caret, setCaret] = createSignal(0)
   let textareaRef: HTMLTextAreaElement | undefined
   let fileInputRef: HTMLInputElement | undefined

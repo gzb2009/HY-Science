@@ -1227,6 +1227,12 @@ export namespace Config {
             .positive()
             .optional()
             .describe("Maximum model steps for gate reviewer agents. Defaults to 12."),
+          reviewRetryMax: z
+            .number()
+            .int()
+            .nonnegative()
+            .optional()
+            .describe("How many times a blocking deterministic review may bounce a finished turn. Defaults to 2."),
         })
         .optional(),
     })

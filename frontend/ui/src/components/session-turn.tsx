@@ -970,9 +970,7 @@ export function SessionTurn(
                           expanded={!!props.stepsExpanded}
                           disabled={!canExpand()}
                           label={
-                            awaitingChoice() || retry()
-                              ? workingLabel()
-                              : i18n.t("ui.messagePart.reasoning.title")
+                            awaitingChoice() || retry() ? workingLabel() : i18n.t("ui.messagePart.reasoning.title")
                           }
                           duration={store.duration}
                           onToggle={() => props.onStepsExpandedToggle?.()}

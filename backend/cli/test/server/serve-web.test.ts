@@ -26,4 +26,11 @@ describe("Server.listen web flag", () => {
     expect(await res.json()).toEqual({ error: "headless-api", ui: "http://localhost:4444" })
     await server.stop(true)
   })
+
+  test("web listen does not silently move to another port", async () => {
+    const first = Server.listen({ port: 18776, web: true })
+    expect(first.port).toBe(18776)
+    expect(() => Server.listen({ port: 18776, web: true })).toThrow(/Stop the other hyscience/)
+    await first.stop(true)
+  })
 })

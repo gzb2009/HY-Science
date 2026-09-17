@@ -347,6 +347,7 @@ export namespace SessionPrompt {
 
     let step = 0
     let compactionAttempts = 0
+    let reviewAttempts = 0
     const breaker = CircuitBreaker.init()
     const session = await Session.get(sessionID)
     const config = await Config.get()
@@ -382,11 +383,19 @@ export namespace SessionPrompt {
           bare: bareMode,
         })
       ) {
-        SessionStatus.set(sessionID, { type: "idle" })
-        log.info("exiting loop", { sessionID, bareMode })
         await OutputClean.cleanFinalAnswer(sessionID, msgs)
         msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))
         if (lastUser.agent) {
+          const kicked = await SessionReview.kick({
+            sessionID,
+            agent: lastUser.agent,
+            model: lastUser.model,
+            attempt: reviewAttempts,
+          })
+          if (kicked) {
+            reviewAttempts++
+            continue
+          }
           const cfg = await Config.get()
           const domain = (() => {
             try {
@@ -413,6 +422,9 @@ export namespace SessionPrompt {
             })
           }
         }
+
+        SessionStatus.set(sessionID, { type: "idle" })
+        log.info("exiting loop", { sessionID, bareMode })
 
         ProjectMemory.rememberSession(sessionID, msgs).catch(() => {})
         if ((await Config.get()).experimental?.sciencePipelines) {

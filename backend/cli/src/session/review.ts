@@ -15,6 +15,7 @@ export namespace SessionReview {
   const REVIEWABLE = ["research", "biology", "ml", "physics"]
   const MIN_TEXT = 400
   const DEFAULT_TIMEOUT = 120_000
+  const RETRY_MAX = 2
   const REPAIR_SYSTEM =
     "You correct finished scientific answers. Rewrite the complete user-facing answer so every count, table row, citation, and claim is internally consistent. Fix only the listed issues. Do not redesign. Do not mention review, flags, or that you corrected anything. Return only the corrected answer."
   const Result = z
@@ -178,6 +179,76 @@ export namespace SessionReview {
   export function decide(record: ReviewRecord.Info) {
     if (record.mode === "enforce" && record.verdict !== "CLEAN") throw new BlockedError(record)
     return record
+  }
+
+  export function retryMax(configured?: number) {
+    return configured ?? RETRY_MAX
+  }
+
+  export function shouldRetry(input: { attempt: number; max: number; findings: ReviewRecord.Finding[] }) {
+    if (input.attempt >= input.max) return false
+    return input.findings.some((finding) => finding.severity === "blocking")
+  }
+
+  export function retryPrompt(findings: ReviewRecord.Finding[], attempt: number, max: number) {
+    const blocking = findings.filter((finding) => finding.severity === "blocking")
+    return [
+      "<review-retry>",
+      `Deterministic review blocked delivery (${attempt + 1}/${max}).`,
+      "Do not claim the task is finished. Fix every blocking issue using files or tool output as evidence.",
+      ...blocking.map((finding) => `- ${finding.message}`),
+      "</review-retry>",
+    ].join("\n")
+  }
+
+  /** Theme/citation-free local scan used to bounce a finished turn without spawning a reviewer. */
+  export async function scan(input: { text: string; messages: MessageV2.WithParts[] }) {
+    const subdomain = (() => {
+      try {
+        return Instance.project.research?.subdomain
+      } catch {
+        return undefined
+      }
+    })()
+    return ThemeSlots.check(subdomain, input.text, { markerClusters: await markerClusters(input.messages) })
+  }
+
+  export async function kick(input: {
+    sessionID: string
+    agent?: string
+    model: { providerID: string; modelID: string }
+    attempt: number
+  }) {
+    if (!input.agent || !REVIEWABLE.includes(input.agent)) return false
+    const config = await Config.get()
+    const max = retryMax(config.experimental?.reviewRetryMax)
+    const { Session } = await import("./index")
+    const messages = await Session.messages({ sessionID: input.sessionID })
+    const last = messages.filter((message) => message.info.role === "assistant" && message.info.finish).at(-1)
+    if (!last) return false
+    const text = answerText(last.parts)
+    if (!text) return false
+    const findings = await scan({ text, messages })
+    if (!shouldRetry({ attempt: input.attempt, max, findings })) return false
+    const user = await Session.updateMessage({
+      id: Identifier.ascending("message"),
+      role: "user",
+      sessionID: input.sessionID,
+      time: { created: Date.now() },
+      agent: input.agent,
+      model: input.model,
+    })
+    await Session.updatePart({
+      id: Identifier.ascending("part"),
+      messageID: user.id,
+      sessionID: input.sessionID,
+      type: "text",
+      hybio: true,
+      text: retryPrompt(findings, input.attempt, max),
+      time: { start: Date.now(), end: Date.now() },
+    })
+    log.info("review retry", { sessionID: input.sessionID, attempt: input.attempt + 1, max, findings: findings.length })
+    return true
   }
 
   async function applyAnswer(last: MessageV2.WithParts, text: string) {

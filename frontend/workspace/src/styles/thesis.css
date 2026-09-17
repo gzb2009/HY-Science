@@ -3882,6 +3882,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   font-size: 17px;
   font-weight: 600;
   color: var(--color-text);
+  cursor: pointer;
 }
 
 .cs-sidebar-project-count {

@@ -294,6 +294,9 @@ export default function Page(): JSX.Element {
         if (!dir) return
         centerTabs.resetForProject(dir)
         setVisitedFiles(false)
+        uiStore.setImagePreview(undefined)
+        uiStore.setHelpOpen(false)
+        uiStore.setPaletteOpen(false)
         ;(async () => {
           try {
             await sync.session.fetch(50)
@@ -400,7 +403,7 @@ export default function Page(): JSX.Element {
     const live = sessions()
     return siblingProjects().map((project) => {
       const dir = resolveProjectWorkingDir(project.worktree)
-      const isCurrent = project.worktree === current || dir === workspaceDir()
+      const isCurrent = project.worktree === current || dir === resolveProjectWorkingDir(current)
       const [child] = globalSync.child(dir, { bootstrap: false })
       const list = isCurrent
         ? live
@@ -736,6 +739,9 @@ export default function Page(): JSX.Element {
           }}
           onOpenProject={(worktree) => {
             centerTabs.showChat()
+            uiStore.setImagePreview(undefined)
+            const here = projectWorktree()
+            if (worktree === here || resolveProjectWorkingDir(worktree) === resolveProjectWorkingDir(here)) return
             openProject(worktree)
           }}
           onSelect={(worktree, id) => {
@@ -788,117 +794,120 @@ export default function Page(): JSX.Element {
                 flex: 1,
                 "min-height": 0,
                 "flex-direction": "column",
+                "pointer-events": centerTabs.chatOpen() && centerTabs.active() === "chat" ? "auto" : "none",
               }}
             >
               <Switch>
                 <Match when={params.id && messages().length > 0}>
                   <div class="cs-chat-thread">
-                  <div class="cs-chat-live-dock" data-chat-live-dock />
-                  <div
-                    ref={attachScroll}
-                    class="thesis-scroll thesis-chat-scroll cs-chat-scroll"
-                    style={{
-                      flex: 1,
-                      "min-height": 0,
-                      "overflow-y": "auto",
-                      "overflow-x": "hidden",
-                      "padding-top": "12px",
-                    }}
-                  >
-                    <div ref={attachContent} class="cs-chat-scroll-inner">
-                      <For each={turnMessages()}>
-                        {(message, index) => {
-                          return (
-                            <div
-                              data-message-id={message.id}
-                              class={`cs-chat-turn${message.role === "assistant" ? " hys-turn-card" : ""}`}
-                              style={{
-                                "min-width": 0,
-                                width: "100%",
-                                "max-width": message.role === "assistant" ? "100%" : "100%",
-                              }}
-                            >
-                              <Show when={message.role === "assistant" && message.agent}>
-                                <div
-                                  class="hys-turn-card-header"
-                                  style={{
-                                    padding: "6px 12px 2px",
-                                    "font-family": "var(--font-sans)",
-                                    "font-size": "11px",
-                                    "font-weight": "600",
-                                    color: "var(--color-text-muted)",
-                                    display: "flex",
-                                    "align-items": "center",
-                                    gap: "8px",
-                                  }}
-                                >
-                                  <span>
-                                    {((message.agent as string) || "assistant")
-                                      .replace(/_/g, " ")
-                                      .replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                  </span>
-                                </div>
-                              </Show>
-                              <SessionTurn
-                                sessionID={params.id!}
-                                messageID={message.id}
-                                lastUserMessageID={lastUserMessage()?.id}
-                                stepsExpanded={stepsExpanded()[message.id] ?? false}
-                                onStepsExpandedToggle={() => toggleSteps(message.id)}
-                                onRevertMessage={(id) => void revertTo(id)}
-                                onOpenFile={(path) => void openFile(path)}
-                                onPreviewFile={(path) => void previewArtifact(path)}
-                                renderFilePreview={(file) =>
-                                  file.kind === "png" || file.kind === "jpg" || file.kind === "svg" ? (
-                                    <ArtifactImageThumb
-                                      directory={sync.data.path.directory || sdk.directory}
-                                      file={file}
-                                    />
-                                  ) : file.kind === "pdf" ? (
-                                    <ArtifactPdfThumb
-                                      directory={sync.data.path.directory || sdk.directory}
-                                      file={file}
-                                    />
-                                  ) : file.kind === "csv" || file.kind === "tsv" ? (
-                                    <ArtifactTableThumb
-                                      directory={sync.data.path.directory || sdk.directory}
-                                      file={file}
-                                    />
-                                  ) : undefined
-                                }
-                                onRevealFile={(path) => void openLocalFile(path, "reveal")}
-                                onOpenInApp={(path, app) => void openLocalFile(path, "app", app)}
-                                hideTools={["task"]}
-                                classes={{
-                                  root: "min-w-0 w-full relative",
-                                  content: "flex flex-col justify-between min-w-0",
-                                  container: "w-full min-w-0",
-                                }}
-                              />
-                              <Show when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}>
-                                {(hit) => <DomainSwitchCard hit={hit()} />}
-                              </Show>
-                              {/* Space, not a rule — the bubbles already separate turns. */}
-                              <Show when={index() < turnMessages().length - 1}>
-                                <div style={{ height: "22px" }} />
-                              </Show>
-                            </div>
-                          )
-                        }}
-                      </For>
-                    </div>
-                  </div>
-                  <Show when={!pinnedToBottom()}>
-                    <button
-                      type="button"
-                      class="cs-chat-latest"
-                      onClick={jumpToLatest}
-                      title={language.t("chat.jumpLatest")}
+                    <div class="cs-chat-live-dock" data-chat-live-dock />
+                    <div
+                      ref={attachScroll}
+                      class="thesis-scroll thesis-chat-scroll cs-chat-scroll"
+                      style={{
+                        flex: 1,
+                        "min-height": 0,
+                        "overflow-y": "auto",
+                        "overflow-x": "hidden",
+                        "padding-top": "12px",
+                      }}
                     >
-                      <IconArrowDown size={13} strokeWidth={1.75} />
-                      <span>{language.t("chat.jumpLatest")}</span>
-                    </button>
-                  </Show>
+                      <div ref={attachContent} class="cs-chat-scroll-inner">
+                        <For each={turnMessages()}>
+                          {(message, index) => {
+                            return (
+                              <div
+                                data-message-id={message.id}
+                                class={`cs-chat-turn${message.role === "assistant" ? " hys-turn-card" : ""}`}
+                                style={{
+                                  "min-width": 0,
+                                  width: "100%",
+                                  "max-width": message.role === "assistant" ? "100%" : "100%",
+                                }}
+                              >
+                                <Show when={message.role === "assistant" && message.agent}>
+                                  <div
+                                    class="hys-turn-card-header"
+                                    style={{
+                                      padding: "6px 12px 2px",
+                                      "font-family": "var(--font-sans)",
+                                      "font-size": "11px",
+                                      "font-weight": "600",
+                                      color: "var(--color-text-muted)",
+                                      display: "flex",
+                                      "align-items": "center",
+                                      gap: "8px",
+                                    }}
+                                  >
+                                    <span>
+                                      {((message.agent as string) || "assistant")
+                                        .replace(/_/g, " ")
+                                        .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                    </span>
+                                  </div>
+                                </Show>
+                                <SessionTurn
+                                  sessionID={params.id!}
+                                  messageID={message.id}
+                                  lastUserMessageID={lastUserMessage()?.id}
+                                  stepsExpanded={stepsExpanded()[message.id] ?? false}
+                                  onStepsExpandedToggle={() => toggleSteps(message.id)}
+                                  onRevertMessage={(id) => void revertTo(id)}
+                                  onOpenFile={(path) => void openFile(path)}
+                                  onPreviewFile={(path) => void previewArtifact(path)}
+                                  renderFilePreview={(file) =>
+                                    file.kind === "png" || file.kind === "jpg" || file.kind === "svg" ? (
+                                      <ArtifactImageThumb
+                                        directory={sync.data.path.directory || sdk.directory}
+                                        file={file}
+                                      />
+                                    ) : file.kind === "pdf" ? (
+                                      <ArtifactPdfThumb
+                                        directory={sync.data.path.directory || sdk.directory}
+                                        file={file}
+                                      />
+                                    ) : file.kind === "csv" || file.kind === "tsv" ? (
+                                      <ArtifactTableThumb
+                                        directory={sync.data.path.directory || sdk.directory}
+                                        file={file}
+                                      />
+                                    ) : undefined
+                                  }
+                                  onRevealFile={(path) => void openLocalFile(path, "reveal")}
+                                  onOpenInApp={(path, app) => void openLocalFile(path, "app", app)}
+                                  hideTools={["task"]}
+                                  classes={{
+                                    root: "min-w-0 w-full relative",
+                                    content: "flex flex-col justify-between min-w-0",
+                                    container: "w-full min-w-0",
+                                  }}
+                                />
+                                <Show
+                                  when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}
+                                >
+                                  {(hit) => <DomainSwitchCard hit={hit()} />}
+                                </Show>
+                                {/* Space, not a rule — the bubbles already separate turns. */}
+                                <Show when={index() < turnMessages().length - 1}>
+                                  <div style={{ height: "22px" }} />
+                                </Show>
+                              </div>
+                            )
+                          }}
+                        </For>
+                      </div>
+                    </div>
+                    <Show when={!pinnedToBottom()}>
+                      <button
+                        type="button"
+                        class="cs-chat-latest"
+                        onClick={jumpToLatest}
+                        title={language.t("chat.jumpLatest")}
+                      >
+                        <IconArrowDown size={13} strokeWidth={1.75} />
+                        <span>{language.t("chat.jumpLatest")}</span>
+                      </button>
+                    </Show>
                   </div>
                 </Match>
                 <Match when={true}>
@@ -966,6 +975,7 @@ export default function Page(): JSX.Element {
                   flex: 1,
                   "min-height": 0,
                   "flex-direction": "column",
+                  "pointer-events": centerTabs.active() === "files" ? "auto" : "none",
                 }}
               >
                 <ErrorBoundary fallback={(err) => <FilesError error={err} />}>
@@ -989,6 +999,7 @@ export default function Page(): JSX.Element {
                     flex: 1,
                     "min-height": 0,
                     "flex-direction": "column",
+                    "pointer-events": centerTabs.active() === doc.id ? "auto" : "none",
                   }}
                 >
                   <FileView
@@ -1232,11 +1243,12 @@ function SessionsSidebar(props: {
                     }
                   >
                     <InlineRename
-                      class="cs-sidebar-project-name"
+                      class="cs-sidebar-project-name cs-sidebar-project-open"
                       inputClass="cs-inline-rename-input cs-sidebar-project-name-input"
                       value={group.name}
                       title={language.t("common.rename")}
                       onSave={props.onRenameProject}
+                      onActivate={() => props.onOpenProject(group.worktree)}
                     />
                   </Show>
                   <span class="cs-sidebar-project-count">{group.sessions.length}</span>
@@ -1451,7 +1463,10 @@ function ChatWelcome(props: {
                 <span class="cs-chat-welcome-name-text">{props.name}</span>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
-                <DropdownMenu.Content class="cs-menu cs-chat-welcome-project-menu">
+                <DropdownMenu.Content
+                  class="cs-menu cs-chat-welcome-project-menu"
+                  onCloseAutoFocus={(event) => event.preventDefault()}
+                >
                   <For each={props.projects}>
                     {(project) => (
                       <DropdownMenu.Item
@@ -1722,4 +1737,3 @@ function ArtifactPdfThumb(props: { directory: string; file: ResultFile }): JSX.E
 
   return <canvas data-slot="session-turn-result-pdf-preview" ref={canvas} aria-label={`${props.file.name} 首页预览`} />
 }
-
