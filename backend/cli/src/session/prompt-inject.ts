@@ -14,6 +14,7 @@ import { CausalInference } from "./causal"
 import { ActiveLearn } from "./active-learn"
 import { DataQuality } from "./data-quality"
 import { DataProfile } from "./data-profile"
+import { ThemeSlots } from "./theme-slots"
 import { TaskProfile } from "./task-profile"
 import { PromptLoader } from "../agent/prompt-loader"
 import { DomainScope } from "./domain-scope"
@@ -888,7 +889,7 @@ async function applyDynamicInjections(
     if (disciplinePack(input.agent.name) === "biology") {
       injectDataGate(messages, userMessage, ctx.contract)
       note("data-gate")
-      await DataProfile.inject(userMessage, Instance.directory).catch(() => undefined)
+      await DataProfile.inject(userMessage, Instance.directory, researchContext()?.subdomain).catch(() => undefined)
       note("data-profile")
     }
     if (task && drifted && drift) {
@@ -896,6 +897,10 @@ async function applyDynamicInjections(
     }
     if (task && !drifted) await injectResearchContext(userMessage, input.session.id, task.id)
     note("research-intent")
+    if (disciplinePack(input.agent.name) === "biology") {
+      ThemeSlots.inject(userMessage, ctx.contract, researchContext()?.subdomain)
+      note("theme-slots")
+    }
 
     await InjectionPipeline.run(
       [

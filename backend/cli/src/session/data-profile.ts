@@ -3,6 +3,7 @@ import { Log } from "../util/log"
 import { Identifier } from "../id/id"
 import { MessageV2 } from "./message-v2"
 import { ProcessEnvironment } from "@/process/environment"
+import { ThemeSlots } from "./theme-slots"
 
 /**
  * Data profile — a deterministic, data-aware summary of files the user
@@ -13,8 +14,9 @@ import { ProcessEnvironment } from "@/process/environment"
 export namespace DataProfile {
   const log = Log.create({ service: "data-profile" })
   const KEY = "data-profile"
-  const EXT = /\.(h5ad|csv|tsv)$/i
-  const MENTION = /(?:^|[\s"'`(（])((?:~|\.{1,2})?\/?[\w./\-\u4e00-\u9fa5]+\.(?:h5ad|csv|tsv))\b/gi
+  const EXT = /\.(h5ad|csv|tsv|mcd|ome\.tiff?|tiff?|vcf)(\.gz)?$/i
+  const MENTION =
+    /(?:^|[\s"'`(（])((?:~|\.{1,2})?\/?[\w./\-\u4e00-\u9fa5]+\.(?:h5ad|csv|tsv|mcd|ome\.tiff?|tiff?|vcf)(?:\.gz)?)\b/gi
   const TIMEOUT = 20_000
   const MAX_FILES = 3
   const cache = new Map<string, { mtime: number; summary: Summary }>()
@@ -42,7 +44,10 @@ export namespace DataProfile {
         numeric: string[]
         sample: string[][]
         delimiter: string
+        panel?: { channels: number; isotopes: string[]; duplicates: string[]; clone: boolean }
       }
+    | { status: "ok"; kind: "image"; bytes: number; note: string }
+    | { status: "ok"; kind: "vcf"; reference?: string; samples: number; variants?: number }
     | { status: "unavailable" | "error"; reason: string }
 
   const SCRIPT = String.raw`
@@ -112,13 +117,18 @@ print(json.dumps(out))
     return undefined
   }
 
+  function accept(file: string, theme?: string) {
+    if (EXT.test(file)) return true
+    return ThemeSlots.extra(theme)?.test(file) ?? false
+  }
+
   /** Candidate local files from attachments and explicit path mentions. */
-  export function candidates(userMessage: MessageV2.WithParts, cwd = process.cwd()) {
+  export function candidates(userMessage: MessageV2.WithParts, cwd = process.cwd(), theme?: string) {
     const out = new Set<string>()
     for (const part of userMessage.parts) {
       if (part.type === "file") {
         const file = local((part as MessageV2.FilePart).url)
-        if (file && EXT.test(file)) out.add(file)
+        if (file && accept(file, theme)) out.add(file)
       }
       if (part.type === "text" && !(part as MessageV2.TextPart).hybio) {
         for (const match of (part as MessageV2.TextPart).text.matchAll(MENTION)) {
@@ -130,6 +140,30 @@ print(json.dumps(out))
     return [...out].slice(0, MAX_FILES)
   }
 
+  async function peekVcf(file: string): Promise<Summary> {
+    const raw = await Bun.file(file).arrayBuffer()
+    const bytes = file.endsWith(".gz") ? Bun.gunzipSync(raw) : new Uint8Array(raw)
+    const text = new TextDecoder().decode(bytes.slice(0, 256_000))
+    const reference = text.match(/##reference=(\S+)/)?.[1]
+    const chrom = text.split("\n").find((line) => line.startsWith("#CHROM"))
+    const samples = chrom ? Math.max(0, chrom.split("\t").length - 9) : 0
+    return { status: "ok", kind: "vcf", reference, samples }
+  }
+
+  function panelHint(columns: string[], sample: string[][]) {
+    const isotopeAt = columns.findIndex((column) => /^(?:isotope|metal|channel|金属|同位素)$/i.test(column))
+    if (isotopeAt < 0) return undefined
+    const isotopes = sample.map((row) => row[isotopeAt]).filter(Boolean)
+    const seen = new Map<string, number>()
+    for (const value of isotopes) seen.set(value.toLowerCase(), (seen.get(value.toLowerCase()) ?? 0) + 1)
+    return {
+      channels: sample.length,
+      isotopes,
+      duplicates: [...seen].filter(([, n]) => n > 1).map(([id]) => id),
+      clone: columns.some((column) => /^(?:clone|克隆)$/i.test(column)),
+    }
+  }
+
   export async function profile(file: string): Promise<Summary | undefined> {
     const stat = await Bun.file(file)
       .stat()
@@ -137,18 +171,37 @@ print(json.dumps(out))
     if (!stat) return undefined
     const hit = cache.get(file)
     if (hit && hit.mtime === stat.mtimeMs) return hit.summary
-    const env = await ProcessEnvironment.resolve("notebook").catch(() => process.env)
-    const proc = Bun.spawn(["python3", "-c", SCRIPT, file], { stdout: "pipe", stderr: "pipe", env })
-    const timer = setTimeout(() => proc.kill(), TIMEOUT)
-    const text = await new Response(proc.stdout).text().catch(() => "")
-    await proc.exited
-    clearTimeout(timer)
-    const line = text.trim().split("\n").at(-1) ?? ""
-    const summary = (() => {
+    const lower = file.toLowerCase()
+    const summary = await (async (): Promise<Summary> => {
+      if (/\.(mcd|ome\.tiff?|tiff?)$/.test(lower)) {
+        return {
+          status: "ok",
+          kind: "image",
+          bytes: stat.size,
+          note: "acquisition image — segmentation required before cells exist",
+        }
+      }
+      if (/\.vcf(\.gz)?$/.test(lower)) {
+        return peekVcf(file).catch((error) => ({
+          status: "error" as const,
+          reason: error instanceof Error ? error.message : "vcf peek failed",
+        }))
+      }
+      const env = await ProcessEnvironment.resolve("notebook").catch(() => process.env)
+      const proc = Bun.spawn(["python3", "-c", SCRIPT, file], { stdout: "pipe", stderr: "pipe", env })
+      const timer = setTimeout(() => proc.kill(), TIMEOUT)
+      const text = await new Response(proc.stdout).text().catch(() => "")
+      await proc.exited
+      clearTimeout(timer)
+      const line = text.trim().split("\n").at(-1) ?? ""
       try {
-        return JSON.parse(line) as Summary
+        const parsed = JSON.parse(line) as Summary
+        if (parsed.status === "ok" && parsed.kind === "table") {
+          return { ...parsed, panel: panelHint(parsed.columns, parsed.sample) }
+        }
+        return parsed
       } catch {
-        return { status: "error" as const, reason: proc.exitCode === null ? "timed out" : "python did not return JSON" }
+        return { status: "error", reason: proc.exitCode === null ? "timed out" : "python did not return JSON" }
       }
     })()
     cache.set(file, { mtime: stat.mtimeMs, summary })
@@ -160,12 +213,31 @@ print(json.dumps(out))
     if (summary.status !== "ok") {
       return `<${KEY} file="${name}" status="${summary.status}">${summary.reason}. Do not guess its contents; say what is needed to read it.</${KEY}>`
     }
+    if (summary.kind === "image") {
+      return [
+        `<${KEY} file="${name}" kind="image" bytes="${summary.bytes}">`,
+        summary.note,
+        "Do not guess channel count or cell numbers from the filename.",
+        `</${KEY}>`,
+      ].join("\n")
+    }
+    if (summary.kind === "vcf") {
+      return [
+        `<${KEY} file="${name}" kind="vcf">`,
+        summary.reference ? `##reference=${summary.reference}` : "no ##reference in the header peek",
+        `${summary.samples} sample column(s) after FORMAT`,
+        "Use this build; do not assume GRCh38.",
+        `</${KEY}>`,
+      ].join("\n")
+    }
     if (summary.kind === "h5ad") {
+      const spatial = summary.obsm.some((key) => /spatial/i.test(key))
       const lines = [
         `<${KEY} file="${name}" kind="h5ad" backend="${summary.backend}">`,
         `${summary.n_obs} cells × ${summary.n_vars} genes; raw=${summary.raw}`,
         summary.obs.length ? `obs: ${summary.obs.join(", ")}` : "",
         summary.obsm.length ? `obsm: ${summary.obsm.join(", ")}` : "",
+        spatial ? "spatial coordinates: present in obsm" : "spatial coordinates: NOT in obsm",
         summary.layers.length ? `layers: ${summary.layers.join(", ")}` : "",
         summary.mito_pct !== undefined ? `mito fraction (first ≤2000 cells): ${summary.mito_pct}%` : "",
         summary.genes_per_cell_median !== undefined
@@ -176,21 +248,25 @@ print(json.dumps(out))
       ]
       return lines.filter(Boolean).join("\n")
     }
+    const panel = summary.panel
     return [
       `<${KEY} file="${name}" kind="table" delimiter="${summary.delimiter}">`,
       `${summary.rows} rows; columns: ${summary.columns.join(", ")}`,
       summary.numeric.length ? `numeric: ${summary.numeric.join(", ")}` : "",
       summary.sample.length ? `first rows: ${summary.sample.map((row) => row.join(" | ")).join(" ⏎ ")}` : "",
-      "Use these measured facts; infer column roles (cluster id, gene symbol, logFC, p-value, pct) from the names and values above instead of asking.",
+      panel
+        ? `panel: ${panel.channels} listed channels; isotopes=${panel.isotopes.join(", ") || "none"}${panel.duplicates.length ? `; DUPLICATE isotopes: ${panel.duplicates.join(", ")}` : ""}; clone column=${panel.clone}`
+        : "",
+      "Use these measured facts; infer column roles (cluster id, gene symbol, logFC, p-value, pct, isotope) from the names and values above instead of asking.",
       `</${KEY}>`,
     ]
       .filter(Boolean)
       .join("\n")
   }
 
-  export async function inject(userMessage: MessageV2.WithParts, cwd?: string) {
+  export async function inject(userMessage: MessageV2.WithParts, cwd?: string, theme?: string) {
     if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text.includes(`<${KEY} `))) return
-    const files = candidates(userMessage, cwd)
+    const files = candidates(userMessage, cwd, theme)
     if (files.length === 0) return
     const blocks = await Promise.all(
       files.map(async (file) => {

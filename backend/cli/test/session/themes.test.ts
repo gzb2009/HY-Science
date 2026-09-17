@@ -7,6 +7,7 @@ import { BiologyProfile } from "../../src/session/biology-profile"
 import { DomainScope } from "../../src/session/domain-scope"
 import { SUBDOMAINS } from "../../src/session/task-profile"
 import { SessionReview } from "../../src/session/review"
+import { ThemeSlots } from "../../src/session/theme-slots"
 import { domainSkillAllowed } from "../../src/skill/domain-preset"
 
 // The theme manifest is the only place a theme may be added. Every layer that
@@ -69,6 +70,12 @@ describe("theme manifest", () => {
     }
     expect(SessionReview.checklist("imc")).toContain("isotope")
     expect(SessionReview.checklist("general")).toBe("")
+    for (const id of BIOLOGY_THEMES) {
+      const section = BiologyProfile.fragment(id).split("## Data forms")[0]
+      for (const slot of ThemeSlots.spec(id)?.ask ?? []) {
+        expect(section, `${id} Ask first missing slot id "${slot.id}"`).toContain(slot.id)
+      }
+    }
   })
 
   test("every profile file on disk belongs to a manifest theme", async () => {

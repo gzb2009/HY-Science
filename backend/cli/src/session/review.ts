@@ -5,6 +5,7 @@ import { MessageV2 } from "./message-v2"
 import { ReviewRecord } from "./review-record"
 import { Instance } from "../project/instance"
 import { CitationCheck } from "./citation-check"
+import { ThemeSlots } from "./theme-slots"
 import { BiologyProfile } from "./biology-profile"
 import { isBiologyTheme } from "@hysci/util/themes"
 import z from "zod"
@@ -63,6 +64,26 @@ export namespace SessionReview {
 
   function answerParts(parts: MessageV2.Part[]) {
     return parts.filter((part): part is MessageV2.TextPart => part.type === "text" && !MessageV2.isHybio(part))
+  }
+
+  async function markerClusters(
+    messages: { info?: { role?: string }; parts?: { type?: string; filename?: string; url?: string }[] }[],
+  ) {
+    const user = [...messages].reverse().find((message) => message.info?.role === "user")
+    if (!user?.parts) return undefined
+    for (const part of user.parts) {
+      if (part.type !== "file") continue
+      const name = part.filename ?? part.url ?? ""
+      if (!/marker/i.test(name)) continue
+      const file = part.url?.startsWith("file://") ? decodeURIComponent(part.url.slice(7)) : part.url
+      if (!file) continue
+      const raw = await Bun.file(file)
+        .text()
+        .catch(() => "")
+      const ids = ThemeSlots.clustersFromCsv(raw)
+      if (ids.length) return ids
+    }
+    return undefined
   }
 
   export function answerText(parts: { type?: string; text?: string; hybio?: boolean; synthetic?: boolean }[]) {
@@ -245,7 +266,10 @@ export namespace SessionReview {
 
     const started = Date.now()
     const citations = await CitationCheck.verify(text).catch(() => ({ items: [], verified: 0, missing: 0, errors: 0 }))
-    const cited = CitationCheck.findings(citations)
+    const cited = [
+      ...CitationCheck.findings(citations),
+      ...ThemeSlots.check(research?.subdomain, text, { markerClusters: await markerClusters(messages) }),
+    ]
     const full = shouldReview({ agent: input.agent, text }) && sessionHasToolCalls(messages)
     if (!full) {
       if (!cited.some((finding) => finding.severity === "blocking")) return
