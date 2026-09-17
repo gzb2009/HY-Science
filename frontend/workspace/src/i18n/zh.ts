@@ -675,6 +675,7 @@ export const dict = {
   "sidebar.backToWorkbench": "返回工作台",
   "sidebar.searchAnalyses": "搜索分析…",
   "sidebar.newSubTask": "新建子任务",
+  "chat.jumpLatest": "最新",
   "sidebar.files": "文件",
   "sidebar.filesDesc": "浏览项目文件",
   "layout.resizeSidebar": "调整侧栏宽度",

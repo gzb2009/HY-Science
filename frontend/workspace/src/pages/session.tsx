@@ -13,7 +13,6 @@ import {
   Switch,
   type JSX,
 } from "solid-js"
-import { Portal } from "solid-js/web"
 import { useNavigate, useParams } from "@solidjs/router"
 import { produce } from "solid-js/store"
 import { Binary } from "@hysci/util/binary"
@@ -52,6 +51,7 @@ import {
   IconSettings,
   IconFile,
   IconX,
+  IconArrowDown,
   IconChevronDown,
   IconChevronRight,
   IconChevronLeft,
@@ -95,12 +95,14 @@ import {
   resultFolderName,
 } from "@/utils/projectResult"
 import { firstUserMessageText, getSessionDisplayTitle } from "@/utils/sessionDisplayTitle"
+import { isEmptyDraftSession } from "@/utils/sessionNaming"
 import { projectMetaLocal } from "@/thesis/store/projectMetaLocal"
 import { projectDomainId } from "@/domain/registry"
 import { IMC_STEPS } from "@/domain/imc-flow"
 import { lastSelectedDomain } from "@/domain/store"
 import { sessionTitleLocal } from "@/thesis/store/sessionTitleLocal"
 import { toast } from "@/thesis/Toast"
+import { ArtifactLightbox } from "@/thesis/ArtifactLightbox"
 import { artifactImageUrl, artifactTable, type ArtifactData } from "@/utils/artifactPreview"
 
 type SyncSession = ReturnType<typeof useSync>["data"]["session"][number]
@@ -126,8 +128,6 @@ export default function Page(): JSX.Element {
   const layout = useLayout()
   const server = useServer()
   const dialog = useDialog()
-  const [creating, setCreating] = createSignal(false)
-
   async function resolveOutputFile(path: string): Promise<HostFileRef> {
     const worktree = sync.data.path.directory || sdk.directory || sync.project?.worktree || ""
     const ref = resolveHostFileRef(worktree, path)
@@ -165,15 +165,17 @@ export default function Page(): JSX.Element {
     return ref
   }
 
-  async function previewImage(path: string) {
+  async function previewArtifact(path: string) {
     const ref = await resolveOutputFile(path)
     if (!ref.path) {
       toast.error("preview failed", "invalid file path")
       return
     }
+    const name = ref.path.split("/").pop() || ref.path
     uiStore.setImagePreview({
       ...ref,
-      name: ref.path.split("/").pop() || ref.path,
+      name,
+      kind: name.toLowerCase().endsWith(".pdf") ? "pdf" : "image",
     })
   }
 
@@ -203,25 +205,8 @@ export default function Page(): JSX.Element {
     toast.error("open failed", body.error ?? body.message ?? `HTTP ${res.status}`)
   }
 
-  async function newSession() {
-    if (creating()) return
-    setCreating(true)
-    try {
-      const res: any = await sdk.client.session.create({
-        directory: sdk.directory,
-      } as any)
-      const data = res?.data ?? res
-      const id = data?.id ?? data?.sessionID
-      if (id) {
-        navigate(`/${params.dir}/session/${id}`)
-      } else {
-        navigate(`/${params.dir}/session/new`)
-      }
-    } catch {
-      navigate(`/${params.dir}/session/new`)
-    } finally {
-      setCreating(false)
-    }
+  function newSession() {
+    navigate(`/${params.dir}/session/new`)
   }
 
   const language = useLanguage()
@@ -327,6 +312,12 @@ export default function Page(): JSX.Element {
       () => params.id,
       (id) => {
         if (!id || id === "new") return
+        // First send already wrote the user turn locally. Don't refetch
+        // before the server has it — reconcile would wipe the bubble.
+        if (sync.data.message[id]?.some((item) => item.role === "user")) {
+          void sync.session.review(id).catch(() => undefined)
+          return
+        }
         ;(async () => {
           try {
             await Promise.all([sync.session.sync(id), sync.session.review(id)])
@@ -370,9 +361,11 @@ export default function Page(): JSX.Element {
 
   const sessions = createMemo<SyncSession[]>(() => {
     const dir = workspaceDir()
+    const active = params.id
     return [...sync.data.session]
       .filter((s) => !s.parentID)
       .filter((s) => !s.directory || s.directory === dir)
+      .filter((s) => s.id === active || !isEmptyDraftSession(s, sync.data.message[s.id]))
       .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))
   })
 
@@ -414,6 +407,7 @@ export default function Page(): JSX.Element {
         : [...child.session]
             .filter((s) => !s.parentID && !s.time?.archived)
             .filter((s) => !s.directory || s.directory === dir)
+            .filter((s) => s.id === params.id || !isEmptyDraftSession(s, child.message[s.id]))
             .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))
       return {
         worktree: project.worktree,
@@ -580,6 +574,11 @@ export default function Page(): JSX.Element {
   createEffect(() => {
     if (centerTabs.active() === "files") setVisitedFiles(true)
   })
+  createEffect(() => {
+    if (centerTabs.active() === "chat") return
+    const focused = document.activeElement
+    if (focused instanceof HTMLElement && focused.closest(".cs-chat-stage")) focused.blur()
+  })
 
   // Chat scroll. The container resizes whenever the right pane opens/closes
   // (the chat column narrows/widens) or the window changes size. A bare reflow
@@ -593,22 +592,32 @@ export default function Page(): JSX.Element {
   let boundScroll: HTMLDivElement | undefined
   let boundContent: HTMLDivElement | undefined
   const NEAR_BOTTOM_PX = 120
-  let pinnedToBottom = true
+  const [pinnedToBottom, setPinnedToBottom] = createSignal(true)
   let distanceFromBottom = 0
 
   const recordScroll = () => {
     if (!scrollRef) return
     distanceFromBottom = scrollRef.scrollHeight - scrollRef.scrollTop - scrollRef.clientHeight
-    pinnedToBottom = distanceFromBottom <= NEAR_BOTTOM_PX
+    setPinnedToBottom(distanceFromBottom <= NEAR_BOTTOM_PX)
   }
 
   const stickToBottom = () => {
-    if (scrollRef) scrollRef.scrollTop = scrollRef.scrollHeight
+    if (!scrollRef) return
+    scrollRef.scrollTop = scrollRef.scrollHeight
+    distanceFromBottom = 0
+    setPinnedToBottom(true)
+  }
+
+  const jumpToLatest = () => {
+    if (!scrollRef) return
+    setPinnedToBottom(true)
+    distanceFromBottom = 0
+    scrollRef.scrollTo({ top: scrollRef.scrollHeight, behavior: "smooth" })
   }
 
   const reanchor = () => {
     if (!scrollRef) return
-    if (pinnedToBottom) stickToBottom()
+    if (pinnedToBottom()) stickToBottom()
     else scrollRef.scrollTop = Math.max(0, scrollRef.scrollHeight - scrollRef.clientHeight - distanceFromBottom)
   }
 
@@ -618,7 +627,7 @@ export default function Page(): JSX.Element {
     if (boundScroll) boundScroll.removeEventListener("scroll", recordScroll)
     boundScroll = el
     scrollRef = el
-    pinnedToBottom = true
+    setPinnedToBottom(true)
     el.addEventListener("scroll", recordScroll, { passive: true })
     scrollObserver = new ResizeObserver(reanchor)
     scrollObserver.observe(el)
@@ -629,7 +638,7 @@ export default function Page(): JSX.Element {
     if (contentObserver) contentObserver.disconnect()
     boundContent = el
     contentObserver = new ResizeObserver(() => {
-      if (pinnedToBottom) stickToBottom()
+      if (pinnedToBottom()) stickToBottom()
     })
     contentObserver.observe(el)
   }
@@ -647,10 +656,10 @@ export default function Page(): JSX.Element {
       () => [messages().length, params.id],
       ([, id], prev) => {
         const sessionChanged = !prev || prev[1] !== id
-        if (sessionChanged) pinnedToBottom = true
-        if (scrollRef && pinnedToBottom)
+        if (sessionChanged) setPinnedToBottom(true)
+        if (scrollRef && pinnedToBottom())
           requestAnimationFrame(() => {
-            if (scrollRef && pinnedToBottom) stickToBottom()
+            if (scrollRef && pinnedToBottom()) stickToBottom()
           })
       },
     ),
@@ -667,9 +676,9 @@ export default function Page(): JSX.Element {
         if (part.type === "text" || part.type === "reasoning") size += part.text?.length ?? 0
       }
     }
-    if (!size || !scrollRef || !pinnedToBottom) return
+    if (!size || !scrollRef || !pinnedToBottom()) return
     requestAnimationFrame(() => {
-      if (scrollRef && pinnedToBottom) stickToBottom()
+      if (scrollRef && pinnedToBottom()) stickToBottom()
     })
   })
 
@@ -692,9 +701,7 @@ export default function Page(): JSX.Element {
     >
       <ToastContainer />
       <Show when={uiStore.imagePreview()}>
-        {(artifact) => (
-          <ArtifactImagePreview artifact={artifact()} onClose={() => uiStore.setImagePreview(undefined)} />
-        )}
+        {(artifact) => <ArtifactLightbox artifact={artifact()} onClose={() => uiStore.setImagePreview(undefined)} />}
       </Show>
       <HelpOverlay open={uiStore.helpOpen()} onClose={() => uiStore.setHelpOpen(false)} />
       <CommandPalette open={uiStore.paletteOpen()} onClose={() => uiStore.setPaletteOpen(false)} />
@@ -715,7 +722,6 @@ export default function Page(): JSX.Element {
           open={sidebarOpen()}
           groups={sidebarGroups()}
           activeId={params.id}
-          creating={creating()}
           filesActive={centerTabs.filesOpen() && centerTabs.active() === "files"}
           onToggle={() => setSidebarOpen((v) => !v)}
           onBack={() => navigate(`/domain/${projectDomainId(projectRecord()) || lastSelectedDomain() || "general"}`)}
@@ -754,7 +760,13 @@ export default function Page(): JSX.Element {
           }}
         >
           <Show when={centerTabs.tabStripVisible()}>
-            <CenterTabStrip chatTitle={chatTitle()} />
+            <CenterTabStrip
+              chatTitle={chatTitle()}
+              onCloseChat={() => {
+                centerTabs.showChat()
+                void newSession()
+              }}
+            />
           </Show>
 
           <div
@@ -772,7 +784,7 @@ export default function Page(): JSX.Element {
             <div
               class="cs-chat-stage"
               style={{
-                display: centerTabs.active() === "chat" ? "flex" : "none",
+                display: centerTabs.chatOpen() && centerTabs.active() === "chat" ? "flex" : "none",
                 flex: 1,
                 "min-height": 0,
                 "flex-direction": "column",
@@ -780,6 +792,8 @@ export default function Page(): JSX.Element {
             >
               <Switch>
                 <Match when={params.id && messages().length > 0}>
+                  <div class="cs-chat-thread">
+                  <div class="cs-chat-live-dock" data-chat-live-dock />
                   <div
                     ref={attachScroll}
                     class="thesis-scroll thesis-chat-scroll cs-chat-scroll"
@@ -833,7 +847,7 @@ export default function Page(): JSX.Element {
                                 onStepsExpandedToggle={() => toggleSteps(message.id)}
                                 onRevertMessage={(id) => void revertTo(id)}
                                 onOpenFile={(path) => void openFile(path)}
-                                onPreviewFile={(path) => void previewImage(path)}
+                                onPreviewFile={(path) => void previewArtifact(path)}
                                 renderFilePreview={(file) =>
                                   file.kind === "png" || file.kind === "jpg" || file.kind === "svg" ? (
                                     <ArtifactImageThumb
@@ -856,8 +870,8 @@ export default function Page(): JSX.Element {
                                 onOpenInApp={(path, app) => void openLocalFile(path, "app", app)}
                                 hideTools={["task"]}
                                 classes={{
-                                  root: "min-w-0 w-full relative overflow-x-hidden",
-                                  content: "flex flex-col justify-between min-w-0 overflow-x-hidden",
+                                  root: "min-w-0 w-full relative",
+                                  content: "flex flex-col justify-between min-w-0",
                                   container: "w-full min-w-0",
                                 }}
                               />
@@ -873,6 +887,18 @@ export default function Page(): JSX.Element {
                         }}
                       </For>
                     </div>
+                  </div>
+                  <Show when={!pinnedToBottom()}>
+                    <button
+                      type="button"
+                      class="cs-chat-latest"
+                      onClick={jumpToLatest}
+                      title={language.t("chat.jumpLatest")}
+                    >
+                      <IconArrowDown size={13} strokeWidth={1.75} />
+                      <span>{language.t("chat.jumpLatest")}</span>
+                    </button>
+                  </Show>
                   </div>
                 </Match>
                 <Match when={true}>
@@ -983,7 +1009,13 @@ export default function Page(): JSX.Element {
   )
 }
 
-function CenterTabStrip(props: { chatTitle: string }): JSX.Element {
+function closeTab(event: MouseEvent, close: () => void) {
+  event.preventDefault()
+  event.stopPropagation()
+  close()
+}
+
+function CenterTabStrip(props: { chatTitle: string; onCloseChat: () => void }): JSX.Element {
   const active = centerTabs.active
   return (
     <div class="cs-center-tabs thesis-scroll">
@@ -995,17 +1027,15 @@ function CenterTabStrip(props: { chatTitle: string }): JSX.Element {
           title={props.chatTitle}
         >
           <span class="cs-center-tab-label">{props.chatTitle}</span>
-          <span
-            role="button"
+          <button
+            type="button"
             aria-label="close tab"
             class="cs-center-tab-close"
-            onClick={(e) => {
-              e.stopPropagation()
-              centerTabs.closeChat()
-            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => closeTab(e, props.onCloseChat)}
           >
             <IconX size={11} strokeWidth={1.8} />
-          </span>
+          </button>
         </div>
       </Show>
       <Show when={centerTabs.filesOpen()}>
@@ -1017,17 +1047,15 @@ function CenterTabStrip(props: { chatTitle: string }): JSX.Element {
         >
           <IconFolder size={14} strokeWidth={1.6} />
           <span class="cs-center-tab-label">Files</span>
-          <span
-            role="button"
+          <button
+            type="button"
             aria-label="close tab"
             class="cs-center-tab-close"
-            onClick={(e) => {
-              e.stopPropagation()
-              centerTabs.closeFiles()
-            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => closeTab(e, centerTabs.closeFiles)}
           >
             <IconX size={11} strokeWidth={1.8} />
-          </span>
+          </button>
         </div>
       </Show>
       <For each={centerTabs.docs()}>
@@ -1040,17 +1068,15 @@ function CenterTabStrip(props: { chatTitle: string }): JSX.Element {
           >
             <IconFile size={12} strokeWidth={1.6} />
             <span class="cs-center-tab-label">{doc.name}</span>
-            <span
-              role="button"
+            <button
+              type="button"
               aria-label="close tab"
               class="cs-center-tab-close"
-              onClick={(e) => {
-                e.stopPropagation()
-                centerTabs.closeDoc(doc.id)
-              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => closeTab(e, () => centerTabs.closeDoc(doc.id))}
             >
               <IconX size={11} strokeWidth={1.8} />
-            </span>
+            </button>
           </div>
         )}
       </For>
@@ -1062,7 +1088,6 @@ function SessionsSidebar(props: {
   open: boolean
   groups: SidebarGroup[]
   activeId: string | undefined
-  creating: boolean
   filesActive: boolean
   onToggle: () => void
   onBack: () => void
@@ -1162,11 +1187,11 @@ function SessionsSidebar(props: {
         </div>
 
         <div class="cs-sidebar-scroll thesis-scroll">
-          <button type="button" class="cs-sidebar-new-task" disabled={props.creating} onClick={props.onNew}>
+          <button type="button" class="cs-sidebar-new-task" onClick={props.onNew}>
             <span class="cs-sidebar-new-task-icon">
               <IconPlus size={16} strokeWidth={1.75} />
             </span>
-            <span>{props.creating ? "Creating…" : language.t("sidebar.newSubTask")}</span>
+            <span>{language.t("sidebar.newSubTask")}</span>
           </button>
 
           <For each={visible()}>
@@ -1364,6 +1389,9 @@ function ChatWelcome(props: {
   const dialog = useDialog()
   const language = useLanguage()
   const [switchOpen, setSwitchOpen] = createSignal(false)
+  createEffect(() => {
+    if (centerTabs.active() !== "chat") setSwitchOpen(false)
+  })
   const noModel = () => models.list().length === 0
   const flow = () => props.domain === "imc"
   const prompts = createMemo(() => {
@@ -1695,175 +1723,3 @@ function ArtifactPdfThumb(props: { directory: string; file: ResultFile }): JSX.E
   return <canvas data-slot="session-turn-result-pdf-preview" ref={canvas} aria-label={`${props.file.name} 首页预览`} />
 }
 
-function ArtifactImagePreview(props: {
-  artifact: { directory: string; path: string; name: string; mime?: string }
-  onClose: () => void
-}): JSX.Element {
-  const sdk = useSDK()
-  const [data, setData] = createSignal<ArtifactData>()
-  const [ready, setReady] = createSignal("")
-  const [zoom, setZoom] = createSignal(1)
-  const source = () => artifactImageUrl(data(), props.artifact.mime)
-  const setZoomBounded = (value: number) => setZoom(Math.min(6, Math.max(0.5, value)))
-
-  createEffect(() => {
-    const directory = props.artifact.directory
-    const path = props.artifact.path
-    setData(undefined)
-    setReady("")
-    setZoom(1)
-    if (!directory || !path) return
-    void sdk.client.file
-      .read({ directory, path })
-      .then((res: any) => setData((res?.data ?? res) as ArtifactData))
-      .catch(() => undefined)
-  })
-
-  createEffect(() => {
-    const value = source()
-    if (!value) return
-    const image = new Image()
-    const reveal = () => {
-      if (source() === value) setReady(value)
-    }
-    image.decoding = "async"
-    image.onload = reveal
-    image.src = value
-    void image.decode().then(reveal).catch(reveal)
-    onCleanup(() => {
-      image.onload = null
-    })
-  })
-
-  return (
-    <Show when={ready()}>
-      {(image) => (
-        <Portal>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`查看图片：${props.artifact.name}`}
-            onClick={props.onClose}
-            style={{
-              position: "fixed",
-              inset: 0,
-              display: "grid",
-              "place-items": "center",
-              padding: "12px",
-              background: "rgba(20, 24, 30, 0.24)",
-              "backdrop-filter": "blur(2px)",
-              "z-index": "var(--z-modal)",
-            }}
-          >
-            <section
-              onClick={(event) => event.stopPropagation()}
-              style={{
-                width: "min(1400px, calc(100vw - 24px))",
-                height: "min(900px, calc(100dvh - 24px))",
-                display: "flex",
-                "flex-direction": "column",
-                overflow: "hidden",
-                "border-radius": "8px",
-                border: "1px solid var(--color-border)",
-                background: "var(--color-surface-solid)",
-                "box-shadow": "0 18px 64px rgba(0, 0, 0, 0.28)",
-              }}
-            >
-              <header
-                style={{
-                  height: "38px",
-                  display: "flex",
-                  "align-items": "center",
-                  gap: "8px",
-                  padding: "0 12px",
-                  "border-bottom": "1px solid var(--color-border)",
-                  "font-family": FONT_MONO,
-                  "font-size": "11px",
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <span style={{ flex: 1, overflow: "hidden", "text-overflow": "ellipsis", "white-space": "nowrap" }}>
-                  {props.artifact.name}
-                </span>
-                <button
-                  type="button"
-                  title="缩小"
-                  onClick={() => setZoomBounded(zoom() - 0.25)}
-                  style={previewButton()}
-                >
-                  −
-                </button>
-                <span style={{ width: "38px", "text-align": "center", "font-size": "10px" }}>
-                  {Math.round(zoom() * 100)}%
-                </span>
-                <button
-                  type="button"
-                  title="放大"
-                  onClick={() => setZoomBounded(zoom() + 0.25)}
-                  style={previewButton()}
-                >
-                  +
-                </button>
-                <button type="button" title="原始比例" onClick={() => setZoom(1)} style={previewButton()}>
-                  1:1
-                </button>
-                <a
-                  href={image()}
-                  download={props.artifact.name}
-                  title="下载"
-                  style={{ ...previewButton(), "text-decoration": "none" }}
-                >
-                  ↓
-                </a>
-                <button type="button" title="关闭" onClick={props.onClose} style={previewButton()}>
-                  ×
-                </button>
-              </header>
-              <div
-                style={{
-                  flex: 1,
-                  "min-height": 0,
-                  display: "grid",
-                  "place-items": "center",
-                  padding: "18px",
-                  overflow: "auto",
-                  background: "var(--color-bg-subtle)",
-                }}
-                onWheel={(event) => {
-                  event.preventDefault()
-                  setZoomBounded(zoom() + (event.deltaY < 0 ? 0.25 : -0.25))
-                }}
-              >
-                <img
-                  src={image()}
-                  alt={props.artifact.name}
-                  onClick={() => setZoom(zoom() === 1 ? 2 : 1)}
-                  style={{
-                    width: zoom() === 1 ? "auto" : `${zoom() * 100}%`,
-                    "max-width": zoom() === 1 ? "100%" : "none",
-                    "max-height": zoom() === 1 ? "100%" : "none",
-                    "object-fit": "contain",
-                    cursor: zoom() === 1 ? "zoom-in" : "zoom-out",
-                  }}
-                />
-              </div>
-            </section>
-          </div>
-        </Portal>
-      )}
-    </Show>
-  )
-}
-
-function previewButton(): JSX.CSSProperties {
-  return {
-    all: "unset",
-    cursor: "pointer",
-    display: "inline-grid",
-    "place-items": "center",
-    width: "28px",
-    height: "26px",
-    "border-radius": "4px",
-    color: "var(--color-text-muted)",
-  }
-}

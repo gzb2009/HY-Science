@@ -23,13 +23,19 @@ import { toast } from "@/thesis/Toast"
 import { SkillsBrowser } from "@/thesis/SkillsBrowser"
 import { EffortSlider } from "@/thesis/EffortSlider"
 import { uiStore } from "@/thesis/store/ui"
+import { centerTabs } from "@/thesis/store/centerTabs"
 import { Identifier } from "@/utils/id"
 import { useProviders, popularProviders } from "@/hooks/use-providers"
 import { useGlobalSync } from "@/context/global-sync"
 import { useDialog } from "@hysci/ui/context/dialog"
 import { openSetupDialog } from "@/thesis/SetupDialog"
 import { resolveModelSource, type ModelSource } from "@/utils/model-cost"
-import { deriveSessionTitleFromMessage, isDefaultSessionTitle, makeUniqueSessionTitle } from "@/utils/sessionNaming"
+import {
+  deriveSessionTitleFromMessage,
+  isDefaultSessionTitle,
+  isGenericSessionTitle,
+  makeUniqueSessionTitle,
+} from "@/utils/sessionNaming"
 import { sessionTitleLocal } from "@/thesis/store/sessionTitleLocal"
 import { ensureDirectory } from "@/utils/projectResult"
 import { Binary } from "@hysci/util/binary"
@@ -174,6 +180,14 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   // no spaces). Arrow keys move selection; Enter inserts `/<name> `.
   const [slashIndex, setSlashIndex] = createSignal(0)
   const [skillsOpen, setSkillsOpen] = createSignal(false)
+  createEffect(() => {
+    if (centerTabs.active() === "chat") return
+    setModelOpen(false)
+    setEffortOpen(false)
+    setSkillsOpen(false)
+    setTaskControlOpen(false)
+    setImcOpen(false)
+  })
   const [caret, setCaret] = createSignal(0)
   let textareaRef: HTMLTextAreaElement | undefined
   let fileInputRef: HTMLInputElement | undefined
@@ -943,18 +957,29 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     setLastSent(p.text)
     try {
       await ensureDirectory(sdk.url, platform.fetch ?? fetch, sdk.directory)
-      let sessionID = sessionPending()
+      const existing = sessionPending()
+      const createdID = existing
+        ? null
+        : await (async () => {
+            const derived = deriveSessionTitleFromMessage(p.text)
+            const seed = derived && !isGenericSessionTitle(derived) ? derived : undefined
+            const title = seed
+              ? makeUniqueSessionTitle(
+                  seed,
+                  sync.data.session.map((item) => sessionTitleLocal.get(item.id)?.title ?? item.title),
+                )
+              : undefined
+            const res: any = await sdk.client.session.create({
+              directory: sdk.directory,
+              ...(title ? { title } : {}),
+            } as any)
+            const data = res?.data ?? res
+            return (data?.id ?? data?.sessionID) as string | undefined
+          })()
+      const sessionID = existing ?? createdID
       if (!sessionID) {
-        const res: any = await sdk.client.session.create({
-          directory: sdk.directory,
-        } as any)
-        const data = res?.data ?? res
-        sessionID = data?.id ?? data?.sessionID
-        if (!sessionID) {
-          toast.error("could not start session", "session.create returned no id")
-          return
-        }
-        navigate(`/${params.dir}/session/${sessionID}`, { replace: true })
+        toast.error("could not start session", "session.create returned no id")
+        return
       }
 
       const messageID = Identifier.ascending("message")
@@ -1040,6 +1065,10 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
       })
 
       maybeUpdateSessionTitle(sessionID, p.text)
+
+      if (!existing) {
+        navigate(`/${params.dir}/session/${sessionID}`, { replace: true })
+      }
 
       // Fire-and-forget: session.prompt resolves only when the whole turn
       // completes, so awaiting it here is what used to freeze the composer
@@ -1459,7 +1488,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
 
           <div style={{ display: "flex", "align-items": "center", gap: "6px" }}>
             {/* Model picker portal — trigger lives top-right beside Notebook. */}
-            <Show when={modelOpen()}>
+            <Show when={modelOpen() && centerTabs.active() === "chat"}>
               <Portal>
                 <div onClick={() => setModelOpen(false)} style={{ position: "fixed", inset: 0, "z-index": 190 }} />
                 <Show when={anchor()}>

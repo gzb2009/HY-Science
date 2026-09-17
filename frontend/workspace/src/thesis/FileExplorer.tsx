@@ -767,16 +767,13 @@ function ArtifactsGrid(props: {
   const hiddenVersionCount = createMemo(() => filterLatestFileNodes(mergedScoped()).hiddenCount)
   const images = createMemo(() => rows().filter((n) => isImage(n.name)))
   const open = (node: FileNode) => {
-    if (isImage(node.name)) {
+    if (isImage(node.name) || ext(node.name) === "pdf") {
       uiStore.setImagePreview({
         directory: props.directory,
         path: node.path,
         name: node.name,
+        kind: ext(node.name) === "pdf" ? "pdf" : "image",
       })
-      return
-    }
-    if (isDelimited(node.name)) {
-      centerTabs.openFile(props.directory, node.path)
       return
     }
     centerTabs.openFile(props.directory, node.path)

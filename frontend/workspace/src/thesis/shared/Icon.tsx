@@ -108,6 +108,13 @@ export const IconArrowUp = (p: IconProps): JSX.Element => (
   </svg>
 )
 
+export const IconArrowDown = (p: IconProps): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
+    <path d="m19 12-7 7-7-7" />
+    <path d="M12 5v14" />
+  </svg>
+)
+
 export const IconArrowLeft = (p: IconProps): JSX.Element => (
   <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
     <path d="m12 19-7-7 7-7" />

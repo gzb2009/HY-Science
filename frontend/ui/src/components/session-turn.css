@@ -140,9 +140,11 @@
     right: 0;
     height: 8px;
     bottom: 0px;
-    background:
-      linear-gradient(to bottom, transparent, var(--surface-weak)),
-      linear-gradient(to bottom, transparent, var(--surface-weak));
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--color-text, var(--text-strong)) 7%, var(--color-bg, var(--background-base)))
+    );
     pointer-events: none;
   }
 

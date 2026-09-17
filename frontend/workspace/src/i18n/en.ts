@@ -686,6 +686,7 @@ export const dict = {
   "sidebar.backToWorkbench": "Back to workbench",
   "sidebar.searchAnalyses": "Search analyses…",
   "sidebar.newSubTask": "New sub-task",
+  "chat.jumpLatest": "Latest",
   "sidebar.files": "Files",
   "sidebar.filesDesc": "Browse project files",
   "layout.resizeSidebar": "Resize sidebar",

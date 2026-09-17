@@ -17,7 +17,9 @@
   color: var(--text-base);
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+  max-width: 100%;
 
   [data-slot="user-message-attachments"] {
     display: flex;
@@ -98,13 +100,16 @@
 
   [data-slot="user-message-text"] {
     position: relative;
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: 100%;
     white-space: pre-wrap;
     word-break: break-word;
     overflow: hidden;
-    background: var(--surface-raised-base);
-    border: 1px solid var(--border-base);
-    padding: 10px 14px;
-    border-radius: 14px;
+    background: color-mix(in srgb, var(--color-text, var(--text-strong)) 7%, var(--color-bg, var(--background-base)));
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
 
     [data-highlight="file"] {
       color: var(--syntax-property);

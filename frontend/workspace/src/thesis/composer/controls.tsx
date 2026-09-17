@@ -3,6 +3,7 @@ import { Portal } from "solid-js/web"
 import { FONT_MONO } from "@/styles/tokens"
 import { IconChevronDown, IconPaperclip } from "@/thesis/shared/Icon"
 import { EffortSlider } from "@/thesis/EffortSlider"
+import { centerTabs } from "@/thesis/store/centerTabs"
 import { CONTEXT_DIR, type Attachment } from "./model-utils"
 
 // Faint caption preceding a segmented control ("effort" / "speed" / "context").
@@ -256,7 +257,7 @@ export function FloatingControls(props: {
       </button>
 
       {/* Effort slider popover */}
-      <Show when={props.effortOpen()}>
+      <Show when={props.effortOpen() && centerTabs.active() === "chat"}>
         <Portal>
           <div onClick={() => props.setEffortOpen(false)} style={{ position: "fixed", inset: 0, "z-index": 190 }} />
           <Show when={props.effortAnchor()}>

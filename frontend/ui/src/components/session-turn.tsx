@@ -25,6 +25,7 @@ import {
   Match,
   on,
   onCleanup,
+  onMount,
   ParentProps,
   Show,
   Switch,
@@ -39,7 +40,7 @@ import { FileIcon } from "./file-icon"
 import { Icon } from "./icon"
 import { IconButton } from "./icon-button"
 import { Card } from "./card"
-import { Dynamic } from "solid-js/web"
+import { Dynamic, Portal } from "solid-js/web"
 import { Button } from "./button"
 import { AgentStreamIcon } from "./agent-stream-icon"
 import { Tooltip } from "./tooltip"
@@ -66,6 +67,7 @@ import {
   type ResultFile,
 } from "./session-result"
 import { ChoiceCard } from "./choice-card"
+import { partStamp, turnClockEnd } from "./turn-clock"
 
 type Translator = (key: UiI18nKey, params?: UiI18nParams) => string
 
@@ -188,7 +190,7 @@ function ResultFileTile(props: {
     return i18n.t("ui.sessionTurn.resultFile.viewFile", { name })
   }
   const open = () => {
-    if (image()) {
+    if (image() || props.file.kind === "pdf") {
       props.onPreviewFile?.(props.file.path)
       return
     }
@@ -281,6 +283,60 @@ function AssistantMessageItem(props: {
   })
 
   return <Message message={props.message} parts={filteredParts()} />
+}
+
+function TurnTraceTrigger(props: {
+  live: boolean
+  expanded: boolean
+  disabled: boolean
+  label: string
+  duration: string
+  onToggle: () => void
+}) {
+  return (
+    <div data-slot="session-turn-trace" data-live={props.live ? "true" : undefined}>
+      <Button
+        data-slot="session-turn-collapsible-trigger-content"
+        data-expanded={props.expanded ? "true" : undefined}
+        variant="ghost"
+        size="small"
+        onClick={() => {
+          if (props.disabled) return
+          props.onToggle()
+        }}
+        aria-expanded={props.expanded}
+        aria-disabled={props.disabled}
+      >
+        <Show
+          when={props.live}
+          fallback={
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              data-slot="session-turn-trigger-icon"
+            >
+              <path
+                d="M8.125 1.875H1.875L5 8.125L8.125 1.875Z"
+                fill="currentColor"
+                stroke="currentColor"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+        >
+          <AgentStreamIcon />
+        </Show>
+        <span data-slot="session-turn-status-text">{props.label}</span>
+        <Show when={props.duration}>
+          <span aria-hidden="true">·</span>
+          <span aria-live="off">{props.duration}</span>
+        </Show>
+      </Button>
+    </div>
+  )
 }
 
 export function SessionTurn(
@@ -599,6 +655,27 @@ export function SessionTurn(
     return !!part?.time?.end && !toolBusy() && !reasoningOpen()
   })
   const live = createMemo(() => working() && !waitingOnQuestion() && !answerClosed())
+  const docked = createMemo(() => working() && isLastUserMessage() && !waitingOnQuestion())
+  const [dock, setDock] = createSignal<HTMLElement>()
+  onMount(() => {
+    const node = document.querySelector("[data-chat-live-dock]")
+    if (node instanceof HTMLElement) setDock(node)
+  })
+  createEffect(() => {
+    if (dock()) return
+    const node = document.querySelector("[data-chat-live-dock]")
+    if (node instanceof HTMLElement) setDock(node)
+  })
+  const lastActivity = createMemo(() => {
+    const stamp = assistantMessages().reduce((latest, item) => {
+      const created = item.time.created ?? 0
+      const completed = item.time.completed ?? 0
+      const parts = data.store.part[item.id] ?? emptyParts
+      const partTimes = parts.reduce((max, part) => Math.max(max, partStamp(part)), 0)
+      return Math.max(latest, created, completed, partTimes)
+    }, 0)
+    return stamp || undefined
+  })
   const awaitingChoice = createMemo(() => waitingOnQuestion() && isLastUserMessage())
   const retry = createMemo(() => {
     const s = status()
@@ -699,10 +776,17 @@ export function SessionTurn(
   function duration() {
     const msg = message()
     if (!msg) return ""
-    const completed = lastAssistantMessage()?.time.completed
-    const from = DateTime.fromMillis(msg.time.created)
-    const paused = awaitingChoice() ? askedAt() : undefined
-    const to = completed ? DateTime.fromMillis(completed) : paused ? DateTime.fromMillis(paused) : DateTime.now()
+    const created = msg.time.created
+    const from = DateTime.fromMillis(created)
+    const end = turnClockEnd({
+      created,
+      now: Date.now(),
+      live: live(),
+      completed: lastAssistantMessage()?.time.completed,
+      paused: awaitingChoice() ? askedAt() : undefined,
+      lastActivity: lastActivity(),
+    })
+    const to = DateTime.fromMillis(Math.max(created, end))
     const interval = Interval.fromDateTimes(from, to)
     const unit: DurationUnit[] = interval.length("seconds") > 60 ? ["minutes", "seconds"] : ["seconds"]
 
@@ -794,8 +878,9 @@ export function SessionTurn(
 
     update()
 
-    // Tick only while the model is actually generating; a pending question freezes the clock.
-    if (!working()) return
+    // Tick only while tokens/tools are in flight. Chat stays mounted under
+    // file/doc tabs, so a stuck `busy` status must not keep the clock running.
+    if (!live()) return
 
     const timer = setInterval(update, 1000)
     onCleanup(() => clearInterval(timer))
@@ -879,53 +964,33 @@ export function SessionTurn(
                         />
                       </div>
 
-                      <Show when={hasTrace()}>
-                        <div data-slot="session-turn-trace">
-                          <Button
-                            data-slot="session-turn-collapsible-trigger-content"
-                            data-expanded={props.stepsExpanded ? "true" : undefined}
-                            variant="ghost"
-                            size="small"
-                            onClick={() => {
-                              if (!canExpand()) return
-                              props.onStepsExpandedToggle?.()
-                            }}
-                            aria-expanded={props.stepsExpanded}
-                            aria-disabled={!canExpand()}
-                          >
-                            <Show
-                              when={live()}
-                              fallback={
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 10 10"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  data-slot="session-turn-trigger-icon"
-                                >
-                                  <path
-                                    d="M8.125 1.875H1.875L5 8.125L8.125 1.875Z"
-                                    fill="currentColor"
-                                    stroke="currentColor"
-                                    stroke-linejoin="round"
-                                  />
-                                </svg>
-                              }
-                            >
-                              <AgentStreamIcon />
-                            </Show>
-                            <span data-slot="session-turn-status-text">
-                              {live() || awaitingChoice() || retry()
-                                ? workingLabel()
-                                : i18n.t("ui.messagePart.reasoning.title")}
-                            </span>
-                            <Show when={store.duration}>
-                              <span aria-hidden="true">·</span>
-                              <span aria-live="off">{store.duration}</span>
-                            </Show>
-                          </Button>
-                        </div>
+                      <Show when={hasTrace() && !docked()}>
+                        <TurnTraceTrigger
+                          live={false}
+                          expanded={!!props.stepsExpanded}
+                          disabled={!canExpand()}
+                          label={
+                            awaitingChoice() || retry()
+                              ? workingLabel()
+                              : i18n.t("ui.messagePart.reasoning.title")
+                          }
+                          duration={store.duration}
+                          onToggle={() => props.onStepsExpandedToggle?.()}
+                        />
+                      </Show>
+                      <Show when={hasTrace() && docked() ? dock() : undefined}>
+                        {(el) => (
+                          <Portal mount={el()}>
+                            <TurnTraceTrigger
+                              live={live()}
+                              expanded={!!props.stepsExpanded}
+                              disabled={!canExpand()}
+                              label={workingLabel()}
+                              duration={store.duration}
+                              onToggle={() => props.onStepsExpandedToggle?.()}
+                            />
+                          </Portal>
+                        )}
                       </Show>
                     </div>
                     <Show when={props.stepsExpanded && canExpand()}>
