@@ -12,13 +12,9 @@ function decode(value: string) {
   return decodeEntities(value)
 }
 
-function stripTags(value: string) {
-  return value.replaceAll("<", "").replaceAll(">", "")
-}
-
 function texts(xml: string, tag: string) {
-  return [...xml.matchAll(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "g"))].map((match) =>
-    decode(stripTags(match[1])).trim(),
+  return [...xml.matchAll(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, "g"))].map((match) =>
+    decode(match[1]).trim(),
   )
 }
 
@@ -35,7 +31,7 @@ function parseXlsx(files: Map<string, Uint8Array>): OfficePreview {
         [...row[1].matchAll(/<c([^>]*)>([\s\S]*?)<\/c>/g)].map((cell) => {
           const attrs = cell[1]
           const body = cell[2]
-          if (/t="inlineStr"/.test(attrs)) return decode(stripTags(body.match(/<t[^>]*>([\s\S]*?)<\/t>/)?.[1] ?? ""))
+          if (/t="inlineStr"/.test(attrs)) return decode(body.match(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/)?.[1] ?? "")
           if (/t="s"/.test(attrs)) return shared[Number(body.match(/<v>([\s\S]*?)<\/v>/)?.[1] ?? "")] ?? ""
           return body.match(/<v>([\s\S]*?)<\/v>/)?.[1] ?? ""
         }),
