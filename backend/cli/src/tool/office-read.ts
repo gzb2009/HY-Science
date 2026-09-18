@@ -13,13 +13,7 @@ function decode(value: string) {
 }
 
 function stripTags(value: string) {
-  let text = value
-  let next = text.replace(/<[^>]*>/g, "")
-  while (next !== text) {
-    text = next
-    next = text.replace(/<[^>]*>/g, "")
-  }
-  return next
+  return value.replaceAll("<", "").replaceAll(">", "")
 }
 
 function texts(xml: string, tag: string) {
