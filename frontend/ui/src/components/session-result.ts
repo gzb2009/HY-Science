@@ -539,13 +539,28 @@ export function hasStructuredResult(sections: ResultSection[], fileCount: number
   return sections.some((section) => section.kind !== "body")
 }
 
+function stripRecommendMark(label: string) {
+  const trimmed = label.trim()
+  if (trimmed.toLowerCase().endsWith("(recommended)")) return trimmed.slice(0, -"(recommended)".length).trim()
+  if (trimmed.endsWith("（推荐）")) return trimmed.slice(0, -"（推荐）".length).trim()
+  if (trimmed.endsWith("(推荐)")) return trimmed.slice(0, -"(推荐)".length).trim()
+  return trimmed
+}
+
 export function optionRecommended(label: string, recommendation?: string) {
-  if (/\(\s*Recommended\s*\)|（推荐）|\(推荐\)/.test(label)) return true
+  const trimmed = label.trim()
+  const bare = stripRecommendMark(trimmed)
+  if (
+    bare !== trimmed ||
+    trimmed.toLowerCase().includes("(recommended)") ||
+    trimmed.includes("（推荐）") ||
+    trimmed.includes("(推荐)")
+  )
+    return true
   const rec = recommendation?.trim()
   if (!rec) return false
-  if (label === rec) return true
-  const bare = label.replace(/\s*[\(（](?:Recommended|推荐)[\)）]\s*$/i, "").trim()
-  return bare === rec || label.includes(rec) || rec.includes(bare)
+  if (trimmed === rec) return true
+  return bare === rec || trimmed.includes(rec) || rec.includes(bare)
 }
 
 export type DecisionCard = {
