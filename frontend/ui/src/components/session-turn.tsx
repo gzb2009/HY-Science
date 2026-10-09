@@ -57,7 +57,6 @@ import {
   formatSectionForDisplay,
   hasStructuredResult,
   isUserStopError,
-  resultFileVisual,
   splitResultSections,
   type ResultFile,
 } from "./session-result"
@@ -113,20 +112,40 @@ function computeStatusFromPart(part: PartType | undefined, t: Translator): strin
 
 const STRIP = 5
 
-function clipName(name: string) {
-  if (name.length <= 18) return name
+function plateMark(name: string) {
   const dot = name.lastIndexOf(".")
-  const ext = dot > 0 ? name.slice(dot) : ""
-  const stem = dot > 0 ? name.slice(0, dot) : name
-  const tail = stem.slice(-8)
-  return `${stem.slice(0, 1)}…${tail}${ext}`
+  const ext = dot > 0 ? name.slice(dot + 1) : "file"
+  return ext.slice(0, 4).toLowerCase()
 }
 
-function folderTitle(file: ResultFile) {
-  const parent = getDirectory(file.path).split("/").filter(Boolean).pop() ?? ""
-  if (parent && !/^(figures?|results?|outputs?|files|src)$/i.test(parent)) return parent.replace(/[_-]+/g, " ")
-  const stem = file.name.includes(".") ? file.name.slice(0, file.name.lastIndexOf(".")) : file.name
-  return stem.replace(/[_-]+/g, " ") || file.name
+function plateTone(kind: ResultFile["kind"]) {
+  if (kind === "xlsx" || kind === "csv" || kind === "tsv") return "sheet"
+  if (kind === "code" || kind === "json") return "code"
+  if (kind === "pdf") return "pdf"
+  if (kind === "docx" || kind === "md") return "doc"
+  if (kind === "pptx") return "deck"
+  if (kind === "png" || kind === "jpg" || kind === "svg") return "image"
+  return "file"
+}
+
+function TypePlate(props: { file: ResultFile }) {
+  const tone = () => plateTone(props.file.kind)
+  return (
+    <div data-slot="session-turn-result-plate" data-tone={tone()}>
+      <Show when={tone() === "sheet"}>
+        <div data-slot="session-turn-result-plate-grid" />
+      </Show>
+      <Show when={tone() !== "sheet"}>
+        <div data-slot="session-turn-result-plate-lines">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </Show>
+      <span data-slot="session-turn-result-plate-mark">{plateMark(props.file.name)}</span>
+    </div>
+  )
 }
 
 function ResultFileCards(props: {
@@ -135,13 +154,15 @@ function ResultFileCards(props: {
   onPreviewFile?: (path: string) => void
   renderFilePreview?: (file: ResultFile) => JSX.Element | undefined
 }) {
+  const i18n = useI18n()
   const [open, setOpen] = createSignal(false)
   const shown = createMemo(() => (open() ? props.files : props.files.slice(0, STRIP)))
   const remaining = createMemo(() => (open() ? 0 : Math.max(0, props.files.length - STRIP)))
+  const label = () => i18n.t("ui.sessionTurn.resultFiles")
   return (
     <Show when={props.files.length > 0}>
-      <section data-slot="session-turn-result-files" aria-label={`GENERATED · ${props.files.length}`}>
-        <div data-slot="session-turn-result-files-label">GENERATED · {props.files.length}</div>
+      <section data-slot="session-turn-result-files" aria-label={label()}>
+        <div data-slot="session-turn-result-files-label">{label()}</div>
         <div data-slot="session-turn-result-files-strip" data-open={open() ? "true" : undefined}>
           <For each={shown()}>
             {(file) => (
@@ -176,7 +197,6 @@ function ResultFileTile(props: {
   onPreviewFile?: (path: string) => void
 }) {
   const image = () => props.file.kind === "png" || props.file.kind === "jpg" || props.file.kind === "svg"
-  const visual = () => resultFileVisual(props.file)
   const open = () => {
     if (image() || props.file.kind === "pdf") {
       props.onPreviewFile?.(props.file.path)
@@ -187,10 +207,11 @@ function ResultFileTile(props: {
   return (
     <div
       data-slot="session-turn-result-file-tile"
-      data-variant={visual() ? "thumb" : "doc"}
+      data-variant="thumb"
       data-role={props.file.role}
       role="button"
       tabIndex={0}
+      title={props.file.name}
       onClick={() => open()}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return
@@ -198,24 +219,12 @@ function ResultFileTile(props: {
         open()
       }}
     >
-      <Show
-        when={visual()}
-        fallback={<div data-slot="session-turn-result-file-title">{folderTitle(props.file)}</div>}
-      >
-        <div data-slot="session-turn-result-file-preview">
-          <Show
-            when={props.preview}
-            fallback={
-              <div data-slot="session-turn-result-file-placeholder">
-                <FileIcon node={{ path: props.file.name, type: "file" }} style={{ width: "22px", height: "22px" }} />
-              </div>
-            }
-          >
-            {(content) => content()}
-          </Show>
-        </div>
-      </Show>
-      <div data-slot="session-turn-result-file-name">{clipName(props.file.name)}</div>
+      <div data-slot="session-turn-result-file-preview">
+        <Show when={props.preview} fallback={<TypePlate file={props.file} />}>
+          {(content) => content()}
+        </Show>
+      </div>
+      <div data-slot="session-turn-result-file-name">{props.file.name}</div>
     </div>
   )
 }

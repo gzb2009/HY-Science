@@ -225,6 +225,22 @@ html:has(.cs-ink-session) {
   --ink-line: color-mix(in srgb, #2a2a2a 16%, transparent);
 }
 
+html[data-color-scheme="dark"]:is(:has(.cs-ink-session), :has(.cs-ink-home)),
+html.dark:is(:has(.cs-ink-session), :has(.cs-ink-home)) {
+  --ink-paper: #141413;
+  --ink-ink: var(--text-strong, #f4f2ec);
+  --ink-veil: color-mix(in srgb, #ffffff 10%, transparent);
+  --ink-glass: color-mix(in srgb, #222221 62%, transparent);
+  --ink-glass-strong: color-mix(in srgb, #2c2c2a 78%, transparent);
+  --ink-dock: color-mix(in srgb, #1c1c1b 88%, transparent);
+  --ink-line: color-mix(in srgb, #ffffff 18%, transparent);
+}
+
+html[data-color-scheme="dark"] .cs-ink-wash,
+html.dark .cs-ink-wash {
+  background: #141413;
+}
+
 .cs-ink-session {
   --session-turn-sticky-height: 0px;
   background: transparent;
@@ -380,9 +396,6 @@ html:has(.cs-ink-session) {
   background: var(--ink-glass-strong) !important;
 }
 
-.cs-ink-session .cs-sidebar-search,
-.cs-ink-session .cs-sidebar-new-task-icon,
-.cs-ink-session .cs-sidebar-files-card,
 .cs-ink-session .cs-session-row-active {
   background: var(--ink-veil);
 }
@@ -3922,41 +3935,55 @@ html[data-color-scheme="dark"] .thesis-overlay {
   flex-basis: 52px;
 }
 
-.cs-sidebar-head {
+.cs-sidebar-top {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 4px;
-  padding: 8px 8px 4px;
+  padding: 10px 8px 0;
   flex-shrink: 0;
 }
 
-.cs-sidebar-back {
+.cs-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 14px 12px;
+  flex-shrink: 0;
+}
+
+.cs-sidebar-lockup {
   all: unset;
   cursor: pointer;
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  font-family: var(--font-sans);
-  font-size: var(--text-md);
-  color: var(--color-text-muted);
-  transition:
-    background-color 75ms ease,
-    color 75ms ease;
+  gap: 8px;
 }
 
-.cs-sidebar-back:hover {
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+.cs-sidebar-lockup-name {
+  font-family: "Avenir Next", "Segoe UI", var(--font-sans);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
   color: var(--color-text);
 }
 
-.cs-sidebar-back span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.cs-sidebar-lockup-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1px;
+  padding: 4px 7px 3px;
+  border-radius: 6px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: "Avenir Next", "Segoe UI", var(--font-sans);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .cs-protocol {
@@ -3983,33 +4010,6 @@ html[data-color-scheme="dark"] .thesis-overlay {
   font-family: var(--font-sans);
   font-size: var(--text-base);
   padding: 4px 6px;
-}
-
-.cs-sidebar-search-wrap {
-  padding: 0 12px 8px;
-  flex-shrink: 0;
-}
-
-.cs-sidebar-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--color-text) 3%, transparent);
-}
-
-.cs-sidebar-search input {
-  all: unset;
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-sans);
-  font-size: var(--text-md);
-  color: var(--color-text);
-}
-
-.cs-sidebar-search input::placeholder {
-  color: var(--color-text-faint);
 }
 
 .cs-sidebar-new-task {
@@ -4041,11 +4041,10 @@ html[data-color-scheme="dark"] .thesis-overlay {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 5px;
+  width: 18px;
+  height: 18px;
   border: none;
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  background: transparent;
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
@@ -4068,10 +4067,6 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .cs-sidebar-project-head:hover {
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
-}
-
-.cs-sidebar-project-head[data-current="true"] {
-  background: color-mix(in srgb, var(--color-accent) 9%, transparent);
 }
 
 .cs-sidebar-project-open {
@@ -4140,55 +4135,6 @@ html[data-color-scheme="dark"] .thesis-overlay {
   margin-left: 6px;
   padding-left: 4px;
   border-left: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
-}
-
-.cs-sidebar-files-card {
-  all: unset;
-  box-sizing: border-box;
-  cursor: pointer;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  width: calc(100% - 16px);
-  margin: 4px 8px 8px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  transition:
-    background-color 75ms ease,
-    border-color 75ms ease;
-}
-
-.cs-sidebar-files-card:hover {
-  background: color-mix(in srgb, var(--color-text) 4%, transparent);
-}
-
-.cs-sidebar-files-card[data-active="true"] {
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
-}
-
-.cs-sidebar-files-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-text) 5%, transparent);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.cs-sidebar-files-title {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-sans);
-  font-size: var(--app-font-size, 14px);
-  font-weight: 500;
-  color: var(--color-text);
-  text-align: left;
 }
 
 .cs-sidebar-project {
@@ -4421,11 +4367,19 @@ html[data-color-scheme="dark"] .thesis-overlay {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px 8px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
   background: var(--color-bg);
   flex-shrink: 0;
   min-width: 0;
+}
+
+.cs-center-tab-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .cs-center-tabs-scroll {
@@ -4442,7 +4396,6 @@ html[data-color-scheme="dark"] .thesis-overlay {
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .cs-center-tab-actions button {

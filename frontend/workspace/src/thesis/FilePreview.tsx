@@ -142,7 +142,10 @@ export function FileView(props: {
     },
   )
 
-  const data = () => file()
+  const data = () => {
+    if (file.error) return
+    return file()
+  }
   const isBinary = () => data()?.encoding === "base64"
   const mime = () => data()?.mimeType ?? ""
   const b64 = () => data()?.content ?? ""

@@ -107,6 +107,13 @@ export const IconChevronDown = (p: IconProps): JSX.Element => (
   </svg>
 )
 
+export const IconPanelLeft = (p: IconProps): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M9 3v18" />
+  </svg>
+)
+
 export const IconChevronLeft = (p: IconProps): JSX.Element => (
   <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
     <path d="m15 18-6-6 6-6" />
