@@ -19,6 +19,6 @@ export const DesktopCommand = cmd({
   handler: async (args) => {
     const run = WebCommand.handler
     if (!run) return
-    await run({ ...args, desktop: true, noOpen: true })
+    await run({ ...args, desktop: true, noOpen: true, "no-open": true })
   },
 })
