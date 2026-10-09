@@ -56,11 +56,9 @@ import {
   IconArrowUp,
   IconChevronDown,
   IconChevronRight,
-  IconChevronLeft,
+  IconPanelLeft,
   IconTrash,
   IconBookOpen,
-  IconArrowLeft,
-  IconSearch,
   IconFolder,
   IconFolderOpen,
   IconStarFilled,
@@ -812,7 +810,6 @@ export default function Page(): JSX.Element {
           open={sidebarOpen()}
           groups={sidebarGroups()}
           activeId={params.id}
-          filesActive={centerTabs.filesOpen() && centerTabs.active() === "files"}
           onToggle={() => setSidebarOpen((v) => !v)}
           onBack={() => {
             stayOnHome()
@@ -823,7 +820,6 @@ export default function Page(): JSX.Element {
             void newSession()
           }}
           onCustomize={() => dialog.show(() => <DialogSettings />)}
-          onFiles={() => centerTabs.showFiles()}
           onOpenProject={(worktree) => {
             uiStore.setImagePreview(undefined)
             const here = projectWorktree()
@@ -857,8 +853,7 @@ export default function Page(): JSX.Element {
             overflow: "hidden",
           }}
         >
-          <Show when={centerTabs.tabStripVisible()}>
-            <CenterTabStrip
+          <CenterTabStrip
               chatTitle={chatTitle()}
               plan={
                 floatActions({
@@ -885,7 +880,6 @@ export default function Page(): JSX.Element {
                 void newSession()
               }}
             />
-          </Show>
 
           <div
             class="cs-session-stage"
@@ -1121,7 +1115,9 @@ function CenterTabStrip(props: {
   onNotebook: (path: string) => void
   onCloseChat: () => void
 }): JSX.Element {
+  const language = useLanguage()
   const active = centerTabs.active
+  const filesOn = () => active() === "files"
   return (
     <div class="cs-center-tabs">
       <div class="cs-center-tabs-scroll thesis-scroll">
@@ -1139,26 +1135,6 @@ function CenterTabStrip(props: {
             class="cs-center-tab-close"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => closeTab(e, props.onCloseChat)}
-          >
-            <IconX size={11} strokeWidth={1.8} />
-          </button>
-        </div>
-      </Show>
-      <Show when={centerTabs.filesOpen()}>
-        <div
-          role="tab"
-          class={`cs-center-tab${active() === "files" ? " cs-center-tab-active" : ""}`}
-          onClick={() => centerTabs.showFiles()}
-          title="Files"
-        >
-          <IconFolder size={14} strokeWidth={1.6} />
-          <span class="cs-center-tab-label">Files</span>
-          <button
-            type="button"
-            aria-label="close tab"
-            class="cs-center-tab-close"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => closeTab(e, centerTabs.closeFiles)}
           >
             <IconX size={11} strokeWidth={1.8} />
           </button>
@@ -1187,6 +1163,7 @@ function CenterTabStrip(props: {
         )}
       </For>
       </div>
+      <div class="cs-center-tab-end">
       <div class="cs-center-tab-actions">
         <Show when={props.plan}>
           {(status) => (
@@ -1216,6 +1193,16 @@ function CenterTabStrip(props: {
           )}
         </Show>
       </div>
+      <button
+        type="button"
+        class={`cs-center-tab cs-center-files${filesOn() ? " cs-center-tab-active" : ""}`}
+        title={language.t("sidebar.files")}
+        onClick={() => centerTabs.showFiles()}
+      >
+        <IconFolder size={14} strokeWidth={1.6} />
+        <span class="cs-center-tab-label">{language.t("sidebar.files")}</span>
+      </button>
+      </div>
     </div>
   )
 }
@@ -1224,12 +1211,10 @@ function SessionsSidebar(props: {
   open: boolean
   groups: SidebarGroup[]
   activeId: string | undefined
-  filesActive: boolean
   onToggle: () => void
   onBack: () => void
   onNew: () => void
   onCustomize: () => void
-  onFiles: () => void
   onOpenProject: (worktree: string) => void
   onSelect: (worktree: string, id: string) => void
   onDelete: (id: string) => void
@@ -1237,23 +1222,7 @@ function SessionsSidebar(props: {
   onRenameSession: (sessionID: string, title: string) => void
 }): JSX.Element {
   const language = useLanguage()
-  const [search, setSearch] = createSignal("")
   const [collapsed, setCollapsed] = createSignal<Record<string, boolean>>({})
-
-  const visible = createMemo(() => {
-    const q = search().trim().toLowerCase()
-    return props.groups
-      .map((group) => {
-        const nameHit = !q || group.name.toLowerCase().includes(q)
-        const sessions = nameHit
-          ? group.sessions
-          : group.sessions.filter(
-              (row) => row.title.toLowerCase().includes(q) || (row.session.title || "").toLowerCase().includes(q),
-            )
-        return { ...group, sessions }
-      })
-      .filter((group) => !q || group.sessions.length > 0 || group.name.toLowerCase().includes(q))
-  })
 
   function isCollapsed(worktree: string) {
     return collapsed()[worktree] ?? false
@@ -1281,7 +1250,7 @@ function SessionsSidebar(props: {
             }}
           >
             <button type="button" class="cs-sidebar-icon-btn" title="expand sidebar" onClick={props.onToggle}>
-              <IconChevronLeft size={14} strokeWidth={1.6} style={{ transform: "rotate(180deg)" }} />
+              <IconPanelLeft size={16} strokeWidth={1.6} />
             </button>
             <button type="button" class="cs-sidebar-icon-btn" title="new session" onClick={props.onNew}>
               <IconPlus size={14} strokeWidth={2} />
@@ -1289,37 +1258,32 @@ function SessionsSidebar(props: {
             <button type="button" class="cs-sidebar-icon-btn" title="settings" onClick={props.onCustomize}>
               <IconSettings size={14} strokeWidth={1.6} />
             </button>
-            <button type="button" class="cs-sidebar-icon-btn" title="files" onClick={props.onFiles}>
-              <IconFolder size={14} strokeWidth={1.6} />
-            </button>
           </div>
         }
       >
-        <div class="cs-sidebar-head">
+        <div class="cs-sidebar-top">
+          <button type="button" class="cs-sidebar-icon-btn" title="collapse sidebar" onClick={props.onToggle}>
+            <IconPanelLeft size={16} strokeWidth={1.6} />
+          </button>
+        </div>
+        <div class="cs-sidebar-brand">
           <button
             type="button"
-            class="cs-sidebar-back"
+            class="cs-sidebar-lockup"
             onClick={props.onBack}
             title={language.t("sidebar.backToWorkbench")}
           >
-            <IconArrowLeft size={15} strokeWidth={1.5} />
-            <span>{language.t("sidebar.backToWorkbench")}</span>
-          </button>
-          <button type="button" class="cs-sidebar-icon-btn" title="collapse sidebar" onClick={props.onToggle}>
-            <IconChevronLeft size={14} strokeWidth={1.6} />
-          </button>
-        </div>
-
-        <div class="cs-sidebar-search-wrap">
-          <div class="cs-sidebar-search">
-            <IconSearch size={14} strokeWidth={1.5} style={{ color: "var(--color-text-faint)", "flex-shrink": 0 }} />
-            <input
-              type="search"
-              value={search()}
-              placeholder={language.t("sidebar.searchAnalyses")}
-              onInput={(e) => setSearch(e.currentTarget.value)}
+            <AgentIcon
+              size={28}
+              style={{
+                "--agent-icon-ink": "var(--color-text)",
+                "--agent-icon-paper": "var(--color-bg)",
+                "flex-shrink": 0,
+              }}
             />
-          </div>
+            <span class="cs-sidebar-lockup-name">HY</span>
+            <span class="cs-sidebar-lockup-badge">science</span>
+          </button>
         </div>
 
         <div class="cs-sidebar-scroll thesis-scroll">
@@ -1330,7 +1294,7 @@ function SessionsSidebar(props: {
             <span>{language.t("sidebar.newSubTask")}</span>
           </button>
 
-          <For each={visible()}>
+          <For each={props.groups}>
             {(group) => (
               <div class="cs-sidebar-project-group">
                 <div class="cs-sidebar-project-head" data-current={group.current ? "true" : "false"}>
@@ -1344,11 +1308,22 @@ function SessionsSidebar(props: {
                       <IconChevronRight size={14} strokeWidth={1.5} />
                     </Show>
                   </button>
-                  <IconFolder
-                    size={14}
-                    strokeWidth={1.5}
-                    style={{ color: "var(--color-text-faint)", "flex-shrink": 0 }}
-                  />
+                  <Show
+                    when={isCollapsed(group.worktree)}
+                    fallback={
+                      <IconFolderOpen
+                        size={18}
+                        strokeWidth={1.5}
+                        style={{ color: "var(--color-text-faint)", "flex-shrink": 0 }}
+                      />
+                    }
+                  >
+                    <IconFolder
+                      size={18}
+                      strokeWidth={1.5}
+                      style={{ color: "var(--color-text-faint)", "flex-shrink": 0 }}
+                    />
+                  </Show>
                   <Show when={group.pinned}>
                     <span class="cs-star-amber">
                       <IconStarFilled size={13} strokeWidth={1.5} />
@@ -1416,18 +1391,6 @@ function SessionsSidebar(props: {
               </div>
             )}
           </For>
-
-          <button
-            type="button"
-            class="cs-sidebar-files-card"
-            data-active={props.filesActive ? "true" : "false"}
-            onClick={props.onFiles}
-          >
-            <span class="cs-sidebar-files-icon">
-              <IconFolderOpen size={18} strokeWidth={1.75} />
-            </span>
-            <span class="cs-sidebar-files-title">{language.t("sidebar.files")}</span>
-          </button>
         </div>
         <ColumnHandle
           edge="end"

@@ -178,24 +178,30 @@ function DocFile(props: { directory: string; path: string; kind: FileKind }): JS
       return res as FilePayload
     },
   )
+  const payload = () => {
+    if (data.error) return
+    return data()
+  }
   return (
     <Show when={!data.loading} fallback={<p class="cs-docs-empty">{language.t("rightpane.doc.loading")}</p>}>
+      <Show when={!data.error} fallback={<p class="cs-docs-empty">{language.t("rightpane.doc.missing")}</p>}>
       <Switch>
         <Match when={props.kind === "md"}>
           <div class="cs-docs-read">
-            <Markdown text={fileText(data())} />
+            <Markdown text={fileText(payload())} />
           </div>
         </Match>
         <Match when={props.kind === "code"}>
-          <Notebook name={props.path} text={fileText(data())} />
+          <Notebook name={props.path} text={fileText(payload())} />
         </Match>
-        <Match when={props.kind === "pdf" && data()?.encoding === "base64" && data()?.content}>
-          <PdfViewer kind="pdf" data={{ base64: data()?.content }} />
+        <Match when={props.kind === "pdf" && payload()?.encoding === "base64" && payload()?.content}>
+          <PdfViewer kind="pdf" data={{ base64: payload()?.content }} />
         </Match>
         <Match when={props.kind === "docx" || props.kind === "pptx"}>
-          <OfficePreview preview={data()?.preview} />
+          <OfficePreview preview={payload()?.preview} />
         </Match>
       </Switch>
+      </Show>
     </Show>
   )
 }

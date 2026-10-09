@@ -114,8 +114,11 @@ function mount(
     draw()
   }
 
+  const night = () => document.documentElement.dataset.colorScheme === "dark"
+
   const draw = () => {
-    ctx.fillStyle = "#f3f3f1"
+    const dark = night()
+    ctx.fillStyle = dark ? "#141413" : "#f3f3f1"
     ctx.fillRect(0, 0, w, h)
     const pattern = ctx.createPattern(grain, "repeat")
     if (pattern) {
@@ -133,7 +136,8 @@ function mount(
       const top = opts.anchor === "bottom-left" ? h - dh + dh * 0.1 : (h - dh) / 2
       ctx.save()
       ctx.filter = "saturate(0.2) contrast(1.08)"
-      ctx.globalAlpha = state.plate
+      ctx.globalAlpha = night() ? 0.16 : state.plate
+      ctx.globalCompositeOperation = night() ? "soft-light" : "source-over"
       ctx.drawImage(plate, left, top, dw, dh)
       ctx.restore()
     }
@@ -164,16 +168,17 @@ function mount(
       }
     }
     for (const item of blooms) {
+      const ink = night() ? "244, 242, 236" : "18, 18, 18"
       const glow = ctx.createRadialGradient(item.x, item.y, 0, item.x, item.y, item.r)
-      glow.addColorStop(0, `rgba(18, 18, 18, ${item.a})`)
-      glow.addColorStop(0.5, `rgba(18, 18, 18, ${item.a * 0.4})`)
-      glow.addColorStop(1, "rgba(18, 18, 18, 0)")
+      glow.addColorStop(0, `rgba(${ink}, ${item.a})`)
+      glow.addColorStop(0.5, `rgba(${ink}, ${item.a * 0.4})`)
+      glow.addColorStop(1, `rgba(${ink}, 0)`)
       ctx.fillStyle = glow
       ctx.beginPath()
       ctx.arc(item.x, item.y, item.r, 0, Math.PI * 2)
       ctx.fill()
     }
-    ctx.fillStyle = "#1a1a1a"
+    ctx.fillStyle = night() ? "#f4f2ec" : "#1a1a1a"
     for (const item of specks) {
       ctx.globalAlpha = item.a
       ctx.beginPath()

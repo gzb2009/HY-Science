@@ -33,6 +33,7 @@ export const dict = {
   "ui.sessionTurn.resultFile.spreadsheet": "試算表",
   "ui.sessionTurn.resultFile.table": "表格",
   "ui.sessionTurn.resultFile.file": "檔案",
+  "ui.sessionTurn.resultFiles": "交付產物",
   "ui.sessionTurn.diff.showMore": "顯示更多變更 ({{count}})",
 
   "ui.sessionTurn.retry.retrying": "重試中",

@@ -693,8 +693,7 @@ export const dict = {
   "sidebar.project.recentSessions": "Recent sessions",
   "sidebar.project.viewAllSessions": "view all sessions",
   "sidebar.backToWorkbench": "Back to workbench",
-  "sidebar.searchAnalyses": "Search analyses…",
-  "sidebar.newSubTask": "New sub-task",
+  "sidebar.newSubTask": "New task",
   "chat.jumpLatest": "Latest",
   "chat.jumpPrev": "Previous",
   "sidebar.files": "Files",
@@ -1060,6 +1059,7 @@ export const dict = {
   "rightpane.doc.slides": "Slides",
   "rightpane.doc.empty": "Plans, Word documents, and other write-ups show up here.",
   "rightpane.doc.loading": "Opening…",
+  "rightpane.doc.missing": "This file is gone.",
   "rightpane.evidence.files": "Artifacts",
   "rightpane.evidence.filesEmpty": "No artifacts from the latest turn.",
 

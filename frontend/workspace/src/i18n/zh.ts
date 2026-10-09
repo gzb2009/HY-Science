@@ -683,8 +683,7 @@ export const dict = {
   "sidebar.project.recentSessions": "最近会话",
   "sidebar.project.viewAllSessions": "查看全部会话",
   "sidebar.backToWorkbench": "返回工作台",
-  "sidebar.searchAnalyses": "搜索分析…",
-  "sidebar.newSubTask": "新建子任务",
+  "sidebar.newSubTask": "新建任务",
   "chat.jumpLatest": "最新",
   "chat.jumpPrev": "上一条",
   "sidebar.files": "文件",
@@ -1030,6 +1029,7 @@ export const dict = {
   "rightpane.doc.slides": "幻灯片",
   "rightpane.doc.empty": "计划和 Word 等文档会显示在这里。",
   "rightpane.doc.loading": "正在打开…",
+  "rightpane.doc.missing": "找不到这个文件。",
   "rightpane.evidence.files": "产物",
   "rightpane.evidence.filesEmpty": "最近一轮还没有产物。",
 
