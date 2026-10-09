@@ -12,15 +12,24 @@ import {
   IconArrowUp,
   IconChevronDown,
   IconPaperclip,
-  IconSearch,
-  IconSparkles,
   IconStop,
   IconX,
 } from "@/thesis/shared/Icon"
-import { IMC_STEPS } from "@/domain/imc-flow"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
+import { ComposerSlotProvider } from "@/shell/composer-slot"
+import { SlotViews } from "@/shell/builtin"
 import { toast } from "@/thesis/Toast"
-import { SkillsBrowser } from "@/thesis/SkillsBrowser"
+import { ScopePick, WorkspacePick } from "@/thesis/composer-picks"
+import { readScope, scopeRules, writeScope, type Scope } from "@/thesis/composer-scope"
+import { decode64 } from "@/utils/base64"
+import { projectLabel } from "@/utils/projectLabel"
+import { findProjectByWorktree, formatWorkingDirLabel, resolveProjectWorkingDir } from "@/utils/projectWorkspace"
+import { projectSessionHref } from "@/utils/route-session"
+import { isResultDirectory } from "@/utils/projectResult"
+import { projectPrefs } from "@/thesis/store/projectPrefs"
+import { projectMetaLocal } from "@/thesis/store/projectMetaLocal"
+import { useLayout } from "@/context/layout"
+import { useServer } from "@/context/server"
 import { EffortSlider } from "@/thesis/EffortSlider"
 import { uiStore } from "@/thesis/store/ui"
 import { centerTabs } from "@/thesis/store/centerTabs"
@@ -43,7 +52,6 @@ import { produce } from "solid-js/store"
 import { mergesContext, startsTask, taskControls, type TaskControl } from "@/thesis/task-control"
 import { isUserStopError } from "@hysci/ui/session-result"
 import {
-  BYOK_URL,
   CONTEXT_DIR,
   MAX_ATTACHMENT_BYTES,
   REDUCE_MOTION,
@@ -57,7 +65,6 @@ import {
   isSubscriptionModel,
   isTextLike,
   providerLabel,
-  rateFor,
   readAsDataURL,
   safeFilename,
   type AgentName,
@@ -66,7 +73,7 @@ import {
 } from "./composer/model-utils"
 import { AttachmentChip, CONTROL_LABEL, FloatingControls, Segmented } from "./composer/controls"
 
-export function Composer(props: { imcFlow?: boolean }): JSX.Element {
+export function Composer(): JSX.Element {
   const params = useParams()
   const navigate = useNavigate()
   const sdk = useSDK()
@@ -78,6 +85,8 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   const dialog = useDialog()
   const language = useLanguage()
   const local = useLocal()
+  const layout = useLayout()
+  const server = useServer()
 
   const [text, setText] = createSignal("")
   const [model, setModel] = createSignal<ModelKey | undefined>(undefined)
@@ -147,23 +156,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   const [lastSent, setLastSent] = createSignal("")
   const [taskControl, setTaskControl] = createSignal<TaskControl>()
   const [taskControlOpen, setTaskControlOpen] = createSignal(false)
-  const [imcOpen, setImcOpen] = createSignal(false)
-  let imcRef: HTMLDivElement | undefined
-  createEffect(() => {
-    if (!imcOpen()) return
-    const close = (e: MouseEvent) => {
-      if (imcRef && !imcRef.contains(e.target as Node)) setImcOpen(false)
-    }
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setImcOpen(false)
-    }
-    document.addEventListener("mousedown", close)
-    document.addEventListener("keydown", onEsc)
-    onCleanup(() => {
-      document.removeEventListener("mousedown", close)
-      document.removeEventListener("keydown", onEsc)
-    })
-  })
   const selectedTaskControl = createMemo(() => taskControls.find((item) => item.id === taskControl()))
   createEffect(
     on(
@@ -179,14 +171,70 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   // Popover opens whenever the input is exactly `/<query>` (single token,
   // no spaces). Arrow keys move selection; Enter inserts `/<name> `.
   const [slashIndex, setSlashIndex] = createSignal(0)
-  const [skillsOpen, setSkillsOpen] = createSignal(false)
+  const directory = createMemo(() => decode64(params.dir) ?? sdk.directory)
+  const [scope, setScope] = createSignal<Scope>("workspace")
+  const [workspaceOpen, setWorkspaceOpen] = createSignal(false)
+  const [scopeOpen, setScopeOpen] = createSignal(false)
+  createEffect(() => {
+    setScope(readScope(directory()))
+  })
+  createEffect(() => {
+    const id = params.id
+    const rules = scopeRules(scope())
+    if (!id || id === "new") return
+    void sdk.client.session.update({ sessionID: id, permission: rules }).catch(() => undefined)
+  })
+  const workspaceProjects = createMemo(() => {
+    projectMetaLocal.all()
+    const hide = projectPrefs.hidden()
+    const current = directory().replace(/\/$/, "")
+    const rows = globalSync.data.project.flatMap((project) => {
+      if (!project.worktree) return []
+      const path = project.worktree.replace(/\/$/, "")
+      if (hide.has(project.worktree) || hide.has(path) || isResultDirectory(project.worktree)) return []
+      const known = findProjectByWorktree(globalSync.data.project, project.worktree)
+      return [
+        {
+          id: project.worktree,
+          name: projectLabel(known ?? project),
+          path: formatWorkingDirLabel(project.worktree),
+          current: path === current,
+        },
+      ]
+    })
+    return rows.sort((a, b) => Number(b.current) - Number(a.current) || a.name.localeCompare(b.name, "zh"))
+  })
+  const workspaceName = createMemo(() => {
+    const found = workspaceProjects().find((item) => item.current)
+    if (found) return found.name
+    const segs = directory().split("/").filter(Boolean)
+    return segs[segs.length - 1] || "选择项目"
+  })
+  const openWorkspace = (worktree: string) => {
+    const dir = resolveProjectWorkingDir(worktree)
+    projectPrefs.unhide(worktree)
+    layout.projects.open(worktree)
+    server.projects.touch(worktree)
+    const [store] = globalSync.child(dir, { bootstrap: false })
+    const latest = [...store.session]
+      .filter((item) => !item.parentID && !item.time?.archived)
+      .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))[0]?.id
+    setWorkspaceOpen(false)
+    if (dir.replace(/\/$/, "") === directory().replace(/\/$/, "")) return
+    navigate(projectSessionHref(worktree, latest))
+  }
+  const pickScope = (next: Scope) => {
+    setScope(next)
+    writeScope(directory(), next)
+    setScopeOpen(false)
+  }
   createEffect(() => {
     if (centerTabs.active() === "chat") return
     setModelOpen(false)
     setEffortOpen(false)
-    setSkillsOpen(false)
+    setWorkspaceOpen(false)
+    setScopeOpen(false)
     setTaskControlOpen(false)
-    setImcOpen(false)
   })
   createEffect(
     on(
@@ -194,9 +242,9 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
       () => {
         setModelOpen(false)
         setEffortOpen(false)
-        setSkillsOpen(false)
+        setWorkspaceOpen(false)
+        setScopeOpen(false)
         setTaskControlOpen(false)
-        setImcOpen(false)
       },
       { defer: true },
     ),
@@ -204,14 +252,26 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   const [caret, setCaret] = createSignal(0)
   let textareaRef: HTMLTextAreaElement | undefined
   let fileInputRef: HTMLInputElement | undefined
-  let modelSearchRef: HTMLInputElement | undefined
   let modelBtnRef: HTMLButtonElement | undefined
   let modelRowRefs: HTMLElement[] = []
 
-  // Pick a sensible default model the moment one becomes available:
-  // last-used > visible Anthropic Sonnet > first visible model. Re-runs
-  // until a real model lands so the picker isn't stuck on "no model".
+  const configured = createMemo(() => {
+    const raw = globalSync.data.config.model
+    if (!raw) return
+    const slash = raw.indexOf("/")
+    if (slash <= 0) return
+    return { providerID: raw.slice(0, slash), modelID: raw.slice(slash + 1) }
+  })
+  const [picked, setPicked] = createSignal(false)
+
+  // Settings default wins until the user picks in this composer.
   createEffect(() => {
+    const chosen = configured()
+    if (picked()) return
+    if (chosen) {
+      setModel(chosen)
+      return
+    }
     if (model()) return
     const recents = models.recent.list()
     if (recents.length > 0) {
@@ -258,8 +318,9 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
 
   const selectedLabel = createMemo(() => {
     const m = model()
+    if (!m) return
     const found = selectedInfo()
-    return found && m ? { name: found.name, providerID: m.providerID } : undefined
+    return { name: found?.name ?? m.modelID, providerID: m.providerID }
   })
 
   const selectedSource = createMemo(() => {
@@ -431,25 +492,10 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
   const selectRowAt = (i: number, close = false) => {
     const row = flatRows()[i]
     if (!row) return
+    setPicked(true)
     setModel({ providerID: row.provider.id, modelID: row.id })
     setModelIndex(i)
     if (close) setModelOpen(false)
-  }
-  const onModelSearchKey = (e: KeyboardEvent) => {
-    const len = flatRows().length
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setModelIndex((i) => (len ? (i + 1) % len : 0))
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setModelIndex((i) => (len ? (i - 1 + len) % len : 0))
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      selectRowAt(modelIndex(), true)
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setModelOpen(false)
-    }
   }
 
   // On open: focus the search box and start the highlight on the current model
@@ -463,11 +509,32 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
       const start = idx >= 0 ? idx : 0
       setModelIndex(start)
       queueMicrotask(() => {
-        modelSearchRef?.focus()
         modelRowRefs[start]?.scrollIntoView({ block: "nearest" })
       })
     }),
   )
+  createEffect(() => {
+    if (!modelOpen() && !effortOpen()) return
+    const close = (e: PointerEvent) => {
+      const node = e.target
+      if (!(node instanceof Node)) return
+      if (modelBtnRef?.contains(node) || effortBtnRef?.contains(node)) return
+      if (node instanceof Element && node.closest('[role="dialog"]')) return
+      setModelOpen(false)
+      setEffortOpen(false)
+    }
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return
+      setModelOpen(false)
+      setEffortOpen(false)
+    }
+    document.addEventListener("pointerdown", close, true)
+    document.addEventListener("keydown", key, true)
+    onCleanup(() => {
+      document.removeEventListener("pointerdown", close, true)
+      document.removeEventListener("keydown", key, true)
+    })
+  })
   // Keep the highlight in range and scrolled into view as the list narrows.
   createEffect(() => {
     const len = flatRows().length
@@ -498,7 +565,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     const vh = window.innerHeight
     const gap = 8
     const margin = 12
-    const width = Math.min(384, vw - margin * 2)
+    const width = Math.min(280, vw - margin * 2)
     // Right-align to the top-right trigger (beside Notebook).
     const left = Math.max(margin, Math.min(r.right - width, vw - width - margin))
     const above = r.top - margin
@@ -506,8 +573,8 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
     const up = r.bottom > vh * 0.55 || above >= below
     setAnchor(
       up
-        ? { left, bottom: vh - r.top + gap, width, maxH: Math.min(440, above), up: true }
-        : { left, top: r.bottom + gap, width, maxH: Math.min(440, below), up: false },
+        ? { left, bottom: vh - r.top + gap, width, maxH: Math.min(280, above), up: true }
+        : { left, top: r.bottom + gap, width, maxH: Math.min(280, below), up: false },
     )
   }
   createEffect(
@@ -984,6 +1051,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               : undefined
             const res: any = await sdk.client.session.create({
               directory: sdk.directory,
+              permission: scopeRules(scope()),
               ...(title ? { title } : {}),
             } as any)
             const data = res?.data ?? res
@@ -1178,6 +1246,17 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
       onDrop={onDrop}
     >
       <div class="cs-composer-inner">
+        <WorkspacePick
+          name={workspaceName()}
+          open={workspaceOpen()}
+          projects={workspaceProjects()}
+          onToggle={() => {
+            setScopeOpen(false)
+            setWorkspaceOpen((open) => !open)
+          }}
+          onClose={() => setWorkspaceOpen(false)}
+          onPick={openWorkspace}
+        />
         <input
           ref={fileInputRef}
           type="file"
@@ -1214,7 +1293,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               dragOver() || focused()
                 ? "0 0 0 4px color-mix(in srgb, var(--color-focus) 10%, transparent), var(--shadow-xs)"
                 : "var(--shadow-xs)",
-            background: dragOver() ? "var(--color-accent-subtle)" : "none",
+            background: dragOver() ? "color-mix(in srgb, var(--color-accent-subtle) 70%, transparent)" : undefined,
             "border-radius": "14px",
             transition: "background 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
           }}
@@ -1232,7 +1311,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                 "z-index": 2,
                 background: "color-mix(in srgb, var(--color-accent-subtle) 85%, transparent)",
                 "font-family": FONT_SANS,
-                "font-size": "13px",
+                "font-size": "var(--text-md)",
                 color: "var(--color-text)",
               }}
             >
@@ -1302,7 +1381,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                   "border-radius": "4px",
                   background: "var(--color-accent-subtle)",
                   "font-family": FONT_MONO,
-                  "font-size": "10px",
+                  "font-size": "var(--text-xs)",
                   color: "var(--color-text-muted)",
                 }}
               >
@@ -1324,53 +1403,16 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               </div>
             )}
           </Show>
-          <Show when={props.imcFlow}>
-            <div class="cs-imc-flow-dock" ref={imcRef}>
-              <button
-                type="button"
-                class="cs-imc-flow-trigger"
-                aria-expanded={imcOpen()}
-                aria-haspopup="menu"
-                onClick={() => {
-                  setTaskControlOpen(false)
-                  setImcOpen((open) => !open)
-                }}
-              >
-                {language.t("chat.welcome.imc.flow.title")}
-                <IconChevronDown size={11} strokeWidth={1.6} />
-              </button>
-              <Show when={imcOpen()}>
-                <div class="cs-imc-flow-pop" role="menu">
-                  <div class="cs-chat-welcome-flow-grid">
-                    <For each={IMC_STEPS}>
-                      {(step, index) => {
-                        const Glyph = step[3]
-                        return (
-                          <button
-                            type="button"
-                            class="cs-chat-welcome-flow-card"
-                            role="menuitem"
-                            onClick={() => {
-                              grow(language.t(step[2]))
-                              setImcOpen(false)
-                              textareaRef?.focus()
-                            }}
-                          >
-                            <span class="cs-chat-welcome-flow-mark">
-                              <Glyph size={16} strokeWidth={1.6} />
-                              <span class="cs-chat-welcome-flow-num">{String(index() + 1).padStart(2, "0")}</span>
-                            </span>
-                            <span class="cs-chat-welcome-flow-name">{language.t(step[0])}</span>
-                            <span class="cs-chat-welcome-flow-hint">{language.t(step[1])}</span>
-                          </button>
-                        )
-                      }}
-                    </For>
-                  </div>
-                </div>
-              </Show>
-            </div>
-          </Show>
+          <ComposerSlotProvider
+            value={{
+              insert: (value) => {
+                grow(value)
+                textareaRef?.focus()
+              },
+            }}
+          >
+            <SlotViews slot="composer.extra" />
+          </ComposerSlotProvider>
           <div style={{ position: "relative", width: "100%" }}>
             <textarea
               ref={textareaRef}
@@ -1386,7 +1428,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               // Delay blur so popover clicks register before the popover unmounts.
               onBlur={() => setTimeout(() => setFocused(false), 120)}
               onPaste={onPaste}
-              placeholder="ask a research question · / for skills"
+              placeholder={language.t("composer.placeholder")}
               style={{
                 all: "unset",
                 "font-family": FONT_SANS,
@@ -1401,15 +1443,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                 display: "block",
               }}
             />
-            <Show when={skillsOpen()}>
-              <SkillsBrowser
-                onPick={(name) => {
-                  pickSlash({ name, description: "", location: "" })
-                  setSkillsOpen(false)
-                }}
-                onClose={() => setSkillsOpen(false)}
-              />
-            </Show>
             <Show when={slashOpen()}>
               <div
                 class="thesis-fade-in thesis-scroll"
@@ -1434,13 +1467,13 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                   style={{
                     padding: "6px 8px 4px",
                     "font-family": FONT_MONO,
-                    "font-size": "10px",
+                    "font-size": "var(--text-xs)",
                     color: "var(--color-text-faint)",
                     "letter-spacing": "0.08em",
                     "text-transform": "uppercase",
                   }}
                 >
-                  skills
+                  {language.t("composer.skills")}
                 </div>
                 <Show
                   when={slashItems().length > 0}
@@ -1449,11 +1482,11 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                       style={{
                         padding: "8px 10px",
                         "font-family": FONT_MONO,
-                        "font-size": "11px",
+                        "font-size": "var(--text-sm)",
                         color: "var(--color-text-faint)",
                       }}
                     >
-                      no matching skills
+                      {language.t("composer.skills.empty")}
                     </div>
                   }
                 >
@@ -1471,7 +1504,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                           cursor: "pointer",
                           background: slashIndex() === i() ? "var(--color-accent-subtle)" : "transparent",
                           "font-family": FONT_MONO,
-                          "font-size": "11px",
+                          "font-size": "var(--text-sm)",
                           color: "var(--color-text)",
                         }}
                       >
@@ -1481,7 +1514,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                             style={{
                               flex: 1,
                               "min-width": 0,
-                              "font-size": "11px",
+                              "font-size": "var(--text-sm)",
                               color: "var(--color-text-faint)",
                               "white-space": "nowrap",
                               overflow: "hidden",
@@ -1503,7 +1536,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
             {/* Model picker portal — trigger lives top-right beside Notebook. */}
             <Show when={modelOpen() && centerTabs.active() === "chat"}>
               <Portal>
-                <div onClick={() => setModelOpen(false)} style={{ position: "fixed", inset: 0, "z-index": 190 }} />
                 <Show when={anchor()}>
                   {(a) => (
                     <div
@@ -1518,64 +1550,19 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                         "max-height": `${a().maxH}px`,
                         display: "flex",
                         "flex-direction": "column",
-                        background: "var(--color-surface-solid)",
-                        border: "1px solid var(--color-border-strong)",
-                        "border-radius": "4px",
-                        "box-shadow": "0 16px 44px rgba(0, 0, 0, 0.18), 0 3px 10px rgba(0, 0, 0, 0.10)",
+                        background:
+                          "linear-gradient(180deg, color-mix(in srgb, #fff 78%, transparent), color-mix(in srgb, #fff 52%, transparent))",
+                        border: "1px solid color-mix(in srgb, #fff 55%, transparent)",
+                        "border-radius": "12px",
+                        "backdrop-filter": "blur(18px) saturate(1.4)",
+                        "-webkit-backdrop-filter": "blur(18px) saturate(1.4)",
+                        "box-shadow":
+                          "inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent), 0 10px 28px color-mix(in srgb, #1a1a1a 12%, transparent)",
                         overflow: "hidden",
                         "z-index": 200,
                         "transform-origin": a().up ? "bottom right" : "top right",
                       }}
                     >
-                      {/* search */}
-                      <div
-                        style={{
-                          display: "flex",
-                          "align-items": "center",
-                          gap: "9px",
-                          padding: "10px 12px",
-                          "border-bottom": "1px solid var(--color-border)",
-                          "flex-shrink": 0,
-                        }}
-                      >
-                        <span style={{ display: "inline-flex", color: "var(--color-text-faint)", "flex-shrink": 0 }}>
-                          <IconSearch size={13} strokeWidth={1.5} />
-                        </span>
-                        <input
-                          ref={modelSearchRef}
-                          value={modelQuery()}
-                          onInput={(e) => {
-                            setModelQuery(e.currentTarget.value)
-                            setModelIndex(0)
-                          }}
-                          onKeyDown={onModelSearchKey}
-                          placeholder="search models"
-                          spellcheck={false}
-                          autocomplete="off"
-                          style={{
-                            all: "unset",
-                            flex: 1,
-                            "min-width": 0,
-                            "font-family": FONT_SANS,
-                            "font-size": "13px",
-                            color: "var(--color-text)",
-                          }}
-                        />
-                        <kbd
-                          style={{
-                            "font-family": FONT_MONO,
-                            "font-size": "10px",
-                            color: "var(--color-text-faint)",
-                            border: "1px solid var(--color-border)",
-                            "border-radius": "4px",
-                            padding: "1px 5px",
-                            "flex-shrink": 0,
-                          }}
-                        >
-                          esc
-                        </kbd>
-                      </div>
-
                       {/* list */}
                       <div
                         class="thesis-scroll"
@@ -1590,7 +1577,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                               style={{
                                 padding: "22px 14px",
                                 "font-family": FONT_SANS,
-                                "font-size": "13px",
+                                "font-size": "var(--text-md)",
                                 color: "var(--color-text-faint)",
                                 "line-height": 1.5,
                               }}
@@ -1613,10 +1600,10 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                     "align-items": "baseline",
                                     "justify-content": "space-between",
                                     gap: "8px",
-                                    padding: "9px 10px 4px",
-                                    background: "var(--color-surface-solid)",
+                                    padding: "6px 8px 2px",
+                                    background: "transparent",
                                     "font-family": FONT_MONO,
-                                    "font-size": "10px",
+                                    "font-size": "var(--text-xs)",
                                     "font-weight": 500,
                                     "letter-spacing": "0.02em",
                                     "text-transform": "lowercase",
@@ -1641,7 +1628,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                       model()?.providerID === row.provider.id && model()?.modelID === row.id
                                     const highlighted = () => modelIndex() === flatIndex()
                                     const dot = SOURCE_DOT[rowSource(row.provider.id)]
-                                    const price = () => rateFor(row.cost as ModelCostShape, active() && longCtx())
                                     return (
                                       <div
                                         ref={(el) => (modelRowRefs[flatIndex()] = el)}
@@ -1657,7 +1643,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                           gap: "10px",
                                           width: "100%",
                                           "box-sizing": "border-box",
-                                          padding: "7px 10px",
+                                          padding: "5px 8px",
                                           "border-radius": "4px",
                                           background: active()
                                             ? "var(--color-accent-subtle)"
@@ -1700,7 +1686,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                             <span
                                               style={{
                                                 "font-family": FONT_SANS,
-                                                "font-size": "13px",
+                                                "font-size": "var(--text-md)",
                                                 "font-weight": 400,
                                                 color: "var(--color-text)",
                                                 overflow: "hidden",
@@ -1715,11 +1701,11 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                                 style={{
                                                   "flex-shrink": 0,
                                                   "font-family": FONT_MONO,
-                                                  "font-size": "10px",
+                                                  "font-size": "var(--text-xs)",
                                                   color: "var(--color-text-faint)",
                                                 }}
                                               >
-                                                latest
+                                                {language.t("model.tag.latest")}
                                               </span>
                                             </Show>
                                             <Show when={isSubscriptionModel(row.provider.id, row.id)}>
@@ -1727,7 +1713,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                                 style={{
                                                   "flex-shrink": 0,
                                                   "font-family": FONT_MONO,
-                                                  "font-size": "10px",
+                                                  "font-size": "var(--text-xs)",
                                                   color: "var(--color-text-faint)",
                                                   opacity: 0.85,
                                                 }}
@@ -1745,33 +1731,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                             gap: "10px",
                                           }}
                                         >
-                                          <Show
-                                            when={!price().free}
-                                            fallback={
-                                              <span
-                                                style={{
-                                                  "font-family": FONT_MONO,
-                                                  "font-size": "11px",
-                                                  color: "var(--color-text-faint)",
-                                                }}
-                                              >
-                                                free
-                                              </span>
-                                            }
-                                          >
-                                            <span
-                                              title="$ per 1M tokens · input / output"
-                                              style={{
-                                                "font-family": FONT_MONO,
-                                                "font-size": "11px",
-                                                "font-variant-numeric": "tabular-nums",
-                                                color: "var(--color-text-faint)",
-                                                "white-space": "nowrap",
-                                              }}
-                                            >
-                                              {price().input} <span style={{ opacity: 0.4 }}>/</span> {price().output}
-                                            </span>
-                                          </Show>
                                           <span
                                             style={{
                                               width: "12px",
@@ -1805,7 +1764,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                                       width: "100%",
                                       padding: "5px 10px 7px",
                                       "font-family": FONT_MONO,
-                                      "font-size": "10px",
+                                      "font-size": "var(--text-xs)",
                                       "letter-spacing": "0.02em",
                                       "text-transform": "lowercase",
                                       color: "var(--color-text-faint)",
@@ -1886,27 +1845,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                         </div>
                       </Show>
 
-                      {/* footer */}
-                      <a
-                        href={BYOK_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "flex",
-                          "align-items": "center",
-                          "justify-content": "space-between",
-                          padding: "9px 12px",
-                          "border-top": "1px solid var(--color-border)",
-                          "font-family": FONT_MONO,
-                          "font-size": "11px",
-                          color: "var(--color-text-muted)",
-                          "text-decoration": "none",
-                          "flex-shrink": 0,
-                        }}
-                      >
-                        <span>manage models</span>
-                        <span style={{ color: "var(--color-text-faint)" }}>↗</span>
-                      </a>
                     </div>
                   )}
                 </Show>
@@ -1933,7 +1871,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                   "border-radius": "4px",
                   background: taskControlOpen() ? "var(--color-accent-subtle)" : "transparent",
                   "font-family": FONT_MONO,
-                  "font-size": "11px",
+                  "font-size": "var(--text-sm)",
                 }}
               >
                 任务
@@ -1983,11 +1921,11 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                             taskControl() === item.id ? "var(--color-accent-subtle)" : "transparent"
                         }}
                       >
-                        <span style={{ "font-family": FONT_SANS, "font-size": "12px", color: "var(--color-text)" }}>
+                        <span style={{ "font-family": FONT_SANS, "font-size": "var(--text-base)", color: "var(--color-text)" }}>
                           {item.label}
                         </span>
                         <span
-                          style={{ "font-family": FONT_SANS, "font-size": "11px", color: "var(--color-text-faint)" }}
+                          style={{ "font-family": FONT_SANS, "font-size": "var(--text-sm)", color: "var(--color-text-faint)" }}
                         >
                           {item.description}
                         </span>
@@ -2000,7 +1938,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
 
             <button
               type="button"
-              title="attach file (or drop / paste)"
+              title={language.t("composer.attach")}
               onClick={openFilePicker}
               style={{
                 all: "unset",
@@ -2014,7 +1952,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                 gap: "4px",
                 "border-radius": "4px",
                 "font-family": FONT_MONO,
-                "font-size": "12px",
+                "font-size": "var(--text-base)",
               }}
             >
               <IconPaperclip size={13} strokeWidth={1.5} />
@@ -2023,25 +1961,16 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               </Show>
             </button>
 
-            <button
-              type="button"
-              title="browse skills (or type / in the prompt)"
-              onClick={() => setSkillsOpen((v) => !v)}
-              style={{
-                all: "unset",
-                "box-sizing": "border-box",
-                cursor: "pointer",
-                height: "28px",
-                padding: "0 7px",
-                color: skillsOpen() ? "var(--color-text)" : "var(--color-text-faint)",
-                display: "inline-flex",
-                "align-items": "center",
-                "border-radius": "4px",
-                background: skillsOpen() ? "var(--color-accent-subtle)" : "transparent",
+            <ScopePick
+              value={scope()}
+              open={scopeOpen()}
+              onToggle={() => {
+                setWorkspaceOpen(false)
+                setScopeOpen((open) => !open)
               }}
-            >
-              <IconSparkles size={13} strokeWidth={1.5} />
-            </button>
+              onClose={() => setScopeOpen(false)}
+              onPick={pickScope}
+            />
 
             <span style={{ flex: 1 }} />
 
@@ -2049,7 +1978,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               <span
                 style={{
                   "font-family": FONT_MONO,
-                  "font-size": "11px",
+                  "font-size": "var(--text-sm)",
                   color: "var(--color-text-faint)",
                   display: "inline-flex",
                   "align-items": "center",
@@ -2068,17 +1997,35 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
               </span>
             </Show>
 
-            <Show when={!submitting()}>
-              <span
-                style={{
-                  "font-family": FONT_MONO,
-                  "font-size": "11px",
-                  color: "var(--color-text-faint)",
-                }}
-              >
-                {turnLocked() ? "↵ to queue · ⇧↵ newline" : "↵ to send · ⇧↵ newline"}
-              </span>
-            </Show>
+            <button
+              ref={(el) => (modelBtnRef = el)}
+              type="button"
+              class="cs-model-chip"
+              aria-label={language.t("composer.model")}
+              title={
+                selectedLabel()
+                  ? `${selectedLabel()!.name}${selectedSource() ? ` — ${selectedSource()!.title}` : ""}`
+                  : language.t("composer.model")
+              }
+              onClick={() => setModelOpen(!modelOpen())}
+            >
+              <Show when={selectedSource()}>
+                {(dot) => (
+                  <span
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      "border-radius": "50%",
+                      "flex-shrink": "0",
+                      background: dot().color,
+                      opacity: dot().opacity,
+                    }}
+                  />
+                )}
+              </Show>
+              <span>{selectedLabel()?.name ?? language.t("composer.model")}</span>
+              <IconChevronDown size={11} strokeWidth={1.6} />
+            </button>
 
             <Show
               when={streaming()}
@@ -2087,12 +2034,12 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                   onClick={() => void submit()}
                   disabled={submitting() || (text().trim().length === 0 && attachments().length === 0)}
                   type="button"
-                  title="send"
+                  title={language.t("composer.send")}
                   style={{
                     all: "unset",
                     "box-sizing": "border-box",
-                    cursor: text().trim().length > 0 || attachments().length > 0 ? "pointer" : "default",
-                    opacity: text().trim().length > 0 || attachments().length > 0 ? 1 : 0.35,
+                    cursor: "pointer",
+                    opacity: "1",
                     width: "32px",
                     height: "32px",
                     display: "inline-flex",
@@ -2102,11 +2049,14 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                     background:
                       text().trim().length > 0 || attachments().length > 0
                         ? "var(--color-accent)"
-                        : "var(--color-border)",
-                    color: "var(--color-on-accent)",
+                        : "color-mix(in srgb, var(--color-text) 78%, var(--color-bg))",
+                    color:
+                      text().trim().length > 0 || attachments().length > 0
+                        ? "var(--color-on-accent)"
+                        : "var(--color-bg)",
                     "font-family": FONT_MONO,
-                    "font-size": "12px",
-                    transition: "all 150ms ease",
+                    "font-size": "var(--text-base)",
+                    transition: "background 150ms ease",
                   }}
                 >
                   <IconArrowUp size={16} strokeWidth={2} />
@@ -2130,7 +2080,7 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
                   background: "var(--color-text)",
                   color: "var(--color-bg)",
                   "font-family": FONT_MONO,
-                  "font-size": "12px",
+                  "font-size": "var(--text-base)",
                   transition: "all 150ms ease",
                 }}
               >
@@ -2140,13 +2090,6 @@ export function Composer(props: { imcFlow?: boolean }): JSX.Element {
           </div>
         </div>
         <FloatingControls
-          modelOpen={modelOpen}
-          setModelOpen={setModelOpen}
-          selectedLabel={selectedLabel}
-          selectedSource={selectedSource}
-          modelBtnRef={(el: HTMLButtonElement) => {
-            modelBtnRef = el
-          }}
           effortOpen={effortOpen}
           setEffortOpen={setEffortOpen}
           variantKeys={variantKeys}

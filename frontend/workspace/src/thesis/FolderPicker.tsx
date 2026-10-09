@@ -294,7 +294,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
                     all: "unset",
                     cursor: "pointer",
                     "font-family": FONT_MONO,
-                    "font-size": "11px",
+                    "font-size": "0.786rem",
                     color: i() === crumbs().length - 1 ? "var(--color-text)" : "var(--color-text-muted)",
                     "font-weight": i() === crumbs().length - 1 ? 600 : 500,
                     padding: "2px 4px",
@@ -344,7 +344,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
               all: "unset",
               flex: 1,
               "font-family": FONT_MONO,
-              "font-size": "12px",
+              "font-size": "0.857rem",
               color: "var(--color-text)",
             }}
           />
@@ -352,7 +352,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
             class="tab-fig"
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               "letter-spacing": "0.04em",
             }}
@@ -379,7 +379,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
           <span
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               "letter-spacing": "0.08em",
               "text-transform": "uppercase",
@@ -399,7 +399,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
               all: "unset",
               flex: 1,
               "font-family": FONT_MONO,
-              "font-size": "11px",
+              "font-size": "0.786rem",
               color: "var(--color-text)",
             }}
           />
@@ -415,7 +415,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
               background: pathInput().trim() ? "var(--color-surface-solid)" : "transparent",
               border: "1px solid var(--color-border)",
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-muted)",
               opacity: pathInput().trim() ? 1 : 0.5,
             }}
@@ -487,7 +487,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
                         padding: "32px 24px",
                         "text-align": "center",
                         "font-family": FONT_SANS,
-                        "font-size": "12px",
+                        "font-size": "0.857rem",
                         color: "var(--color-error)",
                         display: "flex",
                         "flex-direction": "column",
@@ -509,7 +509,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
                           "border-radius": "4px",
                           border: "1px solid var(--color-border)",
                           "font-family": FONT_MONO,
-                          "font-size": "11px",
+                          "font-size": "0.786rem",
                           color: "var(--color-text)",
                         }}
                       >
@@ -524,7 +524,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
                       padding: "32px 24px",
                       "text-align": "center",
                       "font-family": FONT_SANS,
-                      "font-size": "12px",
+                      "font-size": "0.857rem",
                       color: "var(--color-text-faint)",
                       display: "flex",
                       "flex-direction": "column",
@@ -574,7 +574,7 @@ export function FolderPicker(props: PickerProps): JSX.Element {
           <span
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               flex: 1,
               overflow: "hidden",
@@ -656,7 +656,7 @@ function FolderRow(props: { entry: FolderEntry; onDrill: () => void; onPick: () 
           "text-overflow": "ellipsis",
           "white-space": "nowrap",
           "font-family": FONT_MONO,
-          "font-size": "12px",
+          "font-size": "0.857rem",
           color: "var(--color-text)",
         }}
       >
@@ -675,7 +675,7 @@ function FolderRow(props: { entry: FolderEntry; onDrill: () => void; onPick: () 
           padding: "2px 8px",
           "border-radius": "4px",
           "font-family": FONT_MONO,
-          "font-size": "10px",
+          "font-size": "0.714rem",
           "letter-spacing": "0.08em",
           "text-transform": "uppercase",
           color: "var(--color-text-muted)",
@@ -707,7 +707,7 @@ function SectionLabel(props: { children: JSX.Element }): JSX.Element {
     <div
       style={{
         "font-family": FONT_MONO,
-        "font-size": "10px",
+        "font-size": "0.714rem",
         color: "var(--color-text-faint)",
         "letter-spacing": "0.08em",
         "text-transform": "uppercase",
@@ -760,7 +760,7 @@ function SidebarRow(props: {
         <span
           style={{
             "font-family": FONT_MONO,
-            "font-size": "11px",
+            "font-size": "0.786rem",
             color: "var(--color-text)",
             "font-weight": props.active ? 600 : 500,
             overflow: "hidden",
@@ -774,7 +774,7 @@ function SidebarRow(props: {
           <span
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               overflow: "hidden",
               "text-overflow": "ellipsis",
@@ -815,7 +815,7 @@ function cancelBtn(): JSX.CSSProperties {
     border: "1px solid var(--color-border)",
     background: "var(--color-surface-solid)",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text-muted)",
   } as JSX.CSSProperties
 }
@@ -829,7 +829,7 @@ function primaryBtn(): JSX.CSSProperties {
     background: "var(--color-accent)",
     color: "var(--color-on-accent)",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "font-weight": 500,
     display: "inline-flex",
     "align-items": "center",

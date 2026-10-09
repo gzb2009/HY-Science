@@ -4,7 +4,6 @@ import {
   createResource,
   createSignal,
   For,
-  ErrorBoundary,
   Match,
   on,
   onCleanup,
@@ -13,10 +12,10 @@ import {
   Switch,
   type JSX,
 } from "solid-js"
-import { useNavigate, useParams } from "@solidjs/router"
+import { useLocation, useNavigate, useParams } from "@solidjs/router"
 import { produce } from "solid-js/store"
 import { Binary } from "@hysci/util/binary"
-import { base64Encode } from "@hysci/util/encode"
+import { projectSessionHref, sessionIdFromPath } from "@/utils/route-session"
 import type { Project } from "@hysci/sdk/v2/client"
 import { sessionRunning } from "@/utils/sessionActivity"
 import { SessionTurn } from "@hysci/ui/session-turn"
@@ -31,11 +30,13 @@ import { Composer } from "@/thesis/Composer"
 import { RightPane } from "@/thesis/RightPane"
 import { ColumnHandle } from "@/thesis/ColumnHandle"
 import { SIDEBAR_COL, rightReserved } from "@/thesis/column-width"
-import { FileExplorer } from "@/thesis/FileExplorer"
-import { FileView } from "@/thesis/FilePreview"
 import { centerTabs } from "@/thesis/store/centerTabs"
+import { shellHost } from "@/shell/host"
+import { SlotViews } from "@/shell/builtin"
+import { InkWashBg } from "@/shell/ink-wash-bg"
 import { FONT_MONO, FONT_SANS, FONT_SERIF } from "@/styles/tokens"
 import { uiStore } from "@/thesis/store/ui"
+import { floatActions } from "@/thesis/float-doc"
 import { useGlobalKeys } from "@/thesis/useGlobalKeys"
 import { useDialog } from "@hysci/ui/context/dialog"
 import { useModels } from "@/context/models"
@@ -52,6 +53,7 @@ import {
   IconFile,
   IconX,
   IconArrowDown,
+  IconArrowUp,
   IconChevronDown,
   IconChevronRight,
   IconChevronLeft,
@@ -62,6 +64,9 @@ import {
   IconFolder,
   IconFolderOpen,
   IconStarFilled,
+  IconBraces,
+  IconTherefore,
+  IconMatrix,
 } from "@/thesis/shared/Icon"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
 import { useLanguage } from "@/context/language"
@@ -74,7 +79,6 @@ import { decode64 } from "@/utils/base64"
 import { projectLabel } from "@/utils/projectLabel"
 import {
   findProjectByWorktree,
-  formatHostFilePath,
   type HostFileRef,
   resolveHostFileRef,
   resolveProjectWorkingDir,
@@ -97,13 +101,13 @@ import {
 import { firstUserMessageText, getSessionDisplayTitle } from "@/utils/sessionDisplayTitle"
 import { isEmptyDraftSession } from "@/utils/sessionNaming"
 import { projectMetaLocal } from "@/thesis/store/projectMetaLocal"
-import { projectDomainId } from "@/domain/registry"
+import { projectDomainId, type DomainId } from "@/domain/registry"
+import { protocolResearch } from "@/domain/protocol"
 import { IMC_STEPS } from "@/domain/imc-flow"
-import { lastSelectedDomain } from "@/domain/store"
 import { sessionTitleLocal } from "@/thesis/store/sessionTitleLocal"
 import { toast } from "@/thesis/Toast"
-import { ArtifactLightbox } from "@/thesis/ArtifactLightbox"
 import { artifactImageUrl, artifactTable, type ArtifactData } from "@/utils/artifactPreview"
+import { rememberDesktopSession, stayOnHome } from "@/utils/desktop-session"
 
 type SyncSession = ReturnType<typeof useSync>["data"]["session"][number]
 type SidebarSession = { session: SyncSession; title: string; busy: boolean }
@@ -119,7 +123,16 @@ type SidebarGroup = {
  * Session page — sidebar + chat/files center + inspector rail (terminal/review).
  */
 export default function Page(): JSX.Element {
-  const params = useParams()
+  const rawParams = useParams()
+  const location = useLocation()
+  const params = {
+    get dir() {
+      return rawParams.dir
+    },
+    get id() {
+      return sessionIdFromPath(location.pathname)
+    },
+  }
   const navigate = useNavigate()
   const sync = useSync()
   const globalSync = useGlobalSync()
@@ -180,6 +193,11 @@ export default function Page(): JSX.Element {
   }
 
   async function openFile(path: string) {
+    if (/\.(py|ipynb|r|R|sh)$/i.test(path)) {
+      uiStore.setRightPaneTab(path)
+      uiStore.setRightPaneOpen(true)
+      return
+    }
     const ref = await resolveOutputFile(path)
     if (!ref.path) {
       toast.error("open failed", "invalid file path")
@@ -293,7 +311,6 @@ export default function Page(): JSX.Element {
       (dir) => {
         if (!dir) return
         centerTabs.resetForProject(dir)
-        setVisitedFiles(false)
         uiStore.setImagePreview(undefined)
         uiStore.setHelpOpen(false)
         uiStore.setPaletteOpen(false)
@@ -321,12 +338,8 @@ export default function Page(): JSX.Element {
           void sync.session.review(id).catch(() => undefined)
           return
         }
-        ;(async () => {
-          try {
-            await Promise.all([sync.session.sync(id), sync.session.review(id)])
-            await sync.session.refresh(id)
-          } catch {}
-        })()
+        void sync.session.sync(id).catch(() => undefined)
+        void sync.session.review(id).catch(() => undefined)
       },
     ),
   )
@@ -346,6 +359,11 @@ export default function Page(): JSX.Element {
   })
 
   const projectWorktree = createMemo(() => decode64(params.dir) ?? "")
+  createEffect(() => {
+    const dir = projectWorktree()
+    if (!dir) return
+    rememberDesktopSession(dir, params.id)
+  })
   const workspaceDir = () => sdk.directory
   const projectRecord = createMemo(() => {
     projectMetaLocal.all()
@@ -353,6 +371,34 @@ export default function Page(): JSX.Element {
     if (!worktree) return sync.project
     return findProjectByWorktree(globalSync.data.project, worktree) ?? sync.project
   })
+  const [protocolBusy, setProtocolBusy] = createSignal(false)
+  async function setProtocol(id: DomainId) {
+    const project = projectRecord()
+    if (!project?.id || project.id === "global" || protocolBusy()) return
+    if (projectDomainId(project) === id) return
+    setProtocolBusy(true)
+    const research = protocolResearch(id, project.research?.notes)
+    try {
+      await sdk.client.project.update({
+        projectID: project.id,
+        directory: project.worktree,
+        research,
+      } as any)
+      globalSync.set(
+        "project",
+        produce((draft: Project[]) => {
+          const row = draft.find((item) => item.id === project.id)
+          if (!row) return
+          row.research = { ...row.research, ...research }
+        }),
+      )
+      toast.success(language.t("protocol.applied", { name: language.t(`domain.${id}.title` as "domain.general.title") }))
+    } catch (err) {
+      toast.error(language.t("common.requestFailed"), err instanceof Error ? err.message : String(err))
+    } finally {
+      setProtocolBusy(false)
+    }
+  }
   const projectName = createMemo(() => {
     projectMetaLocal.all()
     const p = projectRecord()
@@ -372,78 +418,64 @@ export default function Page(): JSX.Element {
       .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))
   })
 
-  const siblingProjects = createMemo(() => {
-    projectMetaLocal.all()
-    const hide = projectPrefs.hidden()
-    const domain = projectDomainId(projectRecord())
-    const current = projectWorktree()
-    const byWorktree = new Map<string, Project>()
-    const norm = (w: string) => w.replace(/\/$/, "")
-    for (const p of globalSync.data.project) {
-      if (!p.worktree || hide.has(p.worktree) || hide.has(norm(p.worktree))) continue
-      if (isResultDirectory(p.worktree)) continue
-      if (projectDomainId(p) !== domain) continue
-      byWorktree.set(p.worktree, p)
-    }
-    const rec = projectRecord()
-    if (current && rec && !byWorktree.has(current)) {
-      byWorktree.set(current, { ...rec, worktree: current })
-    }
-    return Array.from(byWorktree.values()).sort((a, b) => {
-      if (a.worktree === current) return -1
-      if (b.worktree === current) return 1
-      return projectLabel(a).localeCompare(projectLabel(b), "zh")
-    })
-  })
-
-  const sidebarGroups = createMemo(() => {
+  const sidebarGroups = createMemo((): SidebarGroup[] => {
     projectMetaLocal.all()
     sessionTitleLocal.all()
-    const current = projectWorktree()
-    const live = sessions()
-    return siblingProjects().map((project) => {
-      const dir = resolveProjectWorkingDir(project.worktree)
-      const isCurrent = project.worktree === current || dir === resolveProjectWorkingDir(current)
-      const [child] = globalSync.child(dir, { bootstrap: false })
-      const list = isCurrent
-        ? live
-        : [...child.session]
-            .filter((s) => !s.parentID && !s.time?.archived)
-            .filter((s) => !s.directory || s.directory === dir)
-            .filter((s) => s.id === params.id || !isEmptyDraftSession(s, child.message[s.id]))
-            .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))
-      return {
-        worktree: project.worktree,
+    const worktree = projectWorktree()
+    if (!worktree) return []
+    const dir = resolveProjectWorkingDir(worktree)
+    const [child] = globalSync.child(dir, { bootstrap: false })
+    return [
+      {
+        worktree,
         directory: dir,
-        name: projectLabel(project),
-        pinned: projectPrefs.isFavorite(project.worktree),
-        current: isCurrent,
-        sessions: list.map((session) => {
-          return {
-            session,
-            title: getSessionDisplayTitle(session, child.message[session.id], child.part),
-            busy: sessionRunning(child.session_status[session.id]),
-          }
-        }),
-      }
-    })
+        name: projectName(),
+        pinned: projectPrefs.isFavorite(worktree),
+        current: true,
+        sessions: sessions().map((session) => ({
+          session,
+          title: getSessionDisplayTitle(session, child.message[session.id], child.part),
+          busy: sessionRunning(child.session_status[session.id]),
+        })),
+      },
+    ]
   })
 
-  createEffect((prev?: string) => {
-    const dirs = siblingProjects().map((p) => p.worktree)
-    const key = dirs.slice().sort().join("\0")
-    if (key === prev) return key
-    if (dirs.length === 0) return key
-    void Promise.all(dirs.map((dir) => globalSync.project.loadSessions(resolveProjectWorkingDir(dir))))
-    return key
+  const switchProjects = createMemo(() => {
+    projectMetaLocal.all()
+    const hide = projectPrefs.hidden()
+    const current = projectWorktree().replace(/\/$/, "")
+    const norm = (value: string) => value.replace(/\/$/, "")
+    const by = new Map<string, { worktree: string; name: string; current: boolean }>()
+    for (const project of globalSync.data.project) {
+      if (!project.worktree || hide.has(project.worktree) || hide.has(norm(project.worktree))) continue
+      if (isResultDirectory(project.worktree)) continue
+      const path = norm(project.worktree)
+      by.set(path, {
+        worktree: project.worktree,
+        name: projectLabel(project),
+        current: path === current,
+      })
+    }
+    return [...by.values()].sort(
+      (a, b) => Number(b.current) - Number(a.current) || a.name.localeCompare(b.name, "zh"),
+    )
   })
+
+  function latestSessionId(directory: string) {
+    const dir = resolveProjectWorkingDir(directory)
+    if (dir === workspaceDir() && sessions()[0]?.id) return sessions()[0].id
+    const [child] = globalSync.child(dir, { bootstrap: false })
+    return [...child.session]
+      .filter((s) => !s.parentID && !s.time?.archived)
+      .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))[0]?.id
+  }
 
   function openProject(directory: string, sessionId?: string) {
     projectPrefs.unhide(directory)
     layout.projects.open(directory)
     server.projects.touch(directory)
-    const slug = base64Encode(directory)
-    navigate(sessionId ? `/${slug}/session/${sessionId}` : `/${slug}/session`)
+    navigate(projectSessionHref(directory, sessionId || latestSessionId(directory)))
   }
   const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
   const taskFileNames = createMemo(() => {
@@ -509,6 +541,14 @@ export default function Page(): JSX.Element {
     const revertID = revertInfo()?.messageID
     return messages().filter((m) => m.role === "user" && (!revertID || m.id < revertID))
   })
+  createEffect(() => {
+    shellHost.setImc(projectDomainId(projectRecord()) === "imc" && turnMessages().length > 0)
+  })
+  createEffect(() => {
+    const id = params.id
+    if (!id || id === "new") return
+    void sync.session.todo(id)
+  })
   const revertedCount = createMemo(() => {
     const revertID = revertInfo()?.messageID
     if (!revertID) return 0
@@ -551,6 +591,9 @@ export default function Page(): JSX.Element {
   const [sidebarOpen, setSidebarOpen] = createSignal(true)
 
   onMount(() => {
+    uiStore.setPaletteOpen(false)
+    uiStore.setHelpOpen(false)
+    uiStore.setImagePreview(undefined)
     const fit = () => {
       uiStore.setSidebarWidth(uiStore.sidebarWidth())
       uiStore.setRightPaneWidth(uiStore.rightPaneWidth())
@@ -573,10 +616,6 @@ export default function Page(): JSX.Element {
     if (!s) return fallback
     return getSessionDisplayTitle(s, sync.data.message[id], sync.data.part, fallback)
   })
-  const [visitedFiles, setVisitedFiles] = createSignal(false)
-  createEffect(() => {
-    if (centerTabs.active() === "files") setVisitedFiles(true)
-  })
   createEffect(() => {
     if (centerTabs.active() === "chat") return
     const focused = document.activeElement
@@ -596,12 +635,52 @@ export default function Page(): JSX.Element {
   let boundContent: HTMLDivElement | undefined
   const NEAR_BOTTOM_PX = 120
   const [pinnedToBottom, setPinnedToBottom] = createSignal(true)
+  const [prevTurn, setPrevTurn] = createSignal<{ id: string; preview: string }>()
   let distanceFromBottom = 0
+
+  const previewOf = (id: string) => {
+    const text = (sync.data.part[id] ?? [])
+      .filter((part): part is typeof part & { type: "text"; text: string } => part.type === "text" && "text" in part)
+      .map((part) => part.text)
+      .join(" ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!text) return ""
+    return text.length > 32 ? `${text.slice(0, 32)}…` : text
+  }
+
+  const findPrev = () => {
+    const root = scrollRef
+    if (!root) {
+      setPrevTurn(undefined)
+      return
+    }
+    const edge = root.getBoundingClientRect().top + 16
+    const hit = turnMessages().reduce<{ id: string; preview: string } | undefined>((acc, item) => {
+      const node = root.querySelector(`[data-message-id="${CSS.escape(item.id)}"]`)
+      if (!(node instanceof HTMLElement)) return acc
+      if (node.getBoundingClientRect().bottom < edge) return { id: item.id, preview: previewOf(item.id) }
+      return acc
+    }, undefined)
+    setPrevTurn(hit)
+  }
+
+  const jumpToPrev = () => {
+    const hit = prevTurn()
+    if (!hit || !scrollRef) return
+    const node = scrollRef.querySelector(`[data-message-id="${CSS.escape(hit.id)}"]`)
+    if (!(node instanceof HTMLElement)) return
+    const root = scrollRef.getBoundingClientRect()
+    const box = node.getBoundingClientRect()
+    scrollRef.scrollTo({ top: scrollRef.scrollTop + box.top - root.top - 12, behavior: "smooth" })
+  }
 
   const recordScroll = () => {
     if (!scrollRef) return
     distanceFromBottom = scrollRef.scrollHeight - scrollRef.scrollTop - scrollRef.clientHeight
     setPinnedToBottom(distanceFromBottom <= NEAR_BOTTOM_PX)
+    findPrev()
   }
 
   const stickToBottom = () => {
@@ -632,8 +711,17 @@ export default function Page(): JSX.Element {
     scrollRef = el
     setPinnedToBottom(true)
     el.addEventListener("scroll", recordScroll, { passive: true })
-    scrollObserver = new ResizeObserver(reanchor)
+    const syncGutter = () => {
+      const gutter = el.offsetWidth - el.clientWidth
+      const stage = el.closest(".cs-chat-stage")
+      if (stage instanceof HTMLElement) stage.style.setProperty("--cs-scrollbar", `${gutter}px`)
+    }
+    scrollObserver = new ResizeObserver(() => {
+      syncGutter()
+      reanchor()
+    })
     scrollObserver.observe(el)
+    syncGutter()
   }
 
   const attachContent = (el: HTMLDivElement) => {
@@ -692,20 +780,19 @@ export default function Page(): JSX.Element {
 
   return (
     <div
-      class="thesis-root"
+      class="thesis-root cs-ink-session"
       style={{
         flex: 1,
         display: "flex",
         "flex-direction": "column",
         height: "100dvh",
         overflow: "hidden",
-        background: "var(--color-bg)",
+        position: "relative",
       }}
     >
+      <InkWashBg strength={0.32} scale={0.58} anchor="bottom-left" />
       <ToastContainer />
-      <Show when={uiStore.imagePreview()}>
-        {(artifact) => <ArtifactLightbox artifact={artifact()} onClose={() => uiStore.setImagePreview(undefined)} />}
-      </Show>
+      <SlotViews slot="message" />
       <HelpOverlay open={uiStore.helpOpen()} onClose={() => uiStore.setHelpOpen(false)} />
       <CommandPalette open={uiStore.paletteOpen()} onClose={() => uiStore.setPaletteOpen(false)} />
 
@@ -727,24 +814,30 @@ export default function Page(): JSX.Element {
           activeId={params.id}
           filesActive={centerTabs.filesOpen() && centerTabs.active() === "files"}
           onToggle={() => setSidebarOpen((v) => !v)}
-          onBack={() => navigate(`/domain/${projectDomainId(projectRecord()) || lastSelectedDomain() || "general"}`)}
+          onBack={() => {
+            stayOnHome()
+            navigate("/")
+          }}
           onNew={() => {
             centerTabs.showChat()
             void newSession()
           }}
           onCustomize={() => dialog.show(() => <DialogSettings />)}
-          onFiles={() => {
-            setVisitedFiles(true)
-            centerTabs.showFiles()
-          }}
+          onFiles={() => centerTabs.showFiles()}
           onOpenProject={(worktree) => {
-            centerTabs.showChat()
             uiStore.setImagePreview(undefined)
             const here = projectWorktree()
-            if (worktree === here || resolveProjectWorkingDir(worktree) === resolveProjectWorkingDir(here)) return
+            const same =
+              worktree === here || resolveProjectWorkingDir(worktree) === resolveProjectWorkingDir(here)
+            if (same && params.id && params.id !== "new") {
+              centerTabs.showChat()
+              return
+            }
+            centerTabs.showChat()
             openProject(worktree)
           }}
           onSelect={(worktree, id) => {
+            uiStore.setImagePreview(undefined)
             centerTabs.showChat()
             openProject(worktree, id)
           }}
@@ -761,13 +854,32 @@ export default function Page(): JSX.Element {
             "min-height": 0,
             display: "flex",
             "flex-direction": "column",
-            background: "var(--color-bg)",
             overflow: "hidden",
           }}
         >
           <Show when={centerTabs.tabStripVisible()}>
             <CenterTabStrip
               chatTitle={chatTitle()}
+              plan={
+                floatActions({
+                  statuses: (params.id ? (sync.data.todo[params.id] ?? []) : []).map((item) => item.status),
+                  codePaths: taskResultFiles().map((file) => file.path),
+                }).plan
+              }
+              notebook={
+                floatActions({
+                  statuses: (params.id ? (sync.data.todo[params.id] ?? []) : []).map((item) => item.status),
+                  codePaths: taskResultFiles().map((file) => file.path),
+                }).notebook
+              }
+              onPlan={() => {
+                uiStore.setRightPaneTab("plan")
+                uiStore.setRightPaneOpen(true)
+              }}
+              onNotebook={(path) => {
+                uiStore.setRightPaneTab(path)
+                uiStore.setRightPaneOpen(true)
+              }}
               onCloseChat={() => {
                 centerTabs.showChat()
                 void newSession()
@@ -794,7 +906,6 @@ export default function Page(): JSX.Element {
                 flex: 1,
                 "min-height": 0,
                 "flex-direction": "column",
-                "pointer-events": centerTabs.chatOpen() && centerTabs.active() === "chat" ? "auto" : "none",
               }}
             >
               <Switch>
@@ -819,11 +930,6 @@ export default function Page(): JSX.Element {
                               <div
                                 data-message-id={message.id}
                                 class={`cs-chat-turn${message.role === "assistant" ? " hys-turn-card" : ""}`}
-                                style={{
-                                  "min-width": 0,
-                                  width: "100%",
-                                  "max-width": message.role === "assistant" ? "100%" : "100%",
-                                }}
                               >
                                 <Show when={message.role === "assistant" && message.agent}>
                                   <div
@@ -831,7 +937,7 @@ export default function Page(): JSX.Element {
                                     style={{
                                       padding: "6px 12px 2px",
                                       "font-family": "var(--font-sans)",
-                                      "font-size": "11px",
+                                      "font-size": "0.786rem",
                                       "font-weight": "600",
                                       color: "var(--color-text-muted)",
                                       display: "flex",
@@ -885,7 +991,12 @@ export default function Page(): JSX.Element {
                                 <Show
                                   when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}
                                 >
-                                  {(hit) => <DomainSwitchCard hit={hit()} />}
+                                  {(hit) => (
+                                    <DomainSwitchCard
+                                      hit={hit()}
+                                      onApply={(id) => void setProtocol(id)}
+                                    />
+                                  )}
                                 </Show>
                                 {/* Space, not a rule — the bubbles already separate turns. */}
                                 <Show when={index() < turnMessages().length - 1}>
@@ -897,6 +1008,22 @@ export default function Page(): JSX.Element {
                         </For>
                       </div>
                     </div>
+                    <Show when={prevTurn()}>
+                      {(hit) => (
+                        <button
+                          type="button"
+                          class="cs-chat-prev"
+                          onClick={jumpToPrev}
+                          title={language.t("chat.jumpPrev")}
+                        >
+                          <IconArrowUp size={13} strokeWidth={1.75} />
+                          <span class="cs-chat-prev-label">{language.t("chat.jumpPrev")}</span>
+                          <Show when={hit().preview}>
+                            <span class="cs-chat-prev-excerpt">{hit().preview}</span>
+                          </Show>
+                        </button>
+                      )}
+                    </Show>
                     <Show when={!pinnedToBottom()}>
                       <button
                         type="button"
@@ -914,11 +1041,7 @@ export default function Page(): JSX.Element {
                   <ChatWelcome
                     domain={projectDomainId(projectRecord())}
                     name={projectName()}
-                    projects={sidebarGroups().map((g) => ({
-                      worktree: g.worktree,
-                      name: g.name,
-                      current: g.current,
-                    }))}
+                    projects={switchProjects()}
                     onOpenProject={openProject}
                   />
                 </Match>
@@ -934,7 +1057,7 @@ export default function Page(): JSX.Element {
                       padding: "8px 12px",
                       border: "1px solid var(--color-border)",
                       "border-radius": "4px",
-                      "font-size": "12px",
+                      "font-size": "0.857rem",
                       "font-family": FONT_SANS,
                       color: "var(--color-text-muted)",
                       background: "var(--color-bg)",
@@ -953,7 +1076,7 @@ export default function Page(): JSX.Element {
                         color: "inherit",
                         padding: "4px 10px",
                         "border-radius": "4px",
-                        "font-size": "12px",
+                        "font-size": "0.857rem",
                         cursor: "pointer",
                         "white-space": "nowrap",
                       }}
@@ -964,53 +1087,17 @@ export default function Page(): JSX.Element {
                 </div>
               </Show>
 
-              <Composer imcFlow={projectDomainId(projectRecord()) === "imc" && turnMessages().length > 0} />
+              <Composer />
             </div>
 
-            {/* files — the host explorer, mounted on first visit */}
-            <Show when={visitedFiles()}>
-              <div
-                style={{
-                  display: centerTabs.active() === "files" ? "flex" : "none",
-                  flex: 1,
-                  "min-height": 0,
-                  "flex-direction": "column",
-                  "pointer-events": centerTabs.active() === "files" ? "auto" : "none",
-                }}
-              >
-                <ErrorBoundary fallback={(err) => <FilesError error={err} />}>
-                  <FileExplorer
-                    projectRoot={projectWorktree()}
-                    taskFileNames={taskFileNames()}
-                    recentTurnFileNames={recentTurnFileNames()}
-                    taskResultFiles={taskResultFiles()}
-                    recentResultFiles={recentResultFiles()}
-                  />
-                </ErrorBoundary>
-              </div>
-            </Show>
-
-            {/* document tabs — one inline FileView per opened file */}
-            <For each={centerTabs.docs()}>
-              {(doc) => (
-                <div
-                  style={{
-                    display: centerTabs.active() === doc.id ? "flex" : "none",
-                    flex: 1,
-                    "min-height": 0,
-                    "flex-direction": "column",
-                    "pointer-events": centerTabs.active() === doc.id ? "auto" : "none",
-                  }}
-                >
-                  <FileView
-                    path={doc.path}
-                    directory={doc.directory}
-                    subtitle={`This computer · ${formatHostFilePath(doc.directory, doc.path)}`}
-                    onClose={() => centerTabs.closeDoc(doc.id)}
-                  />
-                </div>
-              )}
-            </For>
+            <SlotViews
+              slot="center"
+              projectRoot={projectWorktree()}
+              taskFileNames={taskFileNames()}
+              recentTurnFileNames={recentTurnFileNames()}
+              taskResultFiles={taskResultFiles()}
+              recentResultFiles={recentResultFiles()}
+            />
           </div>
         </div>
 
@@ -1026,10 +1113,18 @@ function closeTab(event: MouseEvent, close: () => void) {
   close()
 }
 
-function CenterTabStrip(props: { chatTitle: string; onCloseChat: () => void }): JSX.Element {
+function CenterTabStrip(props: {
+  chatTitle: string
+  plan?: string
+  notebook?: string
+  onPlan: () => void
+  onNotebook: (path: string) => void
+  onCloseChat: () => void
+}): JSX.Element {
   const active = centerTabs.active
   return (
-    <div class="cs-center-tabs thesis-scroll">
+    <div class="cs-center-tabs">
+      <div class="cs-center-tabs-scroll thesis-scroll">
       <Show when={centerTabs.chatOpen()}>
         <div
           role="tab"
@@ -1091,6 +1186,36 @@ function CenterTabStrip(props: { chatTitle: string; onCloseChat: () => void }): 
           </div>
         )}
       </For>
+      </div>
+      <div class="cs-center-tab-actions">
+        <Show when={props.plan}>
+          {(status) => (
+            <button
+              type="button"
+              class="cs-plan-chip"
+              aria-label="plan"
+              title={`Plan — ${status()}`}
+              data-active={uiStore.rightPaneOpen() && uiStore.rightPaneTab() === "plan" ? "true" : undefined}
+              onClick={() => props.onPlan()}
+            >
+              <IconTherefore size={16} strokeWidth={1.5} />
+            </button>
+          )}
+        </Show>
+        <Show when={props.notebook}>
+          {(path) => (
+            <button
+              type="button"
+              aria-label="notebook"
+              title="Open the live kernel notebook — watch cells stream and run code in the agent's kernels"
+              data-active={uiStore.rightPaneOpen() && uiStore.rightPaneTab() === path() ? "true" : undefined}
+              onClick={() => props.onNotebook(path())}
+            >
+              <IconMatrix size={15} strokeWidth={1.5} />
+            </button>
+          )}
+        </Show>
+      </div>
     </div>
   )
 }
@@ -1263,7 +1388,7 @@ function SessionsSidebar(props: {
                           style={{
                             padding: "12px 16px",
                             "font-family": FONT_SANS,
-                            "font-size": "12px",
+                            "font-size": "0.857rem",
                             color: "var(--color-text-faint)",
                           }}
                         >
@@ -1411,34 +1536,6 @@ function ChatWelcome(props: {
     const id = props.domain
     return ([1, 2, 3] as const).map((n) => language.t(`chat.welcome.${id}.${n}`))
   })
-  let title: HTMLHeadingElement | undefined
-  const fitTitle = () => {
-    const el = title
-    if (!el) return
-    el.style.removeProperty("font-size")
-    const cap = el.clientWidth
-    if (cap <= 0) return
-    const base = Number.parseFloat(getComputedStyle(el).fontSize)
-    const shrink = (size: number) => {
-      if (el.scrollWidth <= cap || size <= 16) return
-      const next = size - 1
-      el.style.fontSize = `${next}px`
-      shrink(next)
-    }
-    shrink(base)
-  }
-  createEffect(() => {
-    props.name
-    language.t("chat.welcome.title.before")
-    language.t("chat.welcome.title.after")
-    requestAnimationFrame(fitTitle)
-  })
-  onMount(() => {
-    if (!title) return
-    const ro = new ResizeObserver(() => fitTitle())
-    ro.observe(title)
-    onCleanup(() => ro.disconnect())
-  })
   return (
     <div class="thesis-fade-in cs-chat-welcome">
       <div class="cs-chat-welcome-hero">
@@ -1452,7 +1549,7 @@ function ChatWelcome(props: {
           />
         </div>
         <div class="cs-chat-welcome-copy">
-          <h2 class="cs-chat-welcome-title" ref={title}>
+          <h2 class="cs-chat-welcome-title">
             {language.t("chat.welcome.title.before")}
             <DropdownMenu open={switchOpen()} onOpenChange={setSwitchOpen} modal={false}>
               <DropdownMenu.Trigger
@@ -1539,68 +1636,6 @@ function ChatWelcome(props: {
   )
 }
 
-function FilesError(props: { error: unknown }): JSX.Element {
-  const message = () => (props.error instanceof Error ? props.error.message : String(props.error))
-  return (
-    <div
-      style={{
-        flex: 1,
-        "min-height": 0,
-        display: "grid",
-        "place-items": "center",
-        padding: "28px",
-        background: "var(--color-bg)",
-      }}
-    >
-      <div
-        style={{
-          width: "min(420px, 100%)",
-          display: "flex",
-          "flex-direction": "column",
-          "align-items": "center",
-          gap: "10px",
-          padding: "22px",
-          "border-radius": "12px",
-          border: "1px solid var(--color-border)",
-          background: "var(--color-surface-solid)",
-          "text-align": "center",
-        }}
-      >
-        <IconFile size={22} strokeWidth={1.4} />
-        <div style={{ "font-family": FONT_SANS, "font-size": "14px", "font-weight": 600, color: "var(--color-text)" }}>
-          Files view failed
-        </div>
-        <div
-          style={{
-            "font-family": FONT_MONO,
-            "font-size": "11px",
-            color: "var(--color-text-faint)",
-            "line-height": 1.5,
-          }}
-        >
-          {message()}
-        </div>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          style={{
-            all: "unset",
-            cursor: "pointer",
-            padding: "7px 12px",
-            "border-radius": "6px",
-            border: "1px solid var(--color-border)",
-            "font-family": FONT_MONO,
-            "font-size": "11px",
-            color: "var(--color-text)",
-          }}
-        >
-          reload
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function ArtifactImageThumb(props: { directory: string; file: ResultFile }): JSX.Element {
   const sdk = useSDK()
   const [data] = createResource(
@@ -1662,28 +1697,65 @@ function ArtifactTableThumb(props: { directory: string; file: ResultFile }): JSX
   )
 }
 
+const pdfThumbCache = new Map<string, { url: string; w: number; h: number }>()
+let pdfThumbQueue: Promise<void> = Promise.resolve()
+
+function enqueuePdfThumb(work: () => Promise<void>) {
+  pdfThumbQueue = pdfThumbQueue.then(work, work)
+  return pdfThumbQueue
+}
+
+function paintPdfThumb(canvas: HTMLCanvasElement, thumb: { url: string; w: number; h: number }) {
+  canvas.width = thumb.w
+  canvas.height = thumb.h
+  canvas.style.width = `${Math.round(thumb.w / (window.devicePixelRatio || 1))}px`
+  canvas.style.height = `${Math.round(thumb.h / (window.devicePixelRatio || 1))}px`
+  const image = new Image()
+  image.onload = () => {
+    const context = canvas.getContext("2d")
+    if (!context) return
+    context.drawImage(image, 0, 0)
+  }
+  image.src = thumb.url
+}
+
 function ArtifactPdfThumb(props: { directory: string; file: ResultFile }): JSX.Element {
   const sdk = useSDK()
-  const [data] = createResource(
-    () => [props.directory, props.file.path] as const,
-    async ([directory, path]) => {
-      const res: unknown = await sdk.client.file.read({ directory, path })
-      return ((res as { data?: ArtifactData })?.data ?? res) as ArtifactData
-    },
-  )
+  const [visible, setVisible] = createSignal(false)
   let canvas!: HTMLCanvasElement
 
+  onMount(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        setVisible(true)
+        io.disconnect()
+      },
+      { rootMargin: "160px" },
+    )
+    io.observe(canvas)
+    onCleanup(() => io.disconnect())
+  })
+
   createEffect(() => {
-    const file = data()
-    if (!file?.content || file.encoding !== "base64") return
-    const content = file.content
-
+    if (!visible()) return
+    const directory = props.directory
+    const path = props.file.path
+    const key = `${directory}::${path}`
     let disposed = false
-    let task: { cancel(): void } | undefined
-    let doc: { destroy(): Promise<void> } | undefined
 
-    void (async () => {
+    void enqueuePdfThumb(async () => {
+      if (disposed) return
+      const hit = pdfThumbCache.get(key)
+      if (hit) {
+        paintPdfThumb(canvas, hit)
+        return
+      }
       try {
+        const res: unknown = await sdk.client.file.read({ directory, path })
+        if (disposed) return
+        const file = ((res as { data?: ArtifactData })?.data ?? res) as ArtifactData
+        if (!file?.content || file.encoding !== "base64") return
         const pdfjs = (await import("pdfjs-dist")) as unknown as {
           GlobalWorkerOptions: { workerSrc: string }
           getDocument(source: { data: Uint8Array }): {
@@ -1702,15 +1774,17 @@ function ArtifactPdfThumb(props: { directory: string; file: ResultFile }): JSX.E
         if (!pdfjs.GlobalWorkerOptions.workerSrc) {
           pdfjs.GlobalWorkerOptions.workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default
         }
-        const bytes = Uint8Array.from(atob(content), (char) => char.charCodeAt(0))
+        const bytes = Uint8Array.from(atob(file.content), (char) => char.charCodeAt(0))
         const loaded = await pdfjs.getDocument({ data: bytes }).promise
         if (disposed) {
           await loaded.destroy()
           return
         }
-        doc = loaded
         const page = await loaded.getPage(1)
-        if (disposed) return
+        if (disposed) {
+          await loaded.destroy()
+          return
+        }
         const viewport = page.getViewport({ scale: 0.28 })
         const ratio = window.devicePixelRatio || 1
         canvas.width = Math.floor(viewport.width * ratio)
@@ -1718,22 +1792,32 @@ function ArtifactPdfThumb(props: { directory: string; file: ResultFile }): JSX.E
         canvas.style.width = `${Math.floor(viewport.width)}px`
         canvas.style.height = `${Math.floor(viewport.height)}px`
         const context = canvas.getContext("2d")
-        if (!context) return
-        context.scale(ratio, ratio)
-        const rendered = page.render({ canvasContext: context, viewport })
-        task = rendered
-        await rendered.promise
+        if (!context) {
+          await loaded.destroy()
+          return
+        }
+        context.setTransform(ratio, 0, 0, ratio, 0, 0)
+        await page.render({ canvasContext: context, viewport }).promise
+        if (pdfThumbCache.size > 24) {
+          const first = pdfThumbCache.keys().next().value
+          if (first) pdfThumbCache.delete(first)
+        }
+        pdfThumbCache.set(key, {
+          url: canvas.toDataURL("image/jpeg", 0.72),
+          w: canvas.width,
+          h: canvas.height,
+        })
+        await loaded.destroy()
       } catch {
         // The generic file preview remains available when a PDF cannot be rasterized.
       }
-    })()
+    })
 
     onCleanup(() => {
       disposed = true
-      task?.cancel()
-      void doc?.destroy()
     })
   })
 
   return <canvas data-slot="session-turn-result-pdf-preview" ref={canvas} aria-label={`${props.file.name} 首页预览`} />
 }
+

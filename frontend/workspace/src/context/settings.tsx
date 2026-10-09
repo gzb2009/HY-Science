@@ -104,27 +104,28 @@ export function clampFontSize(value: number) {
   return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, Math.round(value)))
 }
 
+const SCALED_TYPE = [
+  "--font-size-2x-small",
+  "--font-size-x-small",
+  "--font-size-small",
+  "--font-size-base",
+  "--font-size-large",
+  "--font-size-x-large",
+  "--text-2xs",
+  "--text-xs",
+  "--text-sm",
+  "--text-base",
+  "--text-md",
+  "--text-lg",
+  "--text-xl",
+  "--text-2xl",
+]
+
 function applyFontSize(size: number) {
   if (typeof document === "undefined") return
-  const next = clampFontSize(size)
-  const delta = next - FONT_SIZE_BASE
-  const px = (value: number) => `${Math.max(8, value + delta)}px`
   const root = document.documentElement
-  root.style.setProperty("--app-font-size", `${next}px`)
-  root.style.setProperty("--font-size-2x-small", px(10))
-  root.style.setProperty("--font-size-x-small", px(11))
-  root.style.setProperty("--font-size-small", px(12))
-  root.style.setProperty("--font-size-base", px(13))
-  root.style.setProperty("--font-size-large", px(15))
-  root.style.setProperty("--font-size-x-large", px(18))
-  root.style.setProperty("--text-2xs", px(9))
-  root.style.setProperty("--text-xs", px(10))
-  root.style.setProperty("--text-sm", px(11))
-  root.style.setProperty("--text-base", px(12))
-  root.style.setProperty("--text-md", px(13))
-  root.style.setProperty("--text-lg", px(14))
-  root.style.setProperty("--text-xl", px(16))
-  root.style.setProperty("--text-2xl", px(20))
+  root.style.setProperty("--app-font-size", `${clampFontSize(size)}px`)
+  for (const name of SCALED_TYPE) root.style.removeProperty(name)
 }
 
 export const { use: useSettings, provider: SettingsProvider } = createSimpleContext({

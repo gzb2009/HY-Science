@@ -4,6 +4,7 @@ import { cmd } from "./cmd"
 import { withNetworkOptions, resolveNetworkOptions } from "../network"
 import open from "open"
 import { openUrl } from "../../util/open-url"
+import { openDesktopWindow } from "../../util/desktop-window"
 import { needsOnboarding, runOnboarding, isConfigured } from "../onboard"
 import fs from "fs/promises"
 import os from "os"
@@ -88,10 +89,26 @@ export const WebCommand = cmd({
   // workspace in the browser. An optional [project] path runs it in that dir.
   command: ["web", "$0 [project]"],
   builder: (yargs) =>
-    withNetworkOptions(yargs).positional("project", {
-      type: "string",
-      describe: "directory to open the workspace in",
-    }),
+    withNetworkOptions(yargs)
+      .positional("project", {
+        type: "string",
+        describe: "directory to open the workspace in",
+      })
+      .option("no-open", {
+        type: "boolean",
+        default: false,
+        describe: "bind the UI but do not open a browser",
+      })
+      .option("desktop", {
+        type: "boolean",
+        default: false,
+        describe: "open a native app window and resume the last session",
+      })
+      .option("safe", {
+        type: "boolean",
+        default: false,
+        describe: "skip third-party plugins (safe start)",
+      }),
   describe: "open the HYscience workspace in your browser",
   handler: async (args) => {
     if (args.project) {
@@ -102,7 +119,10 @@ export const WebCommand = cmd({
         process.exit(1)
       }
     }
+    if (args.safe) process.env.HYSCIENCE_SAFE_MODE = "1"
     const opts = await resolveNetworkOptions(args)
+    const desktop = !!args.desktop
+    const withQuery = (url: string) => (desktop ? `${url}${url.includes("?") ? "&" : "?"}desktop=1` : url)
     UI.empty()
     UI.println(UI.logo("  "))
     UI.empty()
@@ -133,7 +153,8 @@ export const WebCommand = cmd({
         }
       })()
       const ok = await ensureVite()
-      UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, LIVE_UI)
+      const ui = withQuery(LIVE_UI)
+      UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, ui)
       UI.empty()
       if (!ok) {
         UI.println(UI.Style.TEXT_WARNING_BOLD + "  Vite UI is not running on :4444", UI.Style.TEXT_NORMAL)
@@ -141,9 +162,14 @@ export const WebCommand = cmd({
       } else {
         UI.println(UI.Style.TEXT_DIM, "  Local source UI only — packed dist is not served.")
       }
-      openUrl(LIVE_UI)
+      if (desktop) {
+        process.stdout.write(`HYSCIENCE_DESKTOP_READY ${ui}\n`)
+        const native = await openDesktopWindow(ui)
+        if (!native) UI.println(UI.Style.TEXT_DIM, "  Chrome/Edge not found — opened the default browser.")
+      } else if (!args.noOpen && !args["no-open"]) {
+        openUrl(ui)
+      }
       await announceFdaIfNeeded()
-      if (!api) return
       await new Promise<void>((resolve) => {
         const stop = () => resolve()
         process.once("SIGINT", stop)
@@ -152,7 +178,7 @@ export const WebCommand = cmd({
       const watchdog = setTimeout(() => process.exit(0), 2000)
       watchdog.unref?.()
       try {
-        await api.stop(true)
+        await api?.stop(true)
       } catch {
         // ignore
       }
@@ -161,12 +187,17 @@ export const WebCommand = cmd({
 
     const server = Server.listen({ ...opts, web: true })
 
-    const base = `http://localhost:${server.port}`
+    const base = withQuery(`http://localhost:${server.port}`)
     UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, base)
     UI.empty()
-    UI.println(UI.Style.TEXT_DIM, "  Opening your browser… if it doesn't open, visit the URL above.")
-
-    openUrl(base)
+    if (desktop) {
+      process.stdout.write(`HYSCIENCE_DESKTOP_READY ${base}\n`)
+      const native = await openDesktopWindow(base)
+      if (!native) UI.println(UI.Style.TEXT_DIM, "  Chrome/Edge not found — opened the default browser.")
+    } else if (!args.noOpen && !args["no-open"]) {
+      UI.println(UI.Style.TEXT_DIM, "  Opening your browser… if it doesn't open, visit the URL above.")
+      openUrl(base)
+    }
 
     // macOS-only: warn the user (and pop System Settings) if Full Disk
     // Access is missing — without it the folder picker and file tree silently

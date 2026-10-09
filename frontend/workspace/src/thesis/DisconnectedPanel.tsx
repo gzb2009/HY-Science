@@ -38,14 +38,14 @@ export function DisconnectedPanel(): JSX.Element {
         />
         <div style={{ flex: 1, "min-width": 0 }}>
           <div
-            style={{ "font-family": FONT_SANS, "font-size": "12.5px", "font-weight": 500, color: "var(--color-text)" }}
+            style={{ "font-family": FONT_SANS, "font-size": "0.893rem", "font-weight": 500, color: "var(--color-text)" }}
           >
             Can't reach your local HYscience server
           </div>
           <div
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10.5px",
+              "font-size": "0.75rem",
               color: "var(--color-text-muted)",
               overflow: "hidden",
               "text-overflow": "ellipsis",
@@ -66,7 +66,7 @@ export function DisconnectedPanel(): JSX.Element {
             border: "1px solid var(--color-border-strong)",
             background: "var(--color-surface-solid)",
             "font-family": FONT_MONO,
-            "font-size": "11px",
+            "font-size": "0.786rem",
             color: "var(--color-text)",
             "flex-shrink": 0,
           }}

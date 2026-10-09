@@ -124,9 +124,9 @@ export namespace DomainScope {
 
   export function notice(item: Drift) {
     if (item.kind === "ask") {
-      return `当前项目是${item.currentTitle}，可以讨论${item.suggestTitle}的方法与文献，但不能在这里执行。要跑分析请通过「切换领域」到${item.suggestTitle}（或通用研究）。`
+      return `当前项目是${item.currentTitle}，可以讨论${item.suggestTitle}的方法与文献，但不能在这里执行。要跑分析请换协议到${item.suggestTitle}，或改成不锁定。`
     }
-    return `当前项目是${item.currentTitle}，无法在这里执行${item.suggestTitle}。请通过「切换领域」到${item.suggestTitle}（或通用研究）后再发起分析。`
+    return `当前项目是${item.currentTitle}，无法在这里执行${item.suggestTitle}。请换协议到${item.suggestTitle}，或改成不锁定后再发起分析。`
   }
 
   export function refuse(item: Drift) {

@@ -20,7 +20,7 @@ export const Logo = (props: { class?: string; animated?: boolean }) => {
           x="0"
           y="18"
           fill="var(--text-strong, currentColor)"
-          style="font-family: ui-serif, Georgia, serif; font-size: 18px; font-weight: 600; letter-spacing: -0.02em;"
+          style="font-family: ui-serif, Georgia, serif; font-size: 1.286rem; font-weight: 600; letter-spacing: -0.02em;"
         >
           HYscience
         </text>

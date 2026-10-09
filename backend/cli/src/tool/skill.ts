@@ -10,6 +10,7 @@ import { Global } from "@/global"
 import { Config } from "../config/config"
 import { Instance } from "../project/instance"
 import { domainSkillAllowed } from "../skill/domain-preset"
+import { laneOf } from "../skill/lanes"
 
 // Lightweight fuzzy score: rewards substring containment + shared bigrams.
 // Returns 0..1. No external deps needed for a "did you mean?" hint.
@@ -59,20 +60,12 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
     return rule.action !== "deny"
   })
 
-  // Group skills by category for the description
   const categories: Record<string, Skill.Info[]> = {}
-  const uncategorized: Skill.Info[] = []
   for (const skill of accessibleSkills) {
-    const cat = skill.category ?? "other"
-    if (cat === "other" && !skill.category) {
-      uncategorized.push(skill)
-    } else {
-      if (!categories[cat]) categories[cat] = []
-      categories[cat].push(skill)
-    }
-  }
-  if (uncategorized.length > 0) {
-    categories["other"] = [...(categories["other"] ?? []), ...uncategorized]
+    const cat = laneOf(skill)
+    if (cat === "hold") continue
+    if (!categories[cat]) categories[cat] = []
+    categories[cat].push(skill)
   }
 
   const description =
@@ -89,7 +82,8 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
           ...Object.entries(categories)
             .sort((a, b) => b[1].length - a[1].length)
             .map(([cat, list]) => {
-              const examples = list
+              const examples = [...list]
+                .sort((a, b) => Number(b.name.startsWith("HY_lane-")) - Number(a.name.startsWith("HY_lane-")))
                 .slice(0, 3)
                 .map((s) => s.name)
                 .join(", ")
@@ -109,7 +103,7 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
     category: z
       .string()
       .optional()
-      .describe("Browse skills in a category (e.g., 'physics', 'chemistry', 'ml-training')"),
+      .describe("Browse one lane: assay, evidence, design, manuscript, or compute"),
     query: z
       .string()
       .optional()
@@ -149,7 +143,7 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
         const listing = scored
           .map(
             (entry) =>
-              `- **${entry.skill.name}** (${entry.skill.category ?? "other"}): ${entry.skill.description.slice(0, 140)}${entry.skill.description.length > 140 ? "..." : ""}`,
+              `- **${entry.skill.name}** (${laneOf(entry.skill)}): ${entry.skill.description.slice(0, 140)}${entry.skill.description.length > 140 ? "..." : ""}`,
           )
           .join("\n")
         return {
@@ -162,7 +156,7 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
       // Category browse mode: return list of skills in the category
       if (params.category && !params.name) {
         const cat = params.category.toLowerCase()
-        const matched = accessibleSkills.filter((s) => (s.category ?? "other") === cat)
+        const matched = accessibleSkills.filter((s) => laneOf(s) === cat)
 
         if (matched.length === 0) {
           const available = Object.keys(categories).join(", ")

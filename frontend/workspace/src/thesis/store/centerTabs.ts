@@ -109,6 +109,7 @@ export const centerTabs = {
     setArtifactsScope(opts?.scope ?? "recent")
   },
   showChat: () => {
+    if (chatOpen() && active() === "chat") return
     setChatOpen(true)
     setActive("chat")
   },

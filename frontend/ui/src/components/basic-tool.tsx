@@ -1,6 +1,7 @@
 import { createEffect, createSignal, For, Match, Show, Switch, type JSX } from "solid-js"
 import { Collapsible } from "./collapsible"
 import { Icon, IconProps } from "./icon"
+import { useI18n } from "../context/i18n"
 
 export type TriggerTitle = {
   title: string
@@ -26,11 +27,21 @@ export interface BasicToolProps {
   defaultOpen?: boolean
   forceOpen?: boolean
   locked?: boolean
+  status?: string
   onSubtitleClick?: () => void
 }
 
 export function BasicTool(props: BasicToolProps) {
+  const i18n = useI18n()
   const [open, setOpen] = createSignal(props.defaultOpen ?? false)
+  const status = () => {
+    const value = props.status
+    if (value === "completed") return i18n.t("ui.tool.status.completed")
+    if (value === "running") return i18n.t("ui.tool.status.running")
+    if (value === "error") return i18n.t("ui.tool.status.error")
+    if (value === "pending") return i18n.t("ui.tool.status.pending")
+    return ""
+  }
 
   createEffect(() => {
     if (props.forceOpen) setOpen(true)
@@ -42,7 +53,7 @@ export function BasicTool(props: BasicToolProps) {
   }
 
   return (
-    <Collapsible open={open()} onOpenChange={handleOpenChange}>
+    <Collapsible variant="ghost" open={open()} onOpenChange={handleOpenChange}>
       <Collapsible.Trigger>
         <div data-component="tool-trigger">
           <div data-slot="basic-tool-tool-trigger-content">
@@ -101,6 +112,11 @@ export function BasicTool(props: BasicToolProps) {
               </Switch>
             </div>
           </div>
+          <Show when={status()}>
+            <span data-slot="basic-tool-tool-status" data-status={props.status ?? "completed"}>
+              {status()}
+            </span>
+          </Show>
           <Show when={props.children && !props.hideDetails && !props.locked}>
             <Collapsible.Arrow />
           </Show>
@@ -113,6 +129,8 @@ export function BasicTool(props: BasicToolProps) {
   )
 }
 
-export function GenericTool(props: { tool: string; hideDetails?: boolean }) {
-  return <BasicTool icon="mcp" trigger={{ title: props.tool }} hideDetails={props.hideDetails} />
+export function GenericTool(props: { tool: string; hideDetails?: boolean; status?: string }) {
+  return (
+    <BasicTool icon="mcp" trigger={{ title: props.tool }} hideDetails={props.hideDetails} status={props.status} />
+  )
 }

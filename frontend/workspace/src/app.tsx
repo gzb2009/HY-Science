@@ -37,10 +37,21 @@ import "@/science/tool-renderer"
 import { Suspense } from "solid-js"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
 
-const Home = lazy(() => import("@/pages/home"))
-const DomainGuide = lazy(() => import("@/pages/domain-guide"))
 const HomeEntry = lazy(() => import("@/pages/home-entry"))
 const Session = lazy(() => import("@/pages/session"))
+const SessionRoute = () => (
+  <TerminalProvider>
+    <FileProvider>
+      <PromptProvider>
+        <CommentsProvider>
+          <Suspense fallback={<Loading />}>
+            <Session />
+          </Suspense>
+        </CommentsProvider>
+      </PromptProvider>
+    </FileProvider>
+  </TerminalProvider>
+)
 const Loading = () => (
   <div class="size-full" style={{ display: "flex", "align-items": "center", "justify-content": "center" }}>
     <AgentIcon size={18} animated style={{ color: "var(--color-text-faint)" }} />
@@ -173,40 +184,12 @@ export function AppInterface(props: { defaultUrl?: string }) {
                   </Suspense>
                 )}
               />
-              <Route
-                path="/domains"
-                component={() => (
-                  <Suspense fallback={<Loading />}>
-                    <DomainGuide />
-                  </Suspense>
-                )}
-              />
-              <Route
-                path="/domain/:id"
-                component={() => (
-                  <Suspense fallback={<Loading />}>
-                    <Home />
-                  </Suspense>
-                )}
-              />
+              <Route path="/domains" component={() => <Navigate href="/" />} />
+              <Route path="/domain/:id" component={() => <Navigate href="/" />} />
               <Route path="/:dir" component={DirectoryLayout}>
                 <Route path="/" component={() => <Navigate href="session" />} />
-                <Route
-                  path="/session/:id?"
-                  component={() => (
-                    <TerminalProvider>
-                      <FileProvider>
-                        <PromptProvider>
-                          <CommentsProvider>
-                            <Suspense fallback={<Loading />}>
-                              <Session />
-                            </Suspense>
-                          </CommentsProvider>
-                        </PromptProvider>
-                      </FileProvider>
-                    </TerminalProvider>
-                  )}
-                />
+                <Route path="/session" component={SessionRoute} />
+                <Route path="/session/:id" component={SessionRoute} />
               </Route>
             </Router>
           </GlobalSyncProvider>

@@ -147,7 +147,7 @@ export const Credentials: Component = () => {
           <div
             style={{
               "font-family": FONT_SANS,
-              "font-size": "12px",
+              "font-size": "0.857rem",
               "line-height": 1.5,
               color: "var(--color-error)",
               border: "1px solid var(--color-error-muted)",
@@ -369,7 +369,7 @@ function fieldStyle(): JSX.CSSProperties {
     border: "1px solid var(--color-border)",
     background: "var(--color-surface-solid, var(--color-bg))",
     "font-family": FONT_CODE,
-    "font-size": "13px",
+    "font-size": "0.929rem",
     "line-height": 1.5,
     color: "var(--color-text)",
     cursor: "text",
@@ -388,7 +388,7 @@ function addRowStyle(): JSX.CSSProperties {
     "border-radius": "4px",
     border: "1px dashed var(--color-border-strong)",
     "font-family": FONT_SANS,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     color: "var(--color-text-weak)",
   }
 }

@@ -1,7 +1,9 @@
 // @refresh reload
 import { render } from "solid-js/web"
+import "@/shell/builtin"
 import { AppBaseProviders, AppInterface } from "@/app"
 import { Platform, PlatformProvider } from "@/context/platform"
+import { markDesktopShell, isDesktopShell } from "@/utils/desktop-session"
 import { dict as en } from "@/i18n/en"
 import { dict as zh } from "@/i18n/zh"
 import { hyscienceFetch } from "@/utils/hyscience-fetch"
@@ -31,8 +33,24 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
   throw new Error(message)
 }
 
+if (isDesktopShell()) markDesktopShell()
+
+function stripGhostCatchers() {
+  for (const el of [...document.body.querySelectorAll("div")]) {
+    if (el.id === "root" || el.closest("#root")) continue
+    const s = getComputedStyle(el)
+    if (s.position !== "fixed") continue
+    if (s.zIndex !== "190" && el.getAttribute("data-hy-catcher") == null) continue
+    const r = el.getBoundingClientRect()
+    if (r.width < innerWidth * 0.8 || r.height < innerHeight * 0.8) continue
+    if (el.childElementCount > 0) continue
+    el.remove()
+  }
+}
+stripGhostCatchers()
+
 const platform: Platform = {
-  platform: "web",
+  platform: isDesktopShell() ? "desktop" : "web",
   version: pkg.version,
   openLink(url: string) {
     window.open(url, "_blank")

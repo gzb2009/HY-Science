@@ -261,7 +261,7 @@ export function EffortSlider(props: EffortSliderProps): JSX.Element {
               class={`cs-effort-slider-label${active ? " active" : ""}`}
               style={{
                 "font-family": FONT_SANS,
-                "font-size": "10px",
+                "font-size": "0.714rem",
                 color: active ? "var(--color-text)" : "var(--color-text-faint)",
                 "text-transform": "lowercase",
                 "text-align": "center",

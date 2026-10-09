@@ -14,6 +14,7 @@ export namespace Flag {
   export const HYSCIENCE_DISABLE_TERMINAL_TITLE = truthy("HYSCIENCE_DISABLE_TERMINAL_TITLE")
   export const HYSCIENCE_PERMISSION = process.env["HYSCIENCE_PERMISSION"]
   export const HYSCIENCE_DISABLE_DEFAULT_PLUGINS = truthy("HYSCIENCE_DISABLE_DEFAULT_PLUGINS")
+  export declare const HYSCIENCE_SAFE_MODE: boolean
   export const HYSCIENCE_DISABLE_LSP_DOWNLOAD = truthy("HYSCIENCE_DISABLE_LSP_DOWNLOAD")
   export const HYSCIENCE_ENABLE_EXPERIMENTAL_MODELS = truthy("HYSCIENCE_ENABLE_EXPERIMENTAL_MODELS")
   export const HYSCIENCE_DISABLE_AUTOCOMPACT = truthy("HYSCIENCE_DISABLE_AUTOCOMPACT")
@@ -59,6 +60,14 @@ export namespace Flag {
 // Dynamic getter for HYSCIENCE_DISABLE_PROJECT_CONFIG
 // This must be evaluated at access time, not module load time,
 // because external tooling may set this env var at runtime
+Object.defineProperty(Flag, "HYSCIENCE_SAFE_MODE", {
+  get() {
+    return truthy("HYSCIENCE_SAFE_MODE")
+  },
+  enumerable: true,
+  configurable: false,
+})
+
 Object.defineProperty(Flag, "HYSCIENCE_DISABLE_PROJECT_CONFIG", {
   get() {
     return truthy("HYSCIENCE_DISABLE_PROJECT_CONFIG")

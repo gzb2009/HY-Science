@@ -1,4 +1,8 @@
 <result-delivery-protocol>
+Lead with the conclusion. Do not open with a greeting or restate the question.
+Do not narrate tool calls in the answer; the client shows each tool as one line.
+Put file changes in the tool diff, not in prose. Reasoning stays out of the answer.
+
 Shape of a delivered result. Voice and ask-first rules live in the system prompt
 (准则 1–4); this protocol only says how a finished answer should look.
 

@@ -102,7 +102,7 @@ export function LatexView(props: ArtifactRenderProps) {
           "justify-content": "space-between",
           "align-items": "center",
           padding: "5px 10px",
-          "font-size": "11px",
+          "font-size": "0.786rem",
           "font-family": mono,
           color: "#8a8a8a",
           background: "rgba(128,128,128,0.08)",
@@ -126,7 +126,7 @@ export function LatexView(props: ArtifactRenderProps) {
       >
         <Show when={error()}>
           {(msg) => (
-            <div data-slot="latex-error" style={{ "font-family": mono, "font-size": "12px", color: "#b00020" }}>
+            <div data-slot="latex-error" style={{ "font-family": mono, "font-size": "0.857rem", color: "#b00020" }}>
               Failed to typeset LaTeX: {msg()}
             </div>
           )}

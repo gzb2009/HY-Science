@@ -105,7 +105,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
         <span
           style={{
             "font-family": FONT_MONO,
-            "font-size": "10px",
+            "font-size": "0.714rem",
             "letter-spacing": "0.08em",
             "text-transform": "uppercase",
             color: "var(--color-text-faint)",
@@ -115,7 +115,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
         </span>
         <span
           class="tab-fig"
-          style={{ "font-family": FONT_MONO, "font-size": "10px", color: "var(--color-text-muted)" }}
+          style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-muted)" }}
         >
           {total()}
         </span>
@@ -128,7 +128,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
             all: "unset",
             flex: 1,
             "font-family": FONT_SANS,
-            "font-size": "12px",
+            "font-size": "0.857rem",
             color: "var(--color-text)",
             padding: "2px 4px",
           }}
@@ -142,7 +142,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
             cursor: "pointer",
             color: "var(--color-text-faint)",
             "font-family": FONT_MONO,
-            "font-size": "13px",
+            "font-size": "0.929rem",
             padding: "0 4px",
           }}
         >
@@ -159,7 +159,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
                 padding: "18px 10px",
                 "text-align": "center",
                 "font-family": FONT_MONO,
-                "font-size": "11px",
+                "font-size": "0.786rem",
                 color: "var(--color-text-faint)",
               }}
             >
@@ -174,7 +174,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
                   style={{
                     padding: "6px 8px 3px",
                     "font-family": FONT_MONO,
-                    "font-size": "10px",
+                    "font-size": "0.714rem",
                     "letter-spacing": "0.08em",
                     "text-transform": "uppercase",
                     color: "var(--color-text-faint)",
@@ -205,7 +205,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
                       <span
                         style={{
                           "font-family": FONT_SANS,
-                          "font-size": "13px",
+                          "font-size": "0.929rem",
                           "font-weight": 500,
                           color: "var(--color-text)",
                         }}
@@ -216,7 +216,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
                         <span
                           style={{
                             "font-family": FONT_SANS,
-                            "font-size": "12px",
+                            "font-size": "0.857rem",
                             color: "var(--color-text-muted)",
                             "line-height": 1.45,
                             display: "-webkit-box",
@@ -235,7 +235,7 @@ export function SkillsBrowser(props: { onPick: (name: string) => void; onClose: 
                               <span
                                 style={{
                                   "font-family": FONT_MONO,
-                                  "font-size": "10px",
+                                  "font-size": "0.714rem",
                                   color: "var(--color-text-faint)",
                                   background: "var(--color-accent-subtle)",
                                   padding: "1px 5px",
@@ -335,14 +335,14 @@ export function SkillLibraryDialog(props: { onPick: (name: string) => void }): J
               all: "unset",
               flex: 1,
               "font-family": FONT_SANS,
-              "font-size": "14px",
+              "font-size": "1rem",
               color: "var(--color-text)",
             }}
           />
           <span
             style={{
               "font-family": FONT_MONO,
-              "font-size": "11px",
+              "font-size": "0.786rem",
               "letter-spacing": "0.08em",
               "text-transform": "uppercase",
               color: "var(--color-text-faint)",
@@ -372,7 +372,7 @@ export function SkillLibraryDialog(props: { onPick: (name: string) => void }): J
                   padding: "40px 10px",
                   "text-align": "center",
                   "font-family": FONT_MONO,
-                  "font-size": "12px",
+                  "font-size": "0.857rem",
                   color: "var(--color-text-faint)",
                 }}
               >
@@ -392,7 +392,7 @@ export function SkillLibraryDialog(props: { onPick: (name: string) => void }): J
                       "border-bottom": "1px solid var(--color-border)",
                       "margin-bottom": "4px",
                       "font-family": FONT_MONO,
-                      "font-size": "11px",
+                      "font-size": "0.786rem",
                       "letter-spacing": "0.08em",
                       "text-transform": "uppercase",
                       color: "var(--color-text-faint)",
@@ -431,7 +431,7 @@ export function SkillLibraryDialog(props: { onPick: (name: string) => void }): J
                         <span
                           style={{
                             "font-family": FONT_MONO,
-                            "font-size": "14px",
+                            "font-size": "1rem",
                             "font-weight": 500,
                             color: "var(--color-text)",
                           }}
@@ -442,7 +442,7 @@ export function SkillLibraryDialog(props: { onPick: (name: string) => void }): J
                           <span
                             style={{
                               "font-family": FONT_SANS,
-                              "font-size": "13px",
+                              "font-size": "0.929rem",
                               color: "var(--color-text-muted)",
                               "line-height": 1.5,
                               display: "-webkit-box",
@@ -461,7 +461,7 @@ export function SkillLibraryDialog(props: { onPick: (name: string) => void }): J
                                 <span
                                   style={{
                                     "font-family": FONT_MONO,
-                                    "font-size": "11px",
+                                    "font-size": "0.786rem",
                                     color: "var(--color-text-faint)",
                                     background: "var(--color-accent-subtle)",
                                     padding: "1px 6px",

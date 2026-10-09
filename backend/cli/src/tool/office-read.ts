@@ -18,6 +18,26 @@ function texts(xml: string, tag: string) {
   )
 }
 
+function paraText(xml: string) {
+  const parts: string[] = []
+  const re = /<w:t(?=[\s>/])[^>]*>([\s\S]*?)<\/w:t>|<w:tab\b[^>]*\/>|<w:br\b[^>]*\/>|<w:cr\b[^>]*\/>/g
+  for (const match of xml.matchAll(re)) {
+    if (match[1] != null) parts.push(decode(match[1]))
+    else if (match[0].startsWith("<w:tab")) parts.push("\t")
+    else parts.push("\n")
+  }
+  return parts.join("").replace(/[ \t]+\n/g, "\n").trim()
+}
+
+function cellText(xml: string) {
+  const paras = [...xml.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)]
+  if (!paras.length) return paraText(xml)
+  return paras
+    .map((para) => paraText(para[0]))
+    .filter(Boolean)
+    .join("\n")
+}
+
 function parseXlsx(files: Map<string, Uint8Array>): OfficePreview {
   const shared = texts(xmlText(files.get("xl/sharedStrings.xml")), "t")
   const book = xmlText(files.get("xl/workbook.xml"))
@@ -46,11 +66,11 @@ function parseDocx(files: Map<string, Uint8Array>): OfficePreview {
   const blocks = [...xml.matchAll(/<(w:p|w:tbl)\b[\s\S]*?<\/\1>/g)].map((match) => {
     if (match[1] === "w:tbl") {
       const rows = [...match[0].matchAll(/<w:tr\b[\s\S]*?<\/w:tr>/g)].map((row) =>
-        [...row[0].matchAll(/<w:tc\b[\s\S]*?<\/w:tc>/g)].map((cell) => texts(cell[0], "w:t").join("")),
+        [...row[0].matchAll(/<w:tc\b[\s\S]*?<\/w:tc>/g)].map((cell) => cellText(cell[0])),
       )
       return { type: "table" as const, rows }
     }
-    const text = texts(match[0], "w:t").join("")
+    const text = paraText(match[0])
     return { type: /Heading/.test(match[0]) ? ("heading" as const) : ("paragraph" as const), text }
   })
   return { kind: "docx", blocks: blocks.filter((block) => block.text || block.rows?.length) }

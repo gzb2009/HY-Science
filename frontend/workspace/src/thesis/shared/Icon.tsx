@@ -51,6 +51,25 @@ export const IconBraces = (p: IconProps): JSX.Element => (
   </svg>
 )
 
+export const IconTherefore = (p: IconProps): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
+    <circle cx="12" cy="5.5" r="2.1" />
+    <circle cx="12" cy="12" r="2.1" />
+    <circle cx="12" cy="18.5" r="2.1" />
+  </svg>
+)
+
+export const IconMatrix = (p: IconProps): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
+    <path d="M9 4.5H5.8v15H9" />
+    <path d="M15 4.5h3.2v15H15" />
+    <circle cx="10.6" cy="9.6" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="13.4" cy="9.6" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="10.6" cy="14.4" r="0.95" fill="currentColor" stroke="none" />
+    <circle cx="13.4" cy="14.4" r="0.95" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 export const IconFolderTree = (p: IconProps): JSX.Element => (
   <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
     <path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" />
@@ -168,6 +187,13 @@ export const IconFile = (p: IconProps): JSX.Element => (
 export const IconFolder = (p: IconProps): JSX.Element => (
   <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
     <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+  </svg>
+)
+
+export const IconShield = (p: IconProps): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+    <path d="m9 12 2 2 4-4" />
   </svg>
 )
 
@@ -467,22 +493,6 @@ export const IconLogOut = (p: IconProps): JSX.Element => (
     <path d="M10 17l5-5-5-5" />
     <path d="M15 12H3" />
     <path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4" />
-  </svg>
-)
-
-export const IconMatrix = (p: IconProps): JSX.Element => (
-  <svg xmlns="http://www.w3.org/2000/svg" {...baseProps(p)}>
-    <path d="M7 4v16" />
-    <path d="M17 4v16" />
-    <path d="M4 7h3" />
-    <path d="M4 17h3" />
-    <path d="M17 7h3" />
-    <path d="M17 17h3" />
-    <path d="M10 8h1.5" />
-    <path d="M12.5 8H14" />
-    <path d="M10 12h4" />
-    <path d="M10 16h1.5" />
-    <path d="M12.5 16H14" />
   </svg>
 )
 

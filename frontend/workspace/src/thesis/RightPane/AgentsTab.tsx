@@ -215,7 +215,7 @@ function AgentNodeRow(props: { node: AgentNode; depth: number; onNavigate: (id: 
         </span>
         <span style={agentMeta()}>
           <Show when={props.node.toolSummary}>
-            <span style={{ color: "var(--color-accent)", "font-size": "10px" }}>{props.node.toolSummary}</span>
+            <span style={{ color: "var(--color-accent)", "font-size": "0.714rem" }}>{props.node.toolSummary}</span>
           </Show>
           <Show when={!props.node.toolSummary && props.node.statusText}>
             <span>{props.node.statusText}</span>
@@ -248,7 +248,7 @@ function agentsHeader(): JSX.CSSProperties {
 function agentsTitle(): JSX.CSSProperties {
   return {
     "font-family": "var(--font-mono)",
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "font-weight": 700,
     color: "var(--color-text)",
   }
@@ -258,7 +258,7 @@ function agentsHint(): JSX.CSSProperties {
   return {
     "margin-top": "3px",
     "font-family": "var(--font-sans)",
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "line-height": 1.4,
     color: "var(--color-text-faint)",
   }
@@ -275,7 +275,7 @@ function agentRow(depth: number): JSX.CSSProperties {
     width: "100%",
     padding: `7px 10px 7px ${10 + depth * 16}px`,
     "border-radius": "4px",
-    "font-size": "12px",
+    "font-size": "0.857rem",
     transition: "background 120ms ease",
   }
 }
@@ -283,7 +283,7 @@ function agentRow(depth: number): JSX.CSSProperties {
 function agentName(): JSX.CSSProperties {
   return {
     "font-family": FONT_SANS,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     color: "var(--color-text)",
     "font-weight": 500,
   }
@@ -292,7 +292,7 @@ function agentName(): JSX.CSSProperties {
 function agentType(): JSX.CSSProperties {
   return {
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text-faint)",
     "margin-left": "6px",
   }
@@ -301,7 +301,7 @@ function agentType(): JSX.CSSProperties {
 function agentMeta(): JSX.CSSProperties {
   return {
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text-faint)",
     "flex-shrink": 0,
     display: "flex",
@@ -324,7 +324,7 @@ function empty(): JSX.CSSProperties {
 function emptyTitle(): JSX.CSSProperties {
   return {
     "font-family": FONT_SANS,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     "font-weight": 600,
     color: "var(--color-text-muted)",
   }
@@ -334,7 +334,7 @@ function emptyHint(): JSX.CSSProperties {
   return {
     margin: 0,
     "font-family": FONT_SANS,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "line-height": 1.5,
     color: "var(--color-text-faint)",
     "max-width": "240px",

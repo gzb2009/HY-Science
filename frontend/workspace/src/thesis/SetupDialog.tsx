@@ -123,7 +123,7 @@ export function SetupDialog(props: { onDismiss?: () => void }): JSX.Element {
           </Button>
         </Show>
       </div>
-      <style>{`code { font-family: ${FONT_MONO}; font-size: 11px; }`}</style>
+      <style>{`code { font-family: ${FONT_MONO}; font-size: 0.786rem; }`}</style>
     </Dialog>
   )
 }

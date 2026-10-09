@@ -2,15 +2,14 @@ import { test, expect } from "./fixtures"
 import { serverName } from "./utils"
 
 test("home renders and shows core entrypoints", async ({ page }) => {
-  await page.goto("/domains")
+  await page.goto("/")
 
-  await expect(page.getByTestId("domain-guide")).toBeVisible()
-  await expect(page.locator(".cs-domain-card").first()).toBeVisible()
   await expect(page.getByTestId("home-dock")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "HYscience" })).toBeVisible()
 })
 
 test("server picker dialog opens from home", async ({ page }) => {
-  await page.goto("/domains")
+  await page.goto("/")
 
   const trigger = page.getByRole("button", { name: serverName })
   if ((await trigger.count()) === 0) {

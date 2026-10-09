@@ -61,7 +61,7 @@ describe("DomainScope", () => {
     const hit = DomainScope.drift("imc", { text: "帮我做单细胞测序的分析", filenames: [] })
     expect(hit?.kind).toBe("execute")
     expect(hit?.suggest).toBe("single-cell")
-    expect(DomainScope.notice(hit!)).toContain("切换领域")
+    expect(DomainScope.notice(hit!)).toContain("换协议")
   })
 
   test("polite capability phrasing does not arm the exec gate", () => {

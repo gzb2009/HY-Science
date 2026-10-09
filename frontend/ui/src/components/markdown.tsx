@@ -3,6 +3,7 @@ import { useI18n } from "../context/i18n"
 import DOMPurify from "dompurify"
 import morphdom from "morphdom"
 import { checksum } from "@hysci/util/encode"
+import { prepareStreamMarkdown } from "./markdown-stream"
 import { ComponentProps, createEffect, createResource, createSignal, onCleanup, splitProps } from "solid-js"
 import { isServer } from "solid-js/web"
 
@@ -162,17 +163,18 @@ function touch(key: string, value: Entry) {
 export function Markdown(
   props: ComponentProps<"div"> & {
     text: string
+    streaming?: boolean
     cacheKey?: string
     class?: string
     classList?: Record<string, boolean>
   },
 ) {
-  const [local, others] = splitProps(props, ["text", "cacheKey", "class", "classList"])
+  const [local, others] = splitProps(props, ["text", "streaming", "cacheKey", "class", "classList"])
   const marked = useMarked()
   const i18n = useI18n()
   const [root, setRoot] = createSignal<HTMLDivElement>()
   const [html] = createResource(
-    () => local.text,
+    () => prepareStreamMarkdown(local.text, !!local.streaming),
     async (markdown) => {
       if (isServer) return ""
 
@@ -187,8 +189,7 @@ export function Markdown(
         }
       }
 
-      const normalized = markdown.replace(/^(#{1,6})\s*TL;DR\s*$/gim, "$1 摘要")
-      const next = await marked.parse(normalized)
+      const next = await marked.parse(markdown)
       const safe = sanitize(next)
       if (key && hash) touch(key, { hash, html: safe })
       return safe

@@ -111,7 +111,8 @@ export function PdfViewer(props: ArtifactRenderProps) {
           : { data: cfg.bytes ?? decodeBase64(cfg.base64 ?? "") }
         const loaded = await pdfjs.getDocument(src).promise
         if (disposed) {
-          await loaded.destroy()
+          const close = loaded as { destroy?: () => Promise<void> }
+          if (typeof close.destroy === "function") await close.destroy().catch(() => undefined)
           return
         }
         doc = loaded
@@ -166,9 +167,10 @@ export function PdfViewer(props: ArtifactRenderProps) {
           /* ignore */
         }
       }
-      doc?.destroy().catch(() => {
-        /* ignore teardown races */
-      })
+      const close = doc as { destroy?: () => Promise<void> } | undefined
+      if (close && typeof close.destroy === "function") {
+        void close.destroy().catch(() => undefined)
+      }
     })
   })
 
@@ -193,7 +195,7 @@ export function PdfViewer(props: ArtifactRenderProps) {
           "justify-content": "space-between",
           "align-items": "center",
           padding: "5px 10px",
-          "font-size": "11px",
+          "font-size": "0.786rem",
           "font-family": mono,
           color: "#8a8a8a",
           background: "rgba(128,128,128,0.08)",
@@ -223,13 +225,13 @@ export function PdfViewer(props: ArtifactRenderProps) {
         <Show when={!hasSource}>
           <div
             data-slot="pdf-empty"
-            style={{ padding: "28px 14px", "font-family": mono, "font-size": "12px", color: "#8a8a8a" }}
+            style={{ padding: "28px 14px", "font-family": mono, "font-size": "0.857rem", color: "#8a8a8a" }}
           >
             No PDF source. Provide <code>{`{ url }`}</code>, <code>{`{ bytes }`}</code>, or <code>{`{ base64 }`}</code>.
           </div>
         </Show>
         <Show when={status()}>
-          <div style={{ padding: "28px 14px", "font-family": mono, "font-size": "12px", color: "#8a8a8a" }}>
+          <div style={{ padding: "28px 14px", "font-family": mono, "font-size": "0.857rem", color: "#8a8a8a" }}>
             {status()}
           </div>
         </Show>
@@ -240,7 +242,7 @@ export function PdfViewer(props: ArtifactRenderProps) {
               style={{
                 padding: "12px 14px",
                 "font-family": mono,
-                "font-size": "12px",
+                "font-size": "0.857rem",
                 color: "#b00020",
                 border: "1px solid rgba(176,0,32,0.35)",
                 "border-radius": "4px",
@@ -254,7 +256,7 @@ export function PdfViewer(props: ArtifactRenderProps) {
         </Show>
         <div ref={host} data-slot="pdf-pages" />
         <Show when={pages() && pages()!.shown < pages()!.total}>
-          <div style={{ "font-family": mono, "font-size": "11px", color: "#8a8a8a", "padding-top": "4px" }}>
+          <div style={{ "font-family": mono, "font-size": "0.786rem", color: "#8a8a8a", "padding-top": "4px" }}>
             {/* rendering is capped by maxPages */}
             <For each={[pages()!]}>{(p) => <>{p.total - p.shown} more page(s) not rendered</>}</For>
           </div>

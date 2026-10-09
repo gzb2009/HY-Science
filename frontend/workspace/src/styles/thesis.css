@@ -69,14 +69,14 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
 
-  --text-2xs: 9px;
-  --text-xs: 10px;
-  --text-sm: 11px;
-  --text-base: 12px;
-  --text-md: 13px;
-  --text-lg: 14px;
-  --text-xl: 16px;
-  --text-2xl: 20px;
+  --text-2xs: 0.643rem;
+  --text-xs: 0.714rem;
+  --text-sm: 0.786rem;
+  --text-base: 0.857rem;
+  --text-md: 1rem;
+  --text-lg: 1rem;
+  --text-xl: 1.143rem;
+  --text-2xl: 1.429rem;
 
   --app-font-size: 14px;
 
@@ -88,7 +88,7 @@
   --font-ui-sans: var(--font-sans);
   --font-family-sans: var(--font-sans);
   --font-family-serif: var(--font-serif);
-  --font-family-reading: var(--font-sans);
+  --font-family-reading: var(--font-serif);
 
   --z-header: 20;
   --z-sticky: 50;
@@ -205,6 +205,199 @@ html[data-color-scheme="dark"] {
   z-index: 1;
 }
 
+.cs-ink-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: #f3f3f1;
+}
+
+html:has(.cs-ink-session) {
+  --ink-paper: #f3f3f1;
+  --ink-ink: #1c1c1c;
+  --ink-veil: color-mix(in srgb, #2a2a2a 7%, transparent);
+  --ink-glass: color-mix(in srgb, #ffffff 16%, transparent);
+  --ink-glass-strong: color-mix(in srgb, #ffffff 38%, transparent);
+  --ink-dock: color-mix(in srgb, #ffffff 26%, transparent);
+  --ink-line: color-mix(in srgb, #2a2a2a 16%, transparent);
+}
+
+.cs-ink-session {
+  --session-turn-sticky-height: 0px;
+  background: transparent;
+  color: var(--ink-ink);
+}
+
+.cs-ink-session .cs-session-layout {
+  gap: 10px;
+  padding: 10px;
+}
+
+.cs-ink-session .cs-session-center,
+.cs-ink-session .cs-session-stage,
+.cs-ink-session .cs-chat-stage,
+.cs-ink-session .cs-composer-wrap,
+.cs-ink-session .cs-chat-scroll,
+.cs-ink-session [data-component="assistant-message"],
+.cs-ink-session [data-component="text-part"],
+.cs-ink-session [data-slot="text-part-body"] {
+  background: transparent !important;
+}
+
+.cs-ink-session [data-slot="session-turn-sticky"] {
+  position: static !important;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  z-index: auto;
+}
+
+.cs-ink-session [data-slot="session-turn-sticky"]::before,
+.cs-ink-session [data-slot="session-turn-sticky"]::after {
+  display: none !important;
+}
+
+.cs-ink-session .cs-sidebar,
+.cs-ink-session .cs-rightpane-fixed,
+.cs-ink-session .cs-rightpane-rail {
+  background: var(--ink-dock) !important;
+  border: 1px solid var(--ink-line) !important;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px color-mix(in srgb, #1a1a1a 10%, transparent);
+  backdrop-filter: blur(24px) saturate(0.72);
+  -webkit-backdrop-filter: blur(24px) saturate(0.72);
+  overflow: hidden;
+}
+
+.cs-ink-session .cs-center-tabs,
+.cs-ink-session .cs-rightpane-tabs {
+  background: var(--ink-glass) !important;
+  border-color: var(--ink-line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px) saturate(0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(0.72);
+}
+
+.cs-ink-session .g-card,
+.cs-ink-session .g-assistant,
+.cs-ink-session .cs-chat-welcome-prompt,
+.cs-ink-session .cs-chat-welcome-setup,
+.cs-ink-session [data-component="choice-card"] {
+  background: var(--ink-glass) !important;
+  border: 1px solid var(--ink-line);
+  color: var(--ink-ink);
+  box-shadow: none;
+  backdrop-filter: blur(28px) saturate(0.65);
+  -webkit-backdrop-filter: blur(28px) saturate(0.65);
+}
+
+.cs-ink-session .hys-turn-card,
+.cs-ink-session .hys-turn-card:hover,
+.cs-ink-session [data-slot="session-turn-markdown"],
+.cs-ink-session [data-component="reasoning-part"] {
+  background: transparent !important;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+}
+
+.cs-ink-session [data-component="session-turn"] [data-slot="session-turn-result-section"] + [data-slot="session-turn-result-section"] {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 16px;
+}
+
+.cs-ink-session [data-slot="user-message-text"],
+.cs-ink-session [data-slot="user-message-attachment"],
+.cs-ink-session .g-composer {
+  background: var(--ink-glass-strong) !important;
+  border: 1px solid var(--ink-line);
+  color: var(--ink-ink);
+  box-shadow: none;
+  backdrop-filter: blur(24px) saturate(0.7);
+  -webkit-backdrop-filter: blur(24px) saturate(0.7);
+}
+
+.cs-ink-session [data-slot="user-message-text"] {
+  border-radius: 12px;
+  padding: 8px 14px;
+}
+
+.cs-ink-session [data-slot="user-message-text"] [data-component="markdown"] {
+  font-family: var(--font-sans);
+}
+
+.cs-ink-session .g-composer {
+  border-radius: 16px;
+}
+
+.cs-ink-session [data-component="user-message"][data-can-expand="true"]:not([data-expanded="true"])
+  [data-slot="user-message-text"]::after {
+  background: linear-gradient(to bottom, transparent, var(--ink-glass-strong));
+}
+
+.cs-ink-session [data-component="markdown"] table,
+.cs-ink-session .hys-turn-card table {
+  background: var(--ink-glass) !important;
+  border-color: var(--ink-line);
+}
+
+.cs-ink-session [data-component="markdown"] th,
+.cs-ink-session .hys-turn-card table th {
+  background: var(--ink-veil) !important;
+  color: var(--ink-ink);
+}
+
+.cs-ink-session [data-component="markdown"] td,
+.cs-ink-session .hys-turn-card table td,
+.cs-ink-session [data-component="markdown"] tbody tr:nth-child(even) td,
+.cs-ink-session [data-component="markdown"] tbody tr:hover td {
+  background: transparent !important;
+  color: var(--ink-ink);
+}
+
+.cs-ink-session [data-component="markdown"] :not(pre) > code {
+  background: none !important;
+  color: inherit !important;
+  font-weight: 700;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.cs-ink-session .cs-chat-welcome-prompt:hover,
+.cs-ink-session .cs-center-tab-active,
+.cs-ink-session .cs-center-tab:hover,
+.cs-ink-session [data-slot="session-turn-result-file"][role="button"]:hover,
+.cs-ink-session [data-component="choice-card"]:hover {
+  background: var(--ink-glass-strong) !important;
+}
+
+.cs-ink-session .cs-sidebar-search,
+.cs-ink-session .cs-sidebar-new-task-icon,
+.cs-ink-session .cs-sidebar-files-card,
+.cs-ink-session .cs-session-row-active {
+  background: var(--ink-veil);
+}
+
+html:has(.cs-ink-session) .cs-menu,
+html:has(.cs-ink-session) .thesis-overlay,
+html:has(.cs-ink-session) [data-corvu-dropdown-menu-content],
+html:has(.cs-ink-session) [data-corvu-dialog-content] {
+  background: var(--ink-glass-strong);
+  border-color: var(--ink-line);
+  color: var(--ink-ink);
+  backdrop-filter: blur(24px) saturate(0.7);
+  -webkit-backdrop-filter: blur(24px) saturate(0.7);
+}
+
 .thesis-root code,
 .thesis-root pre,
 .thesis-root [data-mono],
@@ -258,7 +451,7 @@ html[data-color-scheme="dark"] .g-strip {
 
 .cs-composer-queue-label {
   font-family: var(--font-family-mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   color: var(--color-text-faint);
 }
@@ -274,7 +467,7 @@ html[data-color-scheme="dark"] .g-strip {
   background: var(--color-bg-elevated);
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-composer-queue-item[data-next="true"] {
@@ -507,7 +700,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
    ========================================================== */
 .thesis-btn {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 500;
   padding: 5px 10px;
   border-radius: var(--radius);
@@ -515,7 +708,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: var(--color-surface-solid);
   color: var(--color-text);
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: background-color 80ms ease, color 80ms ease, border-color 80ms ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -579,8 +772,33 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--text-lg);
   background: var(--color-bg);
+}
+
+.cs-ink-home {
+  position: relative;
+  background: transparent;
+}
+
+.cs-ink-home .cs-home-main {
+  position: relative;
+  z-index: 1;
+}
+
+.cs-ink-home .cs-domain-card,
+.cs-ink-home .cs-home-dock-btn,
+.cs-ink-home .cs-row,
+.cs-ink-home .g-card {
+  background: var(--ink-glass, color-mix(in srgb, #ffffff 48%, transparent));
+  backdrop-filter: blur(20px) saturate(0.7);
+}
+
+html:has(.cs-ink-home) {
+  --ink-paper: #f3f3f1;
+  --ink-ink: #1c1c1c;
+  --ink-glass: color-mix(in srgb, #ffffff 40%, transparent);
+  --ink-glass-strong: color-mix(in srgb, #ffffff 56%, transparent);
 }
 
 .cs-home-main {
@@ -677,7 +895,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-workbench-brand {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 2.2rem;
+  font-size: calc(var(--app-font-size, 14px) * 2);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -687,7 +905,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-workbench-tagline {
   margin: 8px 0 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
 }
 
@@ -722,7 +940,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-beta {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 400;
   color: var(--color-text-faint);
   line-height: 1.2;
@@ -742,7 +960,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-dashboard-recent .cs-section-head {
-  font-size: 16px;
+  font-size: var(--text-2xl);
 }
 
 .cs-dashboard-recent .cs-section-head svg {
@@ -790,7 +1008,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-cap-head-hint {
   margin: -4px 0 12px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.45;
   color: var(--color-text-muted);
 }
@@ -815,7 +1033,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   gap: 8px;
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -836,7 +1054,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-head-meta {
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--color-text-muted);
 }
@@ -867,7 +1085,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: transparent;
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   cursor: pointer;
   max-width: 140px;
@@ -877,7 +1095,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   height: auto;
   padding: 0;
   max-width: 220px;
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--color-text-muted);
 }
@@ -896,7 +1114,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-cap-category-count {
   margin-left: auto;
   padding-left: 12px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-faint);
 }
 
@@ -920,7 +1138,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-cap-category-menu .cs-menu-item {
   gap: 16px;
   padding: 5px 12px;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-cap-add-btn {
@@ -934,7 +1152,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -970,12 +1188,12 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-add-copy strong {
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 500;
 }
 
 .cs-cap-add-copy small {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   line-height: 1.35;
 }
@@ -1002,7 +1220,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   outline: none;
   background: transparent;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text);
 }
 
@@ -1015,7 +1233,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1039,7 +1257,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-cap-skill-form h3 {
   margin: 0 0 8px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 600;
 }
 
@@ -1052,7 +1270,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-empty {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
   padding: 4px 0;
 }
@@ -1146,7 +1364,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-skill-card-name {
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 600;
   line-height: 1.3;
   word-break: break-word;
@@ -1154,7 +1372,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-skill-card-cat {
   align-self: flex-start;
-  font-size: 10px;
+  font-size: var(--text-xs);
   line-height: 1.2;
   color: var(--color-text-muted);
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
@@ -1167,7 +1385,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-skill-card-desc {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   line-height: 1.4;
   display: -webkit-box;
@@ -1185,7 +1403,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-skill-card-hint {
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-faint);
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -1209,7 +1427,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-skill-reader-title h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: calc(var(--app-font-size, 14px) * 1.57);
   font-weight: 600;
   line-height: 1.25;
   word-break: break-word;
@@ -1224,7 +1442,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-skill-detail-state {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
@@ -1239,7 +1457,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text);
 }
 
@@ -1250,13 +1468,13 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   color: var(--color-danger, #b42318);
   justify-content: flex-start;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-cap-skill-reader-desc {
   margin: 0 0 18px;
   max-width: 52rem;
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.55;
   color: var(--color-text-muted);
 }
@@ -1266,7 +1484,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-skill-reader-md {
-  font-size: 14px;
+  font-size: var(--text-lg);
   line-height: 1.65;
 }
 
@@ -1299,7 +1517,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   justify-content: center;
   gap: 4px;
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: var(--text-xs);
   cursor: pointer;
 }
 
@@ -1308,7 +1526,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 
 .cs-cap-more-card strong {
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: 500;
   line-height: 1;
 }
@@ -1355,7 +1573,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-home-dock-btn > span:not(.cs-compute-dock-dot) {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1;
@@ -1411,7 +1629,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-model-dock-label {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--color-text-faint);
@@ -1429,7 +1647,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-model-dock-provider strong {
   display: block;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
@@ -1438,7 +1656,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   display: block;
   margin-top: 2px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.4;
   color: var(--color-text-muted);
 }
@@ -1452,13 +1670,13 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-model-dock-note {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.4;
   color: var(--color-text-faint);
 }
@@ -1492,14 +1710,14 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-compute-dock-head h2 {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 700;
 }
 
 .cs-compute-dock-head p {
   margin: 4px 0 0;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.4;
   color: var(--color-text-muted);
 }
@@ -1510,7 +1728,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-text) 6%, transparent);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -1569,7 +1787,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-compute-info strong {
   display: block;
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   margin-bottom: 3px;
   color: var(--color-text-muted);
@@ -1581,7 +1799,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-compute-scene {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text);
   line-height: 1.35;
   margin-bottom: 2px;
@@ -1589,7 +1807,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-compute-sub {
   display: block;
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -1667,7 +1885,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-cap-fullscreen-head h1 {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: 600;
 }
 
@@ -1722,7 +1940,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-drawer-head h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-large);
   font-weight: 600;
 }
 
@@ -1733,7 +1951,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-drawer-hint {
   margin: 0 0 14px;
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.45;
   color: var(--color-text-muted);
 }
@@ -1764,13 +1982,13 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-drawer-stat dt {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 
 .cs-cap-drawer-stat dd {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--color-text);
   word-break: break-word;
@@ -1778,14 +1996,14 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-drawer-note {
   margin: 10px 0 0;
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.4;
   color: var(--color-text-faint);
 }
 
 .cs-cap-drawer-label {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1795,7 +2013,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-drawer-body label {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin-bottom: 4px;
 }
@@ -1807,7 +2025,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   border-radius: var(--radius);
   padding: 7px 10px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   margin-bottom: 10px;
   background: var(--color-bg);
   color: var(--color-text);
@@ -1824,12 +2042,12 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-cap-drawer-row strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-cap-drawer-row span {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin-top: 2px;
 }
@@ -1844,7 +2062,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   border: none;
   background: transparent;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 0;
@@ -1860,7 +2078,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: var(--color-text);
   color: var(--color-bg);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   padding: 6px 12px;
   border-radius: var(--radius);
   cursor: pointer;
@@ -1888,12 +2106,12 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-section-head-row .cs-section-head {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--text-2xl);
 }
 
 .cs-section-head-row .cs-section-head svg {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 
 .cs-section-head-row .cs-section-head-action {
@@ -1904,7 +2122,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   height: auto;
   min-width: 0;
   padding: 4px;
-  font-size: 22px;
+  font-size: calc(var(--app-font-size, 14px) * 1.57);
   line-height: 0;
 }
 
@@ -1915,7 +2133,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   padding: 0;
   margin: 0 0 12px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-text);
   letter-spacing: normal;
@@ -2008,7 +2226,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-project-path {
   margin: 2px 0 0;
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2077,7 +2295,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   flex: 1;
   min-width: 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 500;
   color: var(--color-text);
   overflow: hidden;
@@ -2085,19 +2303,17 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   white-space: nowrap;
 }
 
-/* Project card title — two sizes below section head (28px) */
 .cs-row-main .cs-row-title,
 .cs-row-wrap .cs-row-title {
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 600;
   line-height: 1.25;
 }
 
-/* Session list title — smaller */
 .cs-workbench-list-row .cs-row-title {
-  font-size: 12px;
+  font-size: var(--app-font-size, 14px);
   font-weight: 500;
-  line-height: 18px;
+  line-height: 1.4;
 }
 
 .cs-row-meta {
@@ -2106,7 +2322,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   align-items: center;
   gap: 12px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
@@ -2148,7 +2364,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   min-width: 26px;
   height: 26px;
   padding: 0 4px;
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 600;
   box-sizing: border-box;
   border-radius: 50%;
@@ -2165,7 +2381,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-row-sub {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2200,7 +2416,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   padding: 2px 8px;
   border-radius: 999px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 400;
   color: var(--color-text-muted);
   background: var(--color-bg-subtle);
@@ -2221,7 +2437,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 400;
   transition:
     background-color 75ms ease,
@@ -2248,7 +2464,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 500;
   transition:
     background-color 75ms ease,
@@ -2325,7 +2541,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   border: none;
   background: transparent;
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
   transition: background-color 75ms ease;
 }
@@ -2345,7 +2561,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   padding: 16px 12px;
   text-align: center;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
 }
 
@@ -2397,7 +2613,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   width: 100%;
   padding: 8px 14px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--color-text);
   transition: background-color 75ms ease;
 }
@@ -2438,7 +2654,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-project-form-title {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -2473,7 +2689,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .cs-project-form-loading {
   padding: 48px 24px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--color-text-faint);
 }
 
@@ -2494,14 +2710,14 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-field-label {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 500;
   color: var(--color-text);
 }
 
 .cs-field-hint {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.5;
   color: var(--color-text-faint);
   margin-bottom: 2px;
@@ -2539,7 +2755,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-folder-picker-embedded-head strong {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -2554,7 +2770,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   outline: none;
   transition:
     border-color 150ms ease,
@@ -2595,7 +2811,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   cursor: pointer;
   padding: 8px 12px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--color-text-muted);
   border-radius: 8px;
   transition:
@@ -2621,7 +2837,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 500;
   border: none;
   transition: background-color 100ms ease;
@@ -2650,7 +2866,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-empty-hero-desc {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: var(--font-size-large);
   line-height: 1.55;
   color: var(--color-text-muted);
   margin: 8px 0 0;
@@ -2658,7 +2874,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .cs-empty-hero-hint {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text-faint);
   margin-top: 12px;
 }
@@ -2701,7 +2917,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   display: block;
   padding: 12px 14px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--color-text-faint);
   border-bottom: 1px solid var(--color-border);
   overflow: hidden;
@@ -2719,7 +2935,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   width: 100%;
   padding: 10px 14px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   color: var(--color-text);
   transition: background-color 75ms ease;
 }
@@ -2734,7 +2950,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .thesis-chip {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2777,7 +2993,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
    ========================================================== */
 .thesis-input {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   padding: 8px 12px;
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
@@ -2796,7 +3012,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .thesis-textarea {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   padding: 12px 14px;
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
@@ -2825,7 +3041,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   padding: 6px 10px;
   border-radius: var(--radius);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -2833,7 +3049,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   border: 0;
   width: 100%;
   text-align: left;
-  transition: all 120ms ease;
+  transition: background-color 80ms ease, color 80ms ease, border-color 80ms ease;
 }
 .thesis-nav-item:hover {
   background: var(--color-accent-subtle);
@@ -2849,7 +3065,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
    ========================================================== */
 .thesis-section-label {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2889,7 +3105,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 .thesis-rn-title {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 500;
   color: var(--color-text);
   line-height: 1.3;
@@ -2900,7 +3116,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 }
 .thesis-rn-summary {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   line-height: 1.5;
   display: -webkit-box;
@@ -2968,26 +3184,26 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   text-wrap: pretty;
 }
 .thesis-md h1 {
-  font-size: 24px;
+  font-size: calc(var(--app-font-size, 14px) * 1.71);
   font-weight: 700;
   margin-top: 20px;
 }
 .thesis-md h2 {
-  font-size: 20px;
+  font-size: var(--text-2xl);
   font-weight: 650;
   margin-top: 18px;
 }
 .thesis-md h3 {
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: 600;
 }
 .thesis-md h4 {
-  font-size: 15px;
+  font-size: var(--font-size-large);
   font-weight: 600;
 }
 .thesis-md h5,
 .thesis-md h6 {
-  font-size: 13px;
+  font-size: var(--text-md);
 }
 
 .thesis-md p {
@@ -3009,7 +3225,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .thesis-md ol li::marker {
   color: var(--color-text-faint);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 .thesis-md ul li::marker {
   color: var(--color-text-faint);
@@ -3039,7 +3255,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .thesis-md code {
   font-family: var(--font-code);
-  font-size: 11px;
+  font-size: var(--text-sm);
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -3051,7 +3267,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .thesis-md pre,
 .thesis-md pre.thesis-code-block {
   font-family: var(--font-code);
-  font-size: 11px;
+  font-size: var(--text-sm);
   background: var(--agent-code-bg);
   color: var(--agent-code-fg);
   border: 1px solid var(--agent-code-border);
@@ -3074,7 +3290,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   top: 6px;
   right: 8px;
   font-family: var(--font-code);
-  font-size: 10px;
+  font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--agent-code-fg-faint);
@@ -3122,7 +3338,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .thesis-md table {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   border-collapse: collapse;
   margin: 10px 0;
   width: 100%;
@@ -3136,7 +3352,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 .thesis-md th {
   background: var(--color-bg-subtle);
   font-weight: 600;
-  font-size: 10px;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -3144,7 +3360,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
 
 .thesis-md kbd {
   font-family: var(--font-code);
-  font-size: 10px;
+  font-size: var(--text-xs);
   padding: 0 5px;
   border: 1px solid var(--color-border);
   border-bottom-width: 2px;
@@ -3158,7 +3374,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
    ========================================================== */
 .thesis-tile {
   font-family: var(--font-sans);
-  font-size: 12.5px;
+  font-size: 0.893rem;
   line-height: 1.5;
   color: var(--color-text-muted);
   padding: 10px 14px;
@@ -3166,7 +3382,7 @@ html[data-color-scheme="dark"] .thesis-agent-orbit {
   border: 1px solid var(--color-border);
   background: var(--color-surface-solid);
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: background-color 80ms ease, color 80ms ease, border-color 80ms ease;
   text-align: left;
 }
 .thesis-tile:hover {
@@ -3256,14 +3472,14 @@ html[data-color-scheme="dark"] .thesis-overlay {
   grid-template-columns: 88px 1fr;
   gap: 10px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   align-items: center;
 }
 .thesis-proposal-row > .label {
   color: var(--color-text-faint);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 .thesis-proposal-row > .value {
   color: var(--color-text);
@@ -3394,7 +3610,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .hy-files-preview-label {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text);
   flex: 1;
   min-width: 0;
@@ -3405,7 +3621,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .hy-files-preview-name {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   max-width: 120px;
   overflow: hidden;
@@ -3466,14 +3682,14 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .hy-files-empty-title {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   font-weight: 500;
   color: var(--color-text);
 }
 
 .hy-files-empty-hint {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 500;
   color: var(--color-text-muted);
   margin-top: 4px;
@@ -3511,7 +3727,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   all: unset;
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text);
 }
 
@@ -3535,7 +3751,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   width: 28px;
   height: 16px;
   border-radius: 4px;
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   font-family: var(--font-mono);
   display: inline-flex;
@@ -3607,7 +3823,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   padding: 4px 8px;
   border-radius: 6px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text);
   transition:
     background-color 75ms ease,
@@ -3633,7 +3849,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .hy-files-row-name {
@@ -3642,7 +3858,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .hy-files-folder-row {
@@ -3678,7 +3894,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .hy-files-sidebar-meta {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-faint);
   padding: 0 8px 6px;
   text-align: center;
@@ -3725,7 +3941,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   padding: 6px 8px;
   border-radius: 8px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
   transition:
     background-color 75ms ease,
@@ -3741,6 +3957,32 @@ html[data-color-scheme="dark"] .thesis-overlay {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cs-protocol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 8px;
+}
+
+.cs-protocol span {
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-faint);
+}
+
+.cs-protocol select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  padding: 4px 6px;
 }
 
 .cs-sidebar-search-wrap {
@@ -3762,7 +4004,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   flex: 1;
   min-width: 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-md);
   color: var(--color-text);
 }
 
@@ -3782,8 +4024,9 @@ html[data-color-scheme="dark"] .thesis-overlay {
   padding: 10px;
   border-radius: 5px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
+  white-space: nowrap;
   transition:
     background-color 75ms ease,
     color 75ms ease;
@@ -3879,7 +4122,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 17px;
+  font-size: var(--text-xl);
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
@@ -3887,7 +4130,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .cs-sidebar-project-count {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-faint);
   flex-shrink: 0;
@@ -3942,7 +4185,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   flex: 1;
   min-width: 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--app-font-size, 14px);
   font-weight: 500;
   color: var(--color-text);
   text-align: left;
@@ -3959,7 +4202,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   padding: 6px 8px;
   border-radius: 8px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--app-font-size, 14px);
   font-weight: 500;
   color: var(--color-text);
   transition: background-color 75ms ease;
@@ -4015,7 +4258,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   padding: 7px 10px;
   border-radius: 8px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--app-font-size, 14px);
   color: var(--color-text-muted);
   transition:
     background-color 75ms ease,
@@ -4038,7 +4281,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 .cs-sidebar-section {
   padding: 8px 10px 6px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--color-text-muted);
 }
@@ -4055,7 +4298,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   margin-bottom: 0;
   border-radius: 4px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--app-font-size, 14px);
   color: var(--color-text-muted);
   transition:
     background-color 75ms ease,
@@ -4066,7 +4309,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .cs-sidebar-project-sessions .cs-session-row {
   padding-left: 8px;
-  font-size: 12px;
+  font-size: var(--app-font-size, 14px);
 }
 
 .cs-session-row:hover {
@@ -4138,7 +4381,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
 
 .cs-session-title {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--color-text);
   flex: 1;
@@ -4177,12 +4420,51 @@ html[data-color-scheme="dark"] .thesis-overlay {
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 8px 10px 8px 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
   background: var(--color-bg);
-  overflow-x: auto;
   flex-shrink: 0;
+  min-width: 0;
+}
+
+.cs-center-tabs-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.cs-center-tab-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.cs-center-tab-actions button {
+  all: unset;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+}
+
+.cs-center-tab-actions button.cs-plan-chip {
+  width: 28px;
+  height: 28px;
+}
+
+.cs-center-tab-actions button:hover,
+.cs-center-tab-actions button[data-active="true"] {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
 }
 
 .cs-center-tab {
@@ -4196,7 +4478,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   border-radius: 8px;
   border: 1px solid transparent;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
   background: transparent;
   flex-shrink: 0;
@@ -4256,6 +4538,240 @@ html[data-color-scheme="dark"] .thesis-overlay {
   max-width: 100%;
 }
 
+.cs-workspace-pick,
+.cs-scope-pick {
+  position: relative;
+  display: inline-flex;
+}
+
+.cs-workspace-pick {
+  margin: 0 0 8px;
+}
+
+.cs-workspace-pill,
+.cs-scope-pill {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  border: 1px solid var(--ink-line, var(--color-border));
+  background: var(--ink-glass-strong, var(--color-surface-solid));
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1;
+  box-shadow: 0 1px 2px color-mix(in srgb, #1a1a1a 6%, transparent);
+}
+
+.cs-model-chip {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  max-width: 220px;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: calc(var(--app-font-size, 14px) * 0.86);
+  user-select: none;
+}
+
+.cs-model-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-chat-turn [data-slot="session-turn-content"] {
+  align-items: stretch;
+}
+
+.cs-chat-turn [data-slot="session-turn-content"] > div,
+.cs-chat-turn [data-slot="session-turn-message-container"],
+.cs-chat-turn [data-slot="session-turn-sticky"],
+.cs-chat-turn [data-slot="session-turn-trace"],
+.cs-chat-turn [data-slot="session-turn-summary-section"],
+.cs-chat-turn [data-slot="session-turn-stopped"] {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+}
+
+.cs-chat-turn [data-component="user-message"] {
+  width: 100%;
+  align-items: flex-end;
+}
+
+.cs-workspace-pill {
+  height: 36px;
+  padding: 0 14px 0 12px;
+  font-size: calc(var(--app-font-size, 14px) * 0.78);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 70%, var(--ink-line, var(--color-border)));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 58%, transparent),
+    color-mix(in srgb, #fff 32%, transparent)
+  );
+  color: var(--ink-ink, var(--color-text));
+  backdrop-filter: blur(18px) saturate(1.45);
+  -webkit-backdrop-filter: blur(18px) saturate(1.45);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 80%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, #1a1a1a 6%, transparent),
+    0 8px 22px color-mix(in srgb, #1a1a1a 8%, transparent);
+}
+
+.cs-scope-pill {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #fff 48%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 34%, transparent),
+    color-mix(in srgb, #fff 14%, transparent)
+  );
+  color: var(--color-text);
+  font-size: calc(var(--app-font-size, 14px) * 0.86);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 62%, transparent),
+    0 6px 16px color-mix(in srgb, #1a1a1a 5%, transparent);
+}
+
+.cs-workspace-pill span,
+.cs-scope-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-scope-pill[data-scope="trust"] {
+  color: #9a3412;
+  border-color: color-mix(in srgb, #9a3412 40%, var(--color-border));
+}
+
+.cs-scope-menu {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  width: 280px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 4px;
+  background: var(--color-surface-solid);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.cs-workspace-menu {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  min-width: 220px;
+  max-width: min(420px, 72vw);
+  max-height: min(70vh, 640px);
+  overflow: auto;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, #fff 46%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fff 40%, transparent),
+    color-mix(in srgb, #fff 16%, transparent)
+  );
+  color: var(--color-text);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 64%, transparent),
+    0 10px 28px color-mix(in srgb, #1a1a1a 10%, transparent);
+}
+
+.cs-workspace-menu .cs-scope-item {
+  padding: 5px 10px;
+  gap: 0;
+}
+
+.cs-workspace-menu .cs-scope-item-title,
+.cs-workspace-menu .cs-scope-item-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-workspace-menu .cs-scope-item-title {
+  font-size: calc(var(--app-font-size, 14px) * 0.78);
+}
+
+.cs-workspace-menu .cs-scope-item-hint {
+  font-size: calc(var(--app-font-size, 14px) * 0.68);
+}
+
+.cs-workspace-menu .cs-scope-item:hover,
+.cs-workspace-menu .cs-scope-item[data-current="true"] {
+  background: color-mix(in srgb, #fff 38%, transparent);
+}
+
+.cs-scope-menu[data-place="down"] {
+  top: calc(100% + 6px);
+}
+
+.cs-scope-menu[data-place="up"] {
+  bottom: calc(100% + 6px);
+}
+
+.cs-scope-item {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.cs-scope-item[data-current="true"] {
+  background: var(--color-accent-subtle);
+}
+
+.cs-scope-item:hover {
+  background: var(--color-bg-elevated);
+}
+
+.cs-scope-item-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  color: var(--color-text);
+}
+
+.cs-scope-item[data-scope="trust"] .cs-scope-item-title {
+  color: #9a3412;
+}
+
+.cs-scope-item-hint,
+.cs-scope-empty {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-faint);
+}
+
+.cs-scope-empty {
+  padding: 8px 10px;
+}
+
 .cs-imc-flow-dock {
   position: relative;
   align-self: flex-start;
@@ -4272,7 +4788,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   padding: 0 2px;
   color: var(--color-text-muted);
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -4301,7 +4817,7 @@ html[data-color-scheme="dark"] .thesis-overlay {
   gap: 6px;
   margin-bottom: 8px;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--color-text-muted);
 }
@@ -4333,7 +4849,7 @@ button.cs-composer-label:hover {
   border: none;
   background: transparent;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text);
   box-shadow: var(--shadow-sm);
   pointer-events: auto;
@@ -4370,7 +4886,7 @@ button.cs-composer-label:hover {
 
 .cs-effort-popover-label {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-faint);
   text-transform: lowercase;
   letter-spacing: 0.02em;
@@ -4406,7 +4922,7 @@ button.cs-composer-label:hover {
   border-radius: 50%;
   border: 1.5px solid color-mix(in srgb, var(--color-text) 20%, transparent);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   line-height: 1;
   color: var(--color-text-muted);
@@ -4414,7 +4930,7 @@ button.cs-composer-label:hover {
 }
 
 .cs-project-index[data-wide="true"] {
-  font-size: 11px;
+  font-size: var(--text-sm);
 }
 
 /* ==========================================================
@@ -4436,7 +4952,7 @@ button.cs-composer-label:hover {
   align-items: center;
   gap: 6px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -4477,7 +4993,7 @@ button.cs-composer-label:hover {
   align-items: center;
   gap: 6px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -4513,20 +5029,20 @@ button.cs-composer-label:hover {
 }
 .hys-eln-entry-time {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-faint);
   font-variant-numeric: tabular-nums;
 }
 .hys-eln-entry-title {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: 2px;
 }
 .hys-eln-entry-summary {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.45;
   color: var(--color-text-muted);
 }
@@ -4540,7 +5056,7 @@ button.cs-composer-label:hover {
   padding: 1px 6px;
   border-radius: 3px;
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -4554,13 +5070,10 @@ button.cs-composer-label:hover {
   overflow-x: hidden;
   overflow-wrap: break-word;
   margin-bottom: 4px;
-  border-left: 2px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
-  background: color-mix(in srgb, var(--color-accent) 2%, var(--color-bg));
-  border-radius: 0 8px 8px 0;
-  padding: 6px 0;
-}
-.hys-turn-card:hover {
-  background: color-mix(in srgb, var(--color-accent) 4%, var(--color-bg));
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
 }
 .hys-turn-card-header {
   text-transform: capitalize;
@@ -4575,7 +5088,7 @@ button.cs-composer-label:hover {
 }
 .cs-domain-switch p {
   margin: 0 0 10px;
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.5;
   color: var(--color-text);
 }
@@ -4585,7 +5098,7 @@ button.cs-composer-label:hover {
   gap: 12px;
 }
 .cs-domain-switch-stay {
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text-muted);
 }
 
@@ -4598,14 +5111,14 @@ button.cs-composer-label:hover {
   max-width: 100%;
   border-collapse: collapse;
   margin: 8px 0;
-  font-size: 12px;
+  font-size: var(--text-base);
   font-family: var(--font-sans);
 }
 .hys-turn-card table th {
   text-align: left;
   padding: 6px 8px;
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   border-bottom: 1px solid var(--color-border);
   text-transform: uppercase;
@@ -4647,22 +5160,22 @@ button.cs-composer-label:hover {
   text-wrap: pretty;
 }
 .hys-turn-card h1 {
-  font-size: 18px;
+  font-size: 1.35em;
   font-weight: 700;
 }
 .hys-turn-card h2 {
-  font-size: 16px;
+  font-size: 1.2em;
   font-weight: 700;
 }
 .hys-turn-card h3 {
-  font-size: 14px;
+  font-size: 1.08em;
 }
 .hys-turn-card h4 {
-  font-size: 13px;
+  font-size: 1em;
 }
 .hys-turn-card h5,
 .hys-turn-card h6 {
-  font-size: 12px;
+  font-size: 0.92em;
 }
 
 /* Bold key numbers inside results */
@@ -4671,12 +5184,14 @@ button.cs-composer-label:hover {
 }
 
 /* Code inline in results */
-.hys-turn-card code {
+.hys-turn-card :not(pre) > code {
   font-family: var(--font-code);
-  font-size: 11px;
-  background: var(--color-bg-subtle);
-  padding: 1px 4px;
-  border-radius: 3px;
+  font-size: 0.92em;
+  font-weight: 700;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
 }
 
 /* Blockquotes as callouts */
@@ -4686,7 +5201,7 @@ button.cs-composer-label:hover {
   border-left: 2px solid var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 4%, transparent);
   border-radius: 0 4px 4px 0;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 .hys-turn-card blockquote p {
   margin: 0;
@@ -4709,7 +5224,6 @@ button.cs-composer-label:hover {
 
 .cs-session-center {
   flex: 1 1 0;
-  contain: inline-size;
   overflow: hidden;
 }
 
@@ -4782,6 +5296,7 @@ button.cs-composer-label:hover {
   line-height: 1.45;
   text-align: center;
   white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--color-text);
 }
 
@@ -4827,7 +5342,7 @@ button.cs-composer-label:hover {
 .cs-chat-welcome-lead {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: var(--text-lg);
   line-height: 1.55;
   color: var(--color-text-muted);
 }
@@ -4852,7 +5367,7 @@ button.cs-composer-label:hover {
   border: 1px solid var(--color-border);
   background: var(--color-surface-solid);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.5;
   color: var(--color-text-muted);
   text-align: left;
@@ -4874,7 +5389,7 @@ button.cs-composer-label:hover {
   margin-top: 2px;
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-chat-welcome-flow {
@@ -4893,7 +5408,7 @@ button.cs-composer-label:hover {
 
 .cs-chat-welcome-flow-title {
   font-family: var(--font-serif);
-  font-size: 16px;
+  font-size: var(--text-xl);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.3;
@@ -4901,7 +5416,7 @@ button.cs-composer-label:hover {
 }
 
 .cs-chat-welcome-flow-lead {
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.45;
   color: var(--color-text-muted);
 }
@@ -4950,7 +5465,7 @@ button.cs-composer-label:hover {
 
 .cs-chat-welcome-flow-num {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   color: inherit;
@@ -4958,7 +5473,7 @@ button.cs-composer-label:hover {
 
 .cs-chat-welcome-flow-name {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 600;
   line-height: 1.35;
   color: var(--color-text);
@@ -4966,7 +5481,7 @@ button.cs-composer-label:hover {
 
 .cs-chat-welcome-flow-hint {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.45;
   color: var(--color-text-muted);
 }
@@ -4999,7 +5514,7 @@ button.cs-composer-label:hover {
 .cs-chat-welcome-setup p {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.5;
   color: var(--color-text-faint);
 }
@@ -5016,7 +5531,7 @@ button.cs-composer-label:hover {
   background: var(--color-accent);
   color: var(--color-on-accent);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-chat-scroll {
@@ -5067,19 +5582,25 @@ button.cs-composer-label:hover {
   z-index: var(--z-modal, 80);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
   background: rgba(12, 14, 16, 0.92);
 }
 
 .cs-artifact-lightbox-bar {
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 12px;
   height: 44px;
   padding: 0 16px;
+  pointer-events: auto;
   color: rgba(255, 255, 255, 0.78);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
+  background: rgba(12, 14, 16, 0.96);
 }
 
 .cs-artifact-lightbox-name {
@@ -5101,6 +5622,7 @@ button.cs-composer-label:hover {
 
 .cs-artifact-lightbox-bar button {
   all: unset;
+  pointer-events: auto;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -5126,27 +5648,61 @@ button.cs-composer-label:hover {
 }
 
 .cs-artifact-lightbox-stage {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: auto;
-  padding: 16px 24px 32px;
+  padding: 24px;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+
+.cs-artifact-lightbox-frame {
+  flex: none;
+  max-width: none;
+  max-height: none;
+}
+
+.cs-artifact-lightbox-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  cursor: inherit;
+  user-select: none;
+  background: #fff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+}
+
+.cs-artifact-lightbox-stage.is-panning {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .cs-artifact-lightbox-stage img {
-  max-width: min(100%, 1600px);
-  max-height: calc(100dvh - 96px);
+  display: block;
+  max-width: none;
+  max-height: none;
+  margin: auto;
   object-fit: contain;
-  transform-origin: center center;
-  cursor: zoom-in;
+  cursor: inherit;
   user-select: none;
+  background: #fff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
 }
 
 .cs-artifact-lightbox-pdf {
   display: block;
-  max-width: 100%;
+  max-width: none;
+  max-height: none;
   height: auto;
+  margin: auto;
   background: #fff;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
 }
@@ -5155,7 +5711,71 @@ button.cs-composer-label:hover {
   margin: 0;
   color: rgba(255, 255, 255, 0.55);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
+}
+
+.cs-chat-prev {
+  all: unset;
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(520px, 78%);
+  height: 34px;
+  padding: 0 14px 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--ink-line, color-mix(in srgb, var(--color-text) 14%, transparent));
+  border-radius: 999px;
+  background: var(--ink-glass-strong, color-mix(in srgb, var(--color-bg) 86%, transparent));
+  color: var(--ink-ink, var(--color-text));
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 550;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 28px color-mix(in srgb, #1a1a1a 12%, transparent);
+  backdrop-filter: blur(22px) saturate(0.7);
+  -webkit-backdrop-filter: blur(22px) saturate(0.7);
+  animation: cs-chat-prev-in 180ms var(--agent-ease, ease);
+}
+
+.cs-chat-prev-label {
+  flex-shrink: 0;
+  letter-spacing: 0.06em;
+}
+
+.cs-chat-prev-excerpt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-weight: 450;
+}
+
+.cs-chat-prev:hover {
+  color: var(--ink-ink, var(--color-text));
+  border-color: color-mix(in srgb, #2a2a2a 26%, transparent);
+}
+
+.cs-chat-prev:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@keyframes cs-chat-prev-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .cs-chat-latest {
@@ -5175,7 +5795,7 @@ button.cs-composer-label:hover {
   background: color-mix(in srgb, var(--color-bg) 88%, var(--color-text) 8%);
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 500;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -5229,6 +5849,7 @@ button.cs-composer-label:hover {
 .cs-composer-wrap {
   min-width: 0;
   padding-inline: clamp(16px, 3vw, 40px);
+  padding-inline-end: calc(clamp(16px, 3vw, 40px) + var(--cs-scrollbar, 0px));
 }
 
 .cs-composer-inner {
@@ -5240,6 +5861,281 @@ button.cs-composer-label:hover {
   min-width: 0;
   overflow: hidden;
   position: relative;
+}
+
+.cs-float-doc {
+  position: fixed;
+  top: 68px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: calc(50vw - 24px);
+  overflow: hidden;
+  border: 1px solid var(--ink-line, var(--color-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, #fff 46%, transparent);
+  box-shadow: 0 18px 48px color-mix(in srgb, #1a1a1a 12%, transparent);
+  backdrop-filter: blur(28px) saturate(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(1.05);
+}
+
+.cs-float-doc-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  width: 10px;
+  cursor: ew-resize;
+}
+
+.cs-docs {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.cs-docs-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cs-docs-bar-doc {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: none;
+}
+
+.cs-docs-bar-doc > button {
+  all: unset;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+}
+
+.cs-docs-bar-doc > button:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+
+.cs-plan-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ink-line, var(--color-border));
+  border-radius: 999px;
+  font-size: var(--text-base);
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.cs-plan-doc {
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: 12px 8px 48px;
+}
+
+.cs-plan-title {
+  margin: 0 0 8px;
+  font-size: calc(var(--app-font-size, 16px) * 1.35);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.cs-plan-sub {
+  margin: 0 0 28px;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  line-height: 1.55;
+}
+
+.cs-docs-heading {
+  grid-column: 2;
+  margin: 0;
+  max-width: 42vw;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: 550;
+  color: var(--color-text);
+}
+
+.cs-docs-tools {
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cs-docs-tools button {
+  all: unset;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--color-text-faint);
+}
+
+.cs-docs-tools button:hover,
+.cs-docs-tools button[data-active="true"] {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+
+.cs-docs-switch {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cs-docs-switch button {
+  all: unset;
+  cursor: pointer;
+  max-width: 160px;
+  padding: 4px 8px;
+  overflow: hidden;
+  border-radius: 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.cs-docs-switch button[data-active="true"] {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+
+.cs-docs-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.cs-docs-paper {
+  padding: 28px 32px 56px;
+}
+
+.cs-docs-read {
+  max-width: 68ch;
+}
+
+.cs-docs-empty {
+  margin: 0;
+  padding: 28px 32px;
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+}
+
+.cs-docs-plan {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.cs-docs-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: var(--app-font-size, 14px);
+  line-height: 1.65;
+}
+
+.cs-docs-mark {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-text-faint);
+  border-radius: 999px;
+}
+
+.cs-docs-step[data-status="completed"] .cs-docs-mark {
+  border-color: var(--color-text);
+}
+
+.cs-docs-step[data-status="completed"] .cs-docs-mark::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  margin: 1px 0 0 5px;
+  border: solid var(--color-text);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+.cs-docs-step[data-status="in_progress"] .cs-docs-mark {
+  border-color: var(--color-text);
+  box-shadow: inset 0 0 0 3px var(--color-bg);
+  background: var(--color-text);
+}
+
+.cs-nb-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-family: var(--font-code);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
+.cs-nb-code {
+  margin: 0;
+  padding: 12px 0;
+  overflow: auto;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  font-family: var(--font-code);
+  font-size: var(--text-base);
+  line-height: 1.55;
+}
+
+.cs-nb-code div {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.cs-nb-code span {
+  text-align: right;
+  color: var(--color-text-faint);
+  user-select: none;
 }
 
 .cs-col-handle {
@@ -5355,6 +6251,7 @@ body.cs-col-resizing input {
 
   .cs-composer-wrap {
     padding-inline: 12px;
+    padding-inline-end: calc(12px + var(--cs-scrollbar, 0px));
   }
 }
 
@@ -5378,7 +6275,7 @@ body.cs-col-resizing input {
   color: var(--color-text-faint);
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: calc(var(--app-font-size, 14px) * 0.86);
   font-weight: 600;
 }
 
@@ -5432,14 +6329,14 @@ body.cs-col-resizing input {
 }
 
 .cs-now-chip strong {
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 650;
 }
 
 .cs-now-chip span,
 .cs-now-hint,
 .cs-now-empty {
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.45;
   color: var(--color-text-faint);
 }
@@ -5460,7 +6357,7 @@ body.cs-col-resizing input {
 }
 
 .cs-now-meta dt {
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 650;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -5469,7 +6366,7 @@ body.cs-col-resizing input {
 
 .cs-now-meta dd {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-md);
   color: var(--color-text);
 }
 
@@ -5479,7 +6376,7 @@ body.cs-col-resizing input {
 
 .cs-now-block h3 {
   margin: 0 0 6px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 650;
   color: var(--color-text-muted);
 }
@@ -5501,7 +6398,7 @@ body.cs-col-resizing input {
   width: 100%;
   padding: 5px 6px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--text-base);
   color: var(--color-text);
 }
 
@@ -5523,7 +6420,7 @@ body.cs-col-resizing input {
   gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-border);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-run-tier strong {
@@ -5565,13 +6462,13 @@ body.cs-col-resizing input {
 .cs-review-inspector-empty strong {
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-review-inspector-empty span {
   max-width: 220px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
@@ -5597,7 +6494,7 @@ body.cs-col-resizing input {
   color: var(--color-text-muted);
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
 }
 
 .cs-review-history-row[data-tone="clean"] {
@@ -5688,19 +6585,19 @@ body.cs-col-resizing input {
 
 .cs-review-inspector-verdict strong {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .cs-review-inspector-verdict span {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   color: var(--color-text-faint);
 }
 
 .cs-review-inspector-summary {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: var(--text-base);
   line-height: 1.55;
   color: var(--color-text-muted);
   text-wrap: pretty;
@@ -5717,7 +6614,7 @@ body.cs-col-resizing input {
 .cs-review-inspector-section h3 {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--color-text-faint);
@@ -5748,14 +6645,14 @@ body.cs-col-resizing input {
 .cs-review-agent strong {
   overflow: hidden;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .cs-review-agent span {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   color: var(--color-text-faint);
 }
 
@@ -5770,7 +6667,7 @@ body.cs-col-resizing input {
   color: var(--color-accent);
   cursor: pointer;
   font-family: var(--font-sans);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
@@ -5801,7 +6698,7 @@ body.cs-col-resizing input {
   justify-content: space-between;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.05em;
   color: var(--color-text-faint);
   text-transform: uppercase;
@@ -5814,7 +6711,7 @@ body.cs-col-resizing input {
 .cs-review-finding p {
   margin: 7px 0 0;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   color: var(--color-text);
   text-wrap: pretty;
@@ -5829,7 +6726,7 @@ body.cs-col-resizing input {
   border-radius: 3px;
   background: var(--color-bg-subtle);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   line-height: 1.45;
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
@@ -5837,7 +6734,7 @@ body.cs-col-resizing input {
 
 .cs-review-inspector-clear {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--color-success);
 }
 
@@ -5860,7 +6757,7 @@ body.cs-col-resizing input {
   align-items: center;
   gap: 3px;
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: var(--text-2xs);
   color: var(--color-text-faint);
 }
 
@@ -5868,7 +6765,7 @@ body.cs-col-resizing input {
   margin: 4px 0 0;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-2xs);
   color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5902,7 +6799,7 @@ body.cs-col-resizing input {
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   font-weight: 700;
   cursor: pointer;
 }
@@ -5918,7 +6815,7 @@ body.cs-col-resizing input {
 .cs-domain-guide-title {
   margin: 0 0 18px;
   font-family: var(--font-sans);
-  font-size: 22px;
+  font-size: calc(var(--app-font-size, 14px) * 1.57);
   font-weight: 700;
   color: var(--color-text);
 }
@@ -5947,7 +6844,7 @@ body.cs-col-resizing input {
 .cs-domain-card-title {
   margin: 0 0 10px;
   font-family: var(--font-sans);
-  font-size: 18px;
+  font-size: var(--font-size-x-large);
   font-weight: 700;
   color: var(--color-text);
 }
@@ -5958,7 +6855,7 @@ body.cs-col-resizing input {
   flex: 1;
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: var(--text-md);
   line-height: 1.55;
 }
 
@@ -5971,6 +6868,12 @@ body.cs-col-resizing input {
   gap: 8px;
 }
 
+.hy-office-page {
+  padding: 28px 32px 56px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
 .hy-office-preview {
   display: flex;
   flex-direction: column;
@@ -5979,17 +6882,23 @@ body.cs-col-resizing input {
   color: var(--color-text);
 }
 
+.hy-office-preview[data-kind="docx"] {
+  font-family: var(--font-family-reading, var(--font-serif));
+}
+
 .hy-office-preview h3,
 .hy-office-preview p[data-type="heading"] {
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 2px 0 0;
+  font-size: calc(var(--app-font-size, 14px) * 1.45);
   font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
 }
 
 .hy-office-preview p {
-  margin: 0 0 8px;
-  font-size: 13px;
-  line-height: 1.6;
+  margin: 0;
+  font-size: var(--app-font-size, 14px);
+  line-height: 1.7;
 }
 
 .hy-office-notes {
@@ -6001,7 +6910,7 @@ body.cs-col-resizing input {
 
 .hy-office-notes p[data-lead="true"] {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--text-lg);
   line-height: 1.5;
 }
 
@@ -6020,7 +6929,7 @@ body.cs-col-resizing input {
   background: color-mix(in srgb, #1d6f42 10%, var(--color-surface-solid));
   border-bottom: 2px solid #1d6f42;
   color: #1d6f42;
-  font-size: 12px;
+  font-size: var(--text-base);
   font-weight: 650;
 }
 
@@ -6029,19 +6938,29 @@ body.cs-col-resizing input {
   max-width: 100%;
 }
 
+.hy-office-preview[data-kind="docx"] .hy-office-grid-wrap {
+  border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, #fff 86%, transparent);
+}
+
 .hy-office-slide {
-  padding: 18px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface-solid);
-  min-height: 160px;
+  padding: 22px 24px 26px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, #fff 88%, transparent);
+  min-height: 140px;
+}
+
+.hy-office-slide h3 {
+  font-family: var(--font-family-reading, var(--font-serif));
 }
 
 .hy-office-table {
   width: max-content;
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--text-base);
 }
 
 .hy-office-table th,
@@ -6055,16 +6974,48 @@ body.cs-col-resizing input {
   max-width: 280px;
 }
 
-.hy-office-table thead tr:last-child th:not([data-role="gutter"]) {
+.hy-office-table[data-sheet="true"] thead tr:last-child th:not([data-role="gutter"]) {
   background: #1d6f42;
   color: #fff;
   font-weight: 650;
 }
 
+.hy-office-preview[data-kind="docx"] .hy-office-table {
+  font-family: var(--font-sans);
+  font-size: calc(var(--app-font-size, 14px) * 0.86);
+}
+
+.hy-office-preview[data-kind="docx"] .hy-office-table th,
+.hy-office-preview[data-kind="docx"] .hy-office-table td {
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  padding: 8px 12px;
+  max-width: 16rem;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.hy-office-preview[data-kind="docx"] .hy-office-table thead th {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, #1d6f42 14%, #fff);
+  color: #14532d;
+  font-weight: 650;
+  border-bottom: 1px solid color-mix(in srgb, #1d6f42 42%, transparent);
+}
+
+.hy-office-preview[data-kind="docx"] .hy-office-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.hy-office-preview[data-kind="docx"] .hy-office-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--color-text) 3.5%, transparent);
+}
+
 .hy-office-table[data-sheet="true"] thead tr[data-role="gutter"] th {
   background: #f3f4f6;
   color: #6b7280;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-align: center;
   padding: 4px 8px;
@@ -6074,7 +7025,7 @@ body.cs-col-resizing input {
 .hy-office-table [data-role="gutter"] {
   background: #f3f4f6;
   color: #6b7280;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-align: center;
   width: 28px;
@@ -6089,11 +7040,9 @@ body.cs-col-resizing input {
 
 .hy-office-empty {
   color: var(--color-text-faint);
-  font-size: 13px;
+  font-size: var(--text-md);
 }
 
 .hy-office-preview[data-compact="true"] {
   gap: 10px;
-  max-height: 220px;
-  overflow: auto;
 }

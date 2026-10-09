@@ -136,7 +136,7 @@
   /* Small size variant */
   &[data-size="small"] {
     [data-slot="radio-group-item-label"] {
-      font-size: 12px;
+      font-size: 0.857rem;
       padding: 4px 8px;
     }
 

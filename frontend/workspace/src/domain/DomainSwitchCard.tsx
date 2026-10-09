@@ -1,10 +1,10 @@
-import { useNavigate } from "@solidjs/router"
 import { useLanguage } from "@/context/language"
+import { isDomainId, type DomainId } from "./registry"
 import type { DomainSwitch } from "./switch"
 
-export function DomainSwitchCard(props: { hit: DomainSwitch }) {
+export function DomainSwitchCard(props: { hit: DomainSwitch; onApply?: (id: DomainId) => void }) {
   const language = useLanguage()
-  const navigate = useNavigate()
+  const suggest = () => (isDomainId(props.hit.suggest) ? props.hit.suggest : undefined)
   const copy =
     props.hit.kind === "execute"
       ? language.t("domain.drift.execute", {
@@ -19,8 +19,16 @@ export function DomainSwitchCard(props: { hit: DomainSwitch }) {
     <aside class="cs-domain-switch" data-kind={props.hit.kind}>
       <p>{copy}</p>
       <div class="cs-domain-switch-actions">
-        <button type="button" class="cs-btn-primary" onClick={() => navigate("/domains")}>
-          {language.t("domain.drift.switch")}
+        <button
+          type="button"
+          class="cs-btn-primary"
+          disabled={!suggest() || !props.onApply}
+          onClick={() => {
+            const id = suggest()
+            if (id) props.onApply?.(id)
+          }}
+        >
+          {language.t("protocol.apply", { name: props.hit.suggestTitle })}
         </button>
         <span class="cs-domain-switch-stay">{language.t("domain.drift.stay")}</span>
       </div>

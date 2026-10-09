@@ -230,7 +230,7 @@ export function FileView(props: {
             "place-items": "center",
             background: "var(--color-surface-solid)",
             "font-family": FONT_MONO,
-            "font-size": "11px",
+            "font-size": "0.786rem",
             color: "var(--color-text-faint)",
           }}
         >
@@ -267,7 +267,7 @@ export function FileView(props: {
               title={props.path}
               style={{
                 "font-family": FONT_CODE,
-                "font-size": "12px",
+                "font-size": "0.857rem",
                 color: "var(--color-text)",
                 overflow: "hidden",
                 "text-overflow": "ellipsis",
@@ -281,7 +281,7 @@ export function FileView(props: {
                 title={props.subtitle}
                 style={{
                   "font-family": FONT_MONO,
-                  "font-size": "10px",
+                  "font-size": "0.714rem",
                   color: "var(--color-text-faint)",
                   overflow: "hidden",
                   "text-overflow": "ellipsis",
@@ -300,7 +300,7 @@ export function FileView(props: {
               border: "1px solid var(--color-border)",
               background: "var(--color-bg-subtle)",
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               "letter-spacing": "0.03em",
             }}
@@ -370,7 +370,7 @@ export function FileView(props: {
               style={{
                 padding: "20px",
                 "font-family": FONT_MONO,
-                "font-size": "12px",
+                "font-size": "0.857rem",
                 color: "var(--color-text-faint)",
               }}
             >
@@ -399,7 +399,7 @@ export function FileView(props: {
                 <div
                   style={{
                     "font-family": FONT_SANS,
-                    "font-size": "13px",
+                    "font-size": "0.929rem",
                     "font-weight": 500,
                     color: "var(--color-text)",
                   }}
@@ -409,7 +409,7 @@ export function FileView(props: {
                 <div
                   style={{
                     "font-family": FONT_SANS,
-                    "font-size": "12px",
+                    "font-size": "0.857rem",
                     color: "var(--color-text-faint)",
                     "line-height": 1.5,
                     "max-width": "340px",
@@ -475,7 +475,7 @@ export function FileView(props: {
                 </Match>
 
                 <Match when={kind() === "office"}>
-                  <div style={{ padding: "18px 22px" }}>
+                  <div class="hy-office-page">
                     <OfficePreview preview={data()?.preview} />
                   </div>
                 </Match>
@@ -494,7 +494,7 @@ export function FileView(props: {
                     <div
                       style={{
                         "font-family": FONT_SANS,
-                        "font-size": "13px",
+                        "font-size": "0.929rem",
                         color: "var(--color-text-muted)",
                         "line-height": 1.6,
                       }}
@@ -521,7 +521,7 @@ export function FileView(props: {
                       "min-height": "100%",
                       padding: "16px 18px",
                       "font-family": FONT_CODE,
-                      "font-size": "12px",
+                      "font-size": "0.857rem",
                       "line-height": 1.65,
                       color: "var(--color-text)",
                       "white-space": "pre",
@@ -589,7 +589,7 @@ function retryBtn(): JSX.CSSProperties {
     "border-radius": "4px",
     border: "1px solid var(--color-border)",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text)",
   } as JSX.CSSProperties
 }
@@ -606,7 +606,7 @@ function ctlBtn(primary = false): JSX.CSSProperties {
     background: primary ? "var(--color-text)" : "var(--color-bg-subtle)",
     color: primary ? "var(--color-bg)" : "var(--color-text-muted)",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "font-weight": primary ? 600 : 500,
     "flex-shrink": 0,
   } as JSX.CSSProperties

@@ -1,6 +1,5 @@
 import { For, Show, createMemo, createSignal, onCleanup, onMount, type JSX } from "solid-js"
 import { Portal } from "solid-js/web"
-import { useParams } from "@solidjs/router"
 import { showToast } from "@hysci/ui/toast"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
@@ -8,7 +7,6 @@ import { useLanguage } from "@/context/language"
 import { useModels } from "@/context/models"
 import { useProviders } from "@/hooks/use-providers"
 import { domainById } from "@/domain/registry"
-import { lastSelectedDomain } from "@/domain/store"
 import { IconX } from "@/thesis/shared/Icon"
 import { IconModel } from "./icons"
 
@@ -57,7 +55,6 @@ function lockedKey(p: { id: string }) {
 
 export function HomeModelDock(): JSX.Element {
   const language = useLanguage()
-  const params = useParams()
   const sdk = useGlobalSDK()
   const sync = useGlobalSync()
   const models = useModels()
@@ -95,7 +92,7 @@ export function HomeModelDock(): JSX.Element {
   const connected = createMemo(() => providers.connected().filter((p) => p.id !== "hysci" || options().length > 0))
   const defaultModel = () => sync.data.config.model
   const subagentModel = () => sync.data.config.small_model
-  const domain = createMemo(() => domainById(params.id) ?? domainById(lastSelectedDomain()) ?? domainById("general"))
+  const domain = createMemo(() => domainById("general"))
   const ready = () => connected().length > 0 && options().length > 0
 
   const setDefaultModel = (value: string) => {

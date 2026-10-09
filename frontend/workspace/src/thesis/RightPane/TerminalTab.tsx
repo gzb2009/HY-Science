@@ -87,7 +87,7 @@ function terminalHeader(): JSX.CSSProperties {
     padding: "8px 10px",
     "border-bottom": "1px solid var(--color-border)",
     "font-family": "var(--font-mono)",
-    "font-size": "12px",
+    "font-size": "0.857rem",
     "font-weight": 600,
     color: "var(--color-text)",
   }
@@ -101,7 +101,7 @@ function smallButton(): JSX.CSSProperties {
     border: "1px solid var(--color-border)",
     "border-radius": "4px",
     "font-family": "var(--font-mono)",
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text)",
   }
 }
@@ -124,7 +124,7 @@ function empty(): JSX.CSSProperties {
     padding: "24px",
     "text-align": "center",
     "font-family": "var(--font-sans)",
-    "font-size": "12px",
+    "font-size": "0.857rem",
     color: "var(--color-text-faint)",
   }
 }

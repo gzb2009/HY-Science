@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onMount, Show, type JSX } from "solid-js"
+import { createEffect, createSignal, For, onMount, Show, type JSX } from "solid-js"
 import { Dialog } from "@hysci/ui/dialog"
 import { useDialog } from "@hysci/ui/context/dialog"
 import { showToast } from "@hysci/ui/toast"
@@ -19,7 +19,7 @@ import {
 } from "@/utils/projectResult"
 import { FolderPicker } from "@/thesis/FolderPicker"
 import { IconX } from "@/thesis/shared/Icon"
-import { projectDomainId, toResearch, type DomainId } from "@/domain/registry"
+import { DOMAINS, projectDomainId, toResearch, type DomainId } from "@/domain/registry"
 
 export type ProjectFormValues = {
   name: string
@@ -255,14 +255,17 @@ export function DialogProjectForm(props: {
               </Show>
 
               <section class="cs-field">
-                <span class="cs-field-label">{language.t("dialog.project.research.label")}</span>
-                <span class="cs-field-hint">{language.t("dialog.project.research.hint")}</span>
-                <input
-                  class="cs-field-input cs-field-input-locked"
-                  value={language.t(`domain.${direction()}.title`)}
-                  readOnly
-                  tabindex={-1}
-                />
+                <span class="cs-field-label">{language.t("protocol.label")}</span>
+                <span class="cs-field-hint">{language.t("protocol.hint")}</span>
+                <select
+                  class="cs-field-input"
+                  value={direction()}
+                  onChange={(event) => setDirection(event.currentTarget.value as DomainId)}
+                >
+                  <For each={DOMAINS}>
+                    {(item) => <option value={item.id}>{language.t(`domain.${item.id}.title`)}</option>}
+                  </For>
+                </select>
                 <textarea
                   class="cs-field-textarea"
                   rows={3}

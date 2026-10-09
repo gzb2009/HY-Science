@@ -9,7 +9,7 @@ import { CONTEXT_DIR, type Attachment } from "./model-utils"
 // Faint caption preceding a segmented control ("effort" / "speed" / "context").
 export const CONTROL_LABEL: JSX.CSSProperties = {
   "font-family": FONT_MONO,
-  "font-size": "10px",
+  "font-size": "var(--text-base, 12px)",
   color: "var(--color-text-faint)",
   "text-transform": "lowercase",
 }
@@ -39,7 +39,7 @@ export function Segmented(props: {
                 all: "unset",
                 cursor: "pointer",
                 "font-family": FONT_MONO,
-                "font-size": "11px",
+                "font-size": "var(--text-base, 12px)",
                 "font-weight": 400,
                 "text-transform": "lowercase",
                 color: on() ? "var(--color-text)" : "var(--color-text-muted)",
@@ -92,7 +92,7 @@ export function AttachmentChip(props: { att: Attachment; onRemove: () => void })
         border: "1px solid var(--color-border)",
         background: "var(--color-bg-elevated)",
         "font-family": FONT_MONO,
-        "font-size": "11px",
+        "font-size": "var(--text-base, 12px)",
         color: "var(--color-text)",
         "max-width": "280px",
         opacity: props.att.status === "saving" ? 0.7 : 1,
@@ -121,7 +121,7 @@ export function AttachmentChip(props: { att: Attachment; onRemove: () => void })
       >
         {props.att.filename}
       </span>
-      <span style={{ color: "var(--color-text-faint)", "font-size": "10px" }}>
+      <span style={{ color: "var(--color-text-faint)", "font-size": "var(--text-sm, 12px)" }}>
         {props.att.status === "saving" ? "…" : props.att.status === "failed" ? "!" : sizeLabel()}
       </span>
       <button
@@ -136,7 +136,7 @@ export function AttachmentChip(props: { att: Attachment; onRemove: () => void })
           cursor: "pointer",
           padding: "0 4px",
           color: "var(--color-text-faint)",
-          "font-size": "11px",
+          "font-size": "var(--text-base, 12px)",
           "line-height": 1,
         }}
         onMouseEnter={(el) => (el.currentTarget.style.color = "var(--color-error)")}
@@ -152,11 +152,6 @@ export function AttachmentChip(props: { att: Attachment; onRemove: () => void })
 // Rendered inline inside cs-composer-inner, below the input box. Only the
 // effort slider popover is portaled.
 export function FloatingControls(props: {
-  modelOpen: () => boolean
-  setModelOpen: (v: boolean) => void
-  selectedLabel: () => { name: string; providerID: string } | undefined
-  selectedSource: () => { color: string; opacity: number; title: string } | undefined
-  modelBtnRef: (el: HTMLButtonElement) => void
   effortOpen: () => boolean
   setEffortOpen: (v: boolean) => void
   variantKeys: () => string[]
@@ -205,7 +200,7 @@ export function FloatingControls(props: {
           <span
             style={{
               "font-family": FONT_MONO,
-              "font-size": "11px",
+              "font-size": "var(--text-base, 12px)",
               "text-transform": "lowercase",
             }}
           >
@@ -215,51 +210,9 @@ export function FloatingControls(props: {
         </button>
       </Show>
 
-      {/* Model chip */}
-      <button
-        ref={props.modelBtnRef}
-        type="button"
-        class="cs-floating-chip"
-        onClick={() => props.setModelOpen(!props.modelOpen())}
-        title={
-          props.selectedLabel()
-            ? `${props.selectedLabel()!.name}${props.selectedSource() ? ` — ${props.selectedSource()!.title}` : ""}`
-            : "select model"
-        }
-      >
-        <Show when={props.selectedSource()}>
-          {(dot) => (
-            <span
-              style={{
-                width: "6px",
-                height: "6px",
-                "border-radius": "50%",
-                "flex-shrink": 0,
-                background: dot().color,
-                opacity: dot().opacity,
-              }}
-            />
-          )}
-        </Show>
-        <span
-          style={{
-            "font-family": FONT_MONO,
-            "font-size": "11px",
-            "max-width": "180px",
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            "white-space": "nowrap",
-          }}
-        >
-          {props.selectedLabel()?.name ?? "select model"}
-        </span>
-        <IconChevronDown size={8} strokeWidth={1.5} />
-      </button>
-
       {/* Effort slider popover */}
       <Show when={props.effortOpen() && centerTabs.active() === "chat"}>
         <Portal>
-          <div onClick={() => props.setEffortOpen(false)} style={{ position: "fixed", inset: 0, "z-index": 190 }} />
           <Show when={props.effortAnchor()}>
             {(a) => (
               <div

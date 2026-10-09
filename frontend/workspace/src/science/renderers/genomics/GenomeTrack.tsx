@@ -115,7 +115,7 @@ export function GenomeTrack(props: ArtifactRenderProps) {
             top: "6px",
             right: "8px",
             "z-index": "2",
-            "font-size": "11px",
+            "font-size": "0.786rem",
             "font-family": "ui-monospace, SFMono-Regular, Menlo, monospace",
             padding: "2px 8px",
             "border-radius": "4px",
@@ -133,7 +133,7 @@ export function GenomeTrack(props: ArtifactRenderProps) {
             style={{
               padding: "12px 14px",
               "font-family": "ui-monospace, SFMono-Regular, Menlo, monospace",
-              "font-size": "12px",
+              "font-size": "0.857rem",
               color: "#b00020",
               border: "1px solid rgba(176,0,32,0.35)",
               "border-radius": "4px",

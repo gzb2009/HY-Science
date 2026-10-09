@@ -72,7 +72,11 @@ describe("buildXlsx", () => {
     )
     expect(docx?.kind).toBe("docx")
     expect(docx?.blocks?.some((block) => block.text === "Aim")).toBe(true)
-    expect(docx?.blocks?.some((block) => block.rows?.[1]?.[0] === "CXCR5")).toBe(true)
+    const table = docx?.blocks?.find((block) => block.type === "table")
+    expect(table?.rows?.[0]?.[0]).toBe("Marker")
+    expect(table?.rows?.[1]?.[0]).toBe("CXCR5")
+    expect(JSON.stringify(docx)).not.toContain("w:tcPr")
+    expect(JSON.stringify(docx)).not.toContain("w:fill")
 
     const pptx = officePreview(
       "brief.pptx",

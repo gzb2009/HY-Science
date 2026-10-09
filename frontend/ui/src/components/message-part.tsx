@@ -729,8 +729,10 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   const data = useData()
   const i18n = useI18n()
   const part = props.part as TextPart
-  const displayText = () => relativizeProjectPaths((part.text ?? "").trim(), data.directory)
-  const throttledText = createThrottledValue(displayText)
+  const streaming = () => props.message.role === "assistant" && props.message.time.completed === undefined
+  const source = () => relativizeProjectPaths(part.text ?? "", data.directory)
+  const displayText = () => source().trim()
+  const throttledText = createThrottledValue(() => source().replace(/^\s+/, ""))
   const [copied, setCopied] = createSignal(false)
 
   const handleCopy = async () => {
@@ -742,10 +744,10 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   }
 
   return (
-    <Show when={throttledText()}>
+    <Show when={throttledText().trim()}>
       <div data-component="text-part">
         <div data-slot="text-part-body">
-          <Markdown text={throttledText()} cacheKey={part.id} />
+          <Markdown text={throttledText()} cacheKey={part.id} streaming={streaming()} />
           <div data-slot="text-part-copy-wrapper">
             <Tooltip
               value={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")}
@@ -770,9 +772,9 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
 PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
   const i18n = useI18n()
   const part = props.part as ReasoningPart
-  const text = () => part.text.trim()
+  const text = () => part.text
   const throttledText = createThrottledValue(text)
-  const streaming = () => part.time.end === undefined
+  const streaming = () => props.message.role === "assistant" && props.message.time.completed === undefined
   const [open, setOpen] = createSignal(props.defaultOpen ?? false)
 
   const label = createMemo(() => {
@@ -785,7 +787,7 @@ PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
   })
 
   return (
-    <Show when={throttledText()}>
+    <Show when={throttledText().trim()}>
       <div data-component="reasoning-part" data-streaming={streaming() ? "true" : undefined}>
         <Collapsible variant="ghost" open={open()} onOpenChange={setOpen}>
           <Collapsible.Trigger>
@@ -797,7 +799,7 @@ PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
           </Collapsible.Trigger>
           <Collapsible.Content>
             <div data-slot="reasoning-part-body">
-              <Markdown text={throttledText()} cacheKey={part.id} />
+              <Markdown text={throttledText()} cacheKey={part.id} streaming={streaming()} />
             </div>
           </Collapsible.Content>
         </Collapsible>
@@ -1035,7 +1037,7 @@ ToolRegistry.register({
           <Match when={true}>
             <BasicTool
               icon="task"
-              defaultOpen={true}
+              status={props.status}
               trigger={{
                 title: i18n.t("ui.tool.agent", { type: props.input.subagent_type || props.tool }),
                 titleClass: "capitalize",
@@ -1115,48 +1117,40 @@ ToolRegistry.register({
     const diffComponent = useDiffComponent()
     const diagnostics = createMemo(() => getDiagnostics(props.metadata.diagnostics, props.input.filePath))
     const filename = () => getFilename(props.input.filePath ?? "")
+    const diff = () => {
+      const name = props.metadata?.filediff?.file || props.input.filePath
+      if (!name) return
+      const before = props.metadata?.filediff?.before ?? props.input.oldString
+      const after = props.metadata?.filediff?.after ?? props.input.newString
+      if (before == null && after == null) return
+      return { name, before: before ?? "", after: after ?? "" }
+    }
+
     return (
-      <BasicTool
-        {...props}
-        icon="code-lines"
-        trigger={
-          <div data-component="edit-trigger">
-            <div data-slot="message-part-title-area">
-              <div data-slot="message-part-title">
-                <span data-slot="message-part-title-text">{i18n.t("ui.messagePart.title.edit")}</span>
-                <span data-slot="message-part-title-filename">{filename()}</span>
-              </div>
-              <Show when={props.input.filePath?.includes("/")}>
-                <div data-slot="message-part-path">
-                  <span data-slot="message-part-directory">{getDirectory(props.input.filePath!)}</span>
-                </div>
-              </Show>
+      <>
+        <BasicTool
+          {...props}
+          icon="code-lines"
+          hideDetails
+          trigger={{
+            title: i18n.t("ui.messagePart.title.edit"),
+            subtitle: filename(),
+            action: props.metadata.filediff ? <DiffChanges changes={props.metadata.filediff} /> : undefined,
+          }}
+        />
+        <Show when={diff()}>
+          {(item) => (
+            <div data-component="tool-diff">
+              <Dynamic
+                component={diffComponent}
+                before={{ name: item().name, contents: item().before }}
+                after={{ name: item().name, contents: item().after }}
+              />
             </div>
-            <div data-slot="message-part-actions">
-              <Show when={props.metadata.filediff}>
-                <DiffChanges changes={props.metadata.filediff} />
-              </Show>
-            </div>
-          </div>
-        }
-      >
-        <Show when={props.metadata.filediff?.path || props.input.filePath}>
-          <div data-component="edit-content">
-            <Dynamic
-              component={diffComponent}
-              before={{
-                name: props.metadata?.filediff?.file || props.input.filePath,
-                contents: props.metadata?.filediff?.before || props.input.oldString,
-              }}
-              after={{
-                name: props.metadata?.filediff?.file || props.input.filePath,
-                contents: props.metadata?.filediff?.after || props.input.newString,
-              }}
-            />
-          </div>
+          )}
         </Show>
         <DiagnosticsDisplay diagnostics={diagnostics()} />
-      </BasicTool>
+      </>
     )
   },
 })
@@ -1199,22 +1193,10 @@ ToolRegistry.register({
       <BasicTool
         {...props}
         icon={isNotebook() ? "code" : "code-lines"}
-        trigger={
-          <div data-component="write-trigger">
-            <div data-slot="message-part-title-area">
-              <div data-slot="message-part-title">
-                <span data-slot="message-part-title-text">{i18n.t("ui.messagePart.title.write")}</span>
-                <span data-slot="message-part-title-filename">{filename()}</span>
-              </div>
-              <Show when={props.input.filePath?.includes("/")}>
-                <div data-slot="message-part-path">
-                  <span data-slot="message-part-directory">{getDirectory(props.input.filePath!)}</span>
-                </div>
-              </Show>
-            </div>
-            <div data-slot="message-part-actions">{/* <DiffChanges diff={diff} /> */}</div>
-          </div>
-        }
+        trigger={{
+          title: i18n.t("ui.messagePart.title.write"),
+          subtitle: filename(),
+        }}
       >
         <Show when={props.input.content}>
           <Show
@@ -1270,65 +1252,69 @@ ToolRegistry.register({
     })
 
     return (
-      <BasicTool
-        {...props}
-        icon="code-lines"
-        trigger={{
-          title: i18n.t("ui.tool.patch"),
-          subtitle: subtitle(),
-        }}
-      >
+      <>
+        <BasicTool
+          {...props}
+          icon="code-lines"
+          hideDetails
+          trigger={{
+            title: i18n.t("ui.tool.patch"),
+            subtitle: subtitle(),
+          }}
+        />
         <Show when={files().length > 0}>
-          <div data-component="apply-patch-files">
-            <For each={files()}>
-              {(file) => (
-                <div data-component="apply-patch-file">
-                  <div data-slot="apply-patch-file-header">
-                    <Switch>
-                      <Match when={file.type === "delete"}>
-                        <span data-slot="apply-patch-file-action" data-type="delete">
-                          {i18n.t("ui.patch.action.deleted")}
-                        </span>
-                      </Match>
-                      <Match when={file.type === "add"}>
-                        <span data-slot="apply-patch-file-action" data-type="add">
-                          {i18n.t("ui.patch.action.created")}
-                        </span>
-                      </Match>
-                      <Match when={file.type === "move"}>
-                        <span data-slot="apply-patch-file-action" data-type="move">
-                          {i18n.t("ui.patch.action.moved")}
-                        </span>
-                      </Match>
-                      <Match when={file.type === "update"}>
-                        <span data-slot="apply-patch-file-action" data-type="update">
-                          {i18n.t("ui.patch.action.patched")}
-                        </span>
-                      </Match>
-                    </Switch>
-                    <span data-slot="apply-patch-file-path">{file.relativePath}</span>
+          <div data-component="tool-diff">
+            <div data-component="apply-patch-files">
+              <For each={files()}>
+                {(file) => (
+                  <div data-component="apply-patch-file">
+                    <div data-slot="apply-patch-file-header">
+                      <Switch>
+                        <Match when={file.type === "delete"}>
+                          <span data-slot="apply-patch-file-action" data-type="delete">
+                            {i18n.t("ui.patch.action.deleted")}
+                          </span>
+                        </Match>
+                        <Match when={file.type === "add"}>
+                          <span data-slot="apply-patch-file-action" data-type="add">
+                            {i18n.t("ui.patch.action.created")}
+                          </span>
+                        </Match>
+                        <Match when={file.type === "move"}>
+                          <span data-slot="apply-patch-file-action" data-type="move">
+                            {i18n.t("ui.patch.action.moved")}
+                          </span>
+                        </Match>
+                        <Match when={file.type === "update"}>
+                          <span data-slot="apply-patch-file-action" data-type="update">
+                            {i18n.t("ui.patch.action.patched")}
+                          </span>
+                        </Match>
+                      </Switch>
+                      <span data-slot="apply-patch-file-path">{file.relativePath}</span>
+                      <Show when={file.type !== "delete"}>
+                        <DiffChanges changes={{ additions: file.additions, deletions: file.deletions }} />
+                      </Show>
+                      <Show when={file.type === "delete"}>
+                        <span data-slot="apply-patch-deletion-count">-{file.deletions}</span>
+                      </Show>
+                    </div>
                     <Show when={file.type !== "delete"}>
-                      <DiffChanges changes={{ additions: file.additions, deletions: file.deletions }} />
-                    </Show>
-                    <Show when={file.type === "delete"}>
-                      <span data-slot="apply-patch-deletion-count">-{file.deletions}</span>
+                      <div data-component="apply-patch-file-diff">
+                        <Dynamic
+                          component={diffComponent}
+                          before={{ name: file.filePath, contents: file.before }}
+                          after={{ name: file.filePath, contents: file.after }}
+                        />
+                      </div>
                     </Show>
                   </div>
-                  <Show when={file.type !== "delete"}>
-                    <div data-component="apply-patch-file-diff">
-                      <Dynamic
-                        component={diffComponent}
-                        before={{ name: file.filePath, contents: file.before }}
-                        after={{ name: file.filePath, contents: file.after }}
-                      />
-                    </div>
-                  </Show>
-                </div>
-              )}
-            </For>
+                )}
+              </For>
+            </div>
           </div>
         </Show>
-      </BasicTool>
+      </>
     )
   },
 })
@@ -1356,7 +1342,6 @@ ToolRegistry.register({
     return (
       <BasicTool
         {...props}
-        defaultOpen
         icon="checklist"
         trigger={{
           title: i18n.t("ui.tool.todos"),

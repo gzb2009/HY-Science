@@ -99,7 +99,7 @@ export function ToastContainer(): JSX.Element {
                 <div
                   style={{
                     "font-family": FONT_MONO,
-                    "font-size": "11.5px",
+                    "font-size": "0.821rem",
                     "font-weight": 500,
                     color: "var(--color-text)",
                   }}
@@ -110,7 +110,7 @@ export function ToastContainer(): JSX.Element {
                   <div
                     style={{
                       "font-family": FONT_SANS,
-                      "font-size": "11.5px",
+                      "font-size": "0.821rem",
                       color: "var(--color-text-muted)",
                       "line-height": 1.5,
                       "margin-top": "2px",

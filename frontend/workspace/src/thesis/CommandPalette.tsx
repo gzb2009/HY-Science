@@ -3,7 +3,8 @@ import { Portal } from "solid-js/web"
 import { useNavigate } from "@solidjs/router"
 import { useDialog } from "@hysci/ui/context/dialog"
 import { FONT_MONO, FONT_SANS } from "@/styles/tokens"
-import { base64Encode } from "@hysci/util/encode"
+import { projectSessionHref } from "@/utils/route-session"
+import { stayOnHome } from "@/utils/desktop-session"
 import { useGlobalSync } from "@/context/global-sync"
 import { DialogSettings } from "@/components/dialog-settings"
 import { FolderPicker } from "@/thesis/FolderPicker"
@@ -32,7 +33,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
   const sync = useGlobalSync()
   let inputRef: HTMLInputElement | undefined
 
-  const goTo = (directory: string) => navigate(`/${base64Encode(directory)}/session`)
+  const goTo = (directory: string) => navigate(projectSessionHref(directory))
 
   const showInAppPicker = () => {
     dialog.show(
@@ -86,6 +87,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
       category: "actions",
       run: () => {
         props.onClose()
+        stayOnHome()
         navigate("/")
       },
     })
@@ -201,14 +203,14 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
                 all: "unset",
                 flex: 1,
                 "font-family": FONT_MONO,
-                "font-size": "13px",
+                "font-size": "0.929rem",
                 color: "var(--color-text)",
               }}
             />
             <span
               style={{
                 "font-family": FONT_MONO,
-                "font-size": "10px",
+                "font-size": "0.714rem",
                 color: "var(--color-text-faint)",
                 "text-transform": "uppercase",
                 "letter-spacing": "0.08em",
@@ -227,7 +229,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
                     padding: "32px",
                     "text-align": "center",
                     "font-family": FONT_MONO,
-                    "font-size": "11px",
+                    "font-size": "0.786rem",
                     color: "var(--color-text-faint)",
                   }}
                 >
@@ -242,7 +244,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
                       style={{
                         padding: "6px 16px",
                         "font-family": FONT_MONO,
-                        "font-size": "10px",
+                        "font-size": "0.714rem",
                         "letter-spacing": "0.08em",
                         "text-transform": "uppercase",
                         color: "var(--color-text-faint)",
@@ -288,7 +290,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
                             <span
                               style={{
                                 "font-family": FONT_MONO,
-                                "font-size": "12px",
+                                "font-size": "0.857rem",
                                 color: "var(--color-text)",
                                 overflow: "hidden",
                                 "text-overflow": "ellipsis",
@@ -302,7 +304,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
                               <span
                                 style={{
                                   "font-family": FONT_SANS,
-                                  "font-size": "11px",
+                                  "font-size": "0.786rem",
                                   color: "var(--color-text-faint)",
                                   overflow: "hidden",
                                   "text-overflow": "ellipsis",
@@ -332,7 +334,7 @@ export function CommandPalette(props: CommandPaletteProps): JSX.Element {
               "border-top": "1px solid var(--color-border)",
               background: "var(--color-bg-subtle)",
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
             }}
           >
@@ -354,7 +356,7 @@ function Hint(props: { k: string; l: string }): JSX.Element {
       <kbd
         style={{
           "font-family": FONT_MONO,
-          "font-size": "10px",
+          "font-size": "0.714rem",
           padding: "0 4px",
           border: "1px solid var(--color-border)",
           "border-radius": "4px",

@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js"
+import { createEffect, createSignal, onCleanup, onMount, Show, type JSX } from "solid-js"
 import { Portal } from "solid-js/web"
 import { useSDK } from "@/context/sdk"
 import { useLanguage } from "@/context/language"
@@ -22,26 +22,67 @@ type Pdfjs = {
   }
 }
 
+type PdfDoc = {
+  numPages: number
+  getPage(page: number): Promise<{
+    getViewport(options: { scale: number }): { width: number; height: number }
+    render(options: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }): {
+      promise: Promise<void>
+      cancel(): void
+    }
+  }>
+  destroy(): Promise<void>
+}
+
 export function ArtifactLightbox(props: { artifact: ImagePreview; onClose: () => void }): JSX.Element {
   const sdk = useSDK()
   const language = useLanguage()
-  const kind = () => props.artifact.kind ?? (props.artifact.name.toLowerCase().endsWith(".pdf") ? "pdf" : "image")
+  // Snapshot once. The parent <Show> accessor throws once the preview is cleared,
+  // and any live read of props.artifact during that update aborts unmount.
+  const artifact: ImagePreview = {
+    directory: props.artifact.directory,
+    path: props.artifact.path,
+    name: props.artifact.name,
+    mime: props.artifact.mime,
+    kind: props.artifact.kind,
+  }
+  const kind = () => artifact.kind ?? (artifact.name.toLowerCase().endsWith(".pdf") ? "pdf" : "image")
   const [data, setData] = createSignal<ArtifactData>()
   const [failed, setFailed] = createSignal("")
   const [zoom, setZoom] = createSignal(1)
   const [page, setPage] = createSignal(1)
   const [pages, setPages] = createSignal(1)
-  const src = () => artifactImageUrl(data(), props.artifact.mime)
-  const clampZoom = (value: number) => setZoom(Math.min(6, Math.max(0.25, value)))
+  const [box, setBox] = createSignal({ w: 800, h: 560 })
+  const [natural, setNatural] = createSignal({ w: 0, h: 0 })
+  const src = () => artifactImageUrl(data(), artifact.mime)
+  const clampZoom = (value: number) => setZoom(Math.min(8, Math.max(0.25, Math.round(value * 20) / 20)))
+
+  const pad = 48
+  const inner = () => ({
+    w: Math.max(160, box().w - pad),
+    h: Math.max(120, box().h - pad),
+  })
+
+  const imageSize = () => {
+    const nat = natural()
+    const view = inner()
+    if (!nat.w || !nat.h) return { w: view.w, h: view.h }
+    const fit = Math.min(view.w / nat.w, view.h / nat.h, 1)
+    return { w: Math.round(nat.w * fit * zoom()), h: Math.round(nat.h * fit * zoom()) }
+  }
+
+  let stage: HTMLDivElement | undefined
+  const drag = { on: false, x: 0, y: 0, left: 0, top: 0 }
 
   createEffect(() => {
-    const directory = props.artifact.directory
-    const path = props.artifact.path
+    const directory = artifact.directory
+    const path = artifact.path
     setData(undefined)
     setFailed("")
     setZoom(1)
     setPage(1)
     setPages(1)
+    setNatural({ w: 0, h: 0 })
     if (!directory || !path) return
     void sdk.client.file
       .read({ directory, path })
@@ -50,6 +91,37 @@ export function ArtifactLightbox(props: { artifact: ImagePreview; onClose: () =>
         setData(payload.data ?? (res as ArtifactData))
       })
       .catch((error: { message?: string }) => setFailed(error?.message ?? "read failed"))
+  })
+
+  onMount(() => {
+    const el = stage
+    if (!el) return
+    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight })
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return
+      event.preventDefault()
+      const next = zoom() + (event.deltaY < 0 ? 0.2 : -0.2)
+      const before = el.scrollWidth
+      clampZoom(next)
+      requestAnimationFrame(() => {
+        if (!before) return
+        const ratio = el.scrollWidth / before
+        el.scrollLeft = (el.scrollLeft + event.clientX - el.getBoundingClientRect().left) * ratio - (event.clientX - el.getBoundingClientRect().left)
+        el.scrollTop = (el.scrollTop + event.clientY - el.getBoundingClientRect().top) * ratio - (event.clientY - el.getBoundingClientRect().top)
+      })
+    }
+    el.addEventListener("wheel", onWheel, { passive: false })
+    onCleanup(() => {
+      try {
+        observer.disconnect()
+        el.removeEventListener("wheel", onWheel)
+      } catch {
+        // Unmount must finish even if the node is already gone.
+      }
+    })
   })
 
   createEffect(() => {
@@ -83,17 +155,42 @@ export function ArtifactLightbox(props: { artifact: ImagePreview; onClose: () =>
     onCleanup(() => window.removeEventListener("keydown", onKey))
   })
 
+  const onPointerDown = (event: PointerEvent) => {
+    if (event.button !== 0 || !stage) return
+    drag.on = true
+    drag.x = event.clientX
+    drag.y = event.clientY
+    drag.left = stage.scrollLeft
+    drag.top = stage.scrollTop
+    stage.setPointerCapture(event.pointerId)
+    stage.classList.add("is-panning")
+  }
+  const onPointerMove = (event: PointerEvent) => {
+    if (!drag.on || !stage) return
+    stage.scrollLeft = drag.left - (event.clientX - drag.x)
+    stage.scrollTop = drag.top - (event.clientY - drag.y)
+  }
+  const onPointerUp = (event: PointerEvent) => {
+    drag.on = false
+    stage?.classList.remove("is-panning")
+    if (stage?.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId)
+  }
+
   return (
     <Portal>
       <div
         class="cs-artifact-lightbox"
         role="dialog"
         aria-modal="true"
-        aria-label={props.artifact.name}
+        aria-label={artifact.name}
         onClick={props.onClose}
       >
-        <header class="cs-artifact-lightbox-bar" onClick={(event) => event.stopPropagation()}>
-          <span class="cs-artifact-lightbox-name">{props.artifact.name}</span>
+        <header
+          class="cs-artifact-lightbox-bar"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <span class="cs-artifact-lightbox-name">{artifact.name}</span>
           <Show when={kind() === "pdf"}>
             <span class="cs-artifact-lightbox-pages">
               <button type="button" disabled={page() <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
@@ -125,28 +222,40 @@ export function ArtifactLightbox(props: { artifact: ImagePreview; onClose: () =>
           </button>
         </header>
         <div
+          ref={stage}
           class="cs-artifact-lightbox-stage"
           onClick={(event) => event.stopPropagation()}
-          onWheel={(event) => {
-            event.preventDefault()
-            clampZoom(zoom() + (event.deltaY < 0 ? 0.2 : -0.2))
-          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
         >
           <Show when={failed()}>
             <p class="cs-artifact-lightbox-empty">{failed()}</p>
           </Show>
           <Show when={!failed() && kind() === "image"}>
             <Show when={src()} fallback={<p class="cs-artifact-lightbox-empty">loading…</p>}>
-              <img
-                src={src()}
-                alt={props.artifact.name}
-                style={{ transform: `scale(${zoom()})` }}
-                onClick={() => setZoom(zoom() === 1 ? 2 : 1)}
-              />
+              <div
+                class="cs-artifact-lightbox-frame"
+                style={{
+                  width: `${imageSize().w}px`,
+                  height: `${imageSize().h}px`,
+                }}
+              >
+                <img
+                  src={src()}
+                  alt={artifact.name}
+                  onLoad={(event) => {
+                    const img = event.currentTarget
+                    setNatural({ w: img.naturalWidth, h: img.naturalHeight })
+                  }}
+                  onDblClick={() => setZoom(zoom() === 1 ? 2 : 1)}
+                />
+              </div>
             </Show>
           </Show>
           <Show when={!failed() && kind() === "pdf"}>
-            <PdfStage data={data()} page={page()} zoom={zoom()} onPages={setPages} />
+            <PdfStage data={data()} page={page()} zoom={zoom()} box={inner()} onPages={setPages} />
           </Show>
         </div>
       </div>
@@ -158,20 +267,32 @@ function PdfStage(props: {
   data: ArtifactData | undefined
   page: number
   zoom: number
+  box: { w: number; h: number }
   onPages: (count: number) => void
 }): JSX.Element {
-  let canvas!: HTMLCanvasElement
+  const [canvas, setCanvas] = createSignal<HTMLCanvasElement>()
+  const [doc, setDoc] = createSignal<PdfDoc>()
+  const [base, setBase] = createSignal({ w: 0, h: 0 })
+
+  createEffect(() => {
+    const node = canvas()
+    const size = base()
+    const zoom = props.zoom
+    const view = props.box
+    if (!node || !size.w || !size.h) return
+    const fit = Math.min(view.w / size.w, view.h / size.h)
+    const scale = Math.max(0.08, fit * zoom)
+    node.style.width = `${Math.floor(size.w * scale)}px`
+    node.style.height = `${Math.floor(size.h * scale)}px`
+  })
 
   createEffect(() => {
     const file = props.data
-    const pageNumber = props.page
-    const zoom = props.zoom
-    if (!file?.content || file.encoding !== "base64") return
-
-    let disposed = false
-    let task: { cancel(): void } | undefined
-    let doc: { destroy(): Promise<void> } | undefined
-
+    if (!file?.content || file.encoding !== "base64") {
+      setDoc(undefined)
+      return
+    }
+    const life = { disposed: false, handle: undefined as PdfDoc | undefined }
     void (async () => {
       try {
         const pdfjs = (await import("pdfjs-dist")) as unknown as Pdfjs
@@ -180,37 +301,65 @@ function PdfStage(props: {
         }
         const bytes = Uint8Array.from(atob(file.content!), (char) => char.charCodeAt(0))
         const loaded = await pdfjs.getDocument({ data: bytes }).promise
-        if (disposed) {
+        if (life.disposed) {
           await loaded.destroy()
           return
         }
-        doc = loaded
+        life.handle = loaded
+        setDoc(loaded)
         props.onPages(loaded.numPages)
-        const page = await loaded.getPage(Math.min(pageNumber, loaded.numPages))
-        if (disposed) return
-        const viewport = page.getViewport({ scale: 1.35 * zoom })
-        const ratio = window.devicePixelRatio || 1
-        canvas.width = Math.floor(viewport.width * ratio)
-        canvas.height = Math.floor(viewport.height * ratio)
-        canvas.style.width = `${Math.floor(viewport.width)}px`
-        canvas.style.height = `${Math.floor(viewport.height)}px`
-        const context = canvas.getContext("2d")
-        if (!context) return
-        context.setTransform(ratio, 0, 0, ratio, 0, 0)
-        const rendered = page.render({ canvasContext: context, viewport })
-        task = rendered
-        await rendered.promise
       } catch {
-        // Keep the empty canvas; the header still identifies the file.
+        if (!life.disposed) setDoc(undefined)
       }
     })()
-
     onCleanup(() => {
-      disposed = true
-      task?.cancel()
-      void doc?.destroy()
+      life.disposed = true
+      const handle = life.handle as { destroy?: () => Promise<void> } | undefined
+      if (!handle || typeof handle.destroy !== "function") return
+      void handle.destroy().catch(() => undefined)
     })
   })
 
-  return <canvas ref={canvas} class="cs-artifact-lightbox-pdf" />
+  createEffect(() => {
+    const loaded = doc()
+    const node = canvas()
+    const pageNumber = props.page
+    const zoom = props.zoom
+    const view = props.box
+    if (!loaded || !node) return
+    const life = { disposed: false, task: undefined as { cancel(): void } | undefined }
+    void (async () => {
+      try {
+        const page = await loaded.getPage(Math.min(pageNumber, loaded.numPages))
+        if (life.disposed) return
+        const raw = page.getViewport({ scale: 1 })
+        setBase({ w: raw.width, h: raw.height })
+        const fit = Math.min(view.w / raw.width, view.h / raw.height)
+        const viewport = page.getViewport({ scale: Math.max(0.08, fit * zoom) })
+        const ratio = window.devicePixelRatio || 1
+        node.width = Math.floor(viewport.width * ratio)
+        node.height = Math.floor(viewport.height * ratio)
+        node.style.width = `${Math.floor(viewport.width)}px`
+        node.style.height = `${Math.floor(viewport.height)}px`
+        const context = node.getContext("2d")
+        if (!context) return
+        context.setTransform(ratio, 0, 0, ratio, 0, 0)
+        const rendered = page.render({ canvasContext: context, viewport })
+        life.task = rendered
+        await rendered.promise
+      } catch {
+        // empty canvas; filename stays in the bar
+      }
+    })()
+    onCleanup(() => {
+      life.disposed = true
+      try {
+        life.task?.cancel()
+      } catch {
+        // Cancelling a finished render must not block lightbox unmount.
+      }
+    })
+  })
+
+  return <canvas ref={setCanvas} class="cs-artifact-lightbox-pdf" />
 }

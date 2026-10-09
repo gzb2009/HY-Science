@@ -57,11 +57,6 @@ import {
   formatSectionForDisplay,
   hasStructuredResult,
   isUserStopError,
-  resultFileCtaKind,
-  resultFileCtaName,
-  resultFileGlyph,
-  resultFileHowLabel,
-  resultFileTypeLabel,
   resultFileVisual,
   splitResultSections,
   type ResultFile,
@@ -116,58 +111,59 @@ function computeStatusFromPart(part: PartType | undefined, t: Translator): strin
   return undefined
 }
 
+const STRIP = 5
+
+function clipName(name: string) {
+  if (name.length <= 18) return name
+  const dot = name.lastIndexOf(".")
+  const ext = dot > 0 ? name.slice(dot) : ""
+  const stem = dot > 0 ? name.slice(0, dot) : name
+  const tail = stem.slice(-8)
+  return `${stem.slice(0, 1)}…${tail}${ext}`
+}
+
+function folderTitle(file: ResultFile) {
+  const parent = getDirectory(file.path).split("/").filter(Boolean).pop() ?? ""
+  if (parent && !/^(figures?|results?|outputs?|files|src)$/i.test(parent)) return parent.replace(/[_-]+/g, " ")
+  const stem = file.name.includes(".") ? file.name.slice(0, file.name.lastIndexOf(".")) : file.name
+  return stem.replace(/[_-]+/g, " ") || file.name
+}
+
 function ResultFileCards(props: {
   files: ResultFile[]
   onOpenFile?: (path: string) => void
   onPreviewFile?: (path: string) => void
   renderFilePreview?: (file: ResultFile) => JSX.Element | undefined
 }) {
-  const i18n = useI18n()
-  const [limit, setLimit] = createSignal(6)
-  const visible = createMemo(() => props.files.slice(0, limit()))
-  const remaining = createMemo(() => Math.max(0, props.files.length - limit()))
-  const thumbs = createMemo(() => visible().filter(resultFileVisual))
-  const chips = createMemo(() => visible().filter((file) => !resultFileVisual(file)))
+  const [open, setOpen] = createSignal(false)
+  const shown = createMemo(() => (open() ? props.files : props.files.slice(0, STRIP)))
+  const remaining = createMemo(() => (open() ? 0 : Math.max(0, props.files.length - STRIP)))
   return (
     <Show when={props.files.length > 0}>
-      <section data-slot="session-turn-result-files">
-        <Show when={thumbs().length > 0}>
-          <div data-slot="session-turn-result-files-grid">
-            <For each={thumbs()}>
-              {(file) => (
-                <ResultFileTile
-                  file={file}
-                  preview={props.renderFilePreview?.(file)}
-                  onOpenFile={props.onOpenFile}
-                  onPreviewFile={props.onPreviewFile}
-                />
-              )}
-            </For>
-          </div>
-        </Show>
-        <Show when={chips().length > 0}>
-          <div data-slot="session-turn-result-files-chips">
-            <For each={chips()}>
-              {(file) => (
-                <ResultFileTile file={file} onOpenFile={props.onOpenFile} onPreviewFile={props.onPreviewFile} />
-              )}
-            </For>
-          </div>
-        </Show>
-        <Show when={remaining() > 0}>
-          <Button
-            data-slot="session-turn-result-files-more"
-            variant="ghost"
-            size="small"
-            aria-label={i18n.t("ui.sessionTurn.diff.showMore", { count: remaining() })}
-            onClick={() => setLimit(props.files.length)}
-          >
-            +{remaining()} more
-          </Button>
-        </Show>
-        <Show when={props.files.length > limit()}>
-          <span data-slot="session-turn-result-files-header">展示 {limit()}</span>
-        </Show>
+      <section data-slot="session-turn-result-files" aria-label={`GENERATED · ${props.files.length}`}>
+        <div data-slot="session-turn-result-files-label">GENERATED · {props.files.length}</div>
+        <div data-slot="session-turn-result-files-strip" data-open={open() ? "true" : undefined}>
+          <For each={shown()}>
+            {(file) => (
+              <ResultFileTile
+                file={file}
+                preview={props.renderFilePreview?.(file)}
+                onOpenFile={props.onOpenFile}
+                onPreviewFile={props.onPreviewFile}
+              />
+            )}
+          </For>
+          <Show when={remaining() > 0}>
+            <button
+              type="button"
+              data-slot="session-turn-result-files-more"
+              aria-label={`+${remaining()} more`}
+              onClick={() => setOpen(true)}
+            >
+              +{remaining()} more
+            </button>
+          </Show>
+        </div>
       </section>
     </Show>
   )
@@ -179,16 +175,8 @@ function ResultFileTile(props: {
   onOpenFile?: (path: string) => void
   onPreviewFile?: (path: string) => void
 }) {
-  const i18n = useI18n()
   const image = () => props.file.kind === "png" || props.file.kind === "jpg" || props.file.kind === "svg"
-  const chip = () => !resultFileVisual(props.file)
-  const glyph = () => resultFileGlyph(props.file.kind)
-  const ext = () => props.file.name.slice(props.file.name.lastIndexOf(".") + 1).toUpperCase()
-  const cta = () => {
-    const name = resultFileCtaName(props.file.name)
-    if (resultFileCtaKind(props.file) === "table") return i18n.t("ui.sessionTurn.resultFile.viewTable", { name })
-    return i18n.t("ui.sessionTurn.resultFile.viewFile", { name })
-  }
+  const visual = () => resultFileVisual(props.file)
   const open = () => {
     if (image() || props.file.kind === "pdf") {
       props.onPreviewFile?.(props.file.path)
@@ -199,7 +187,7 @@ function ResultFileTile(props: {
   return (
     <div
       data-slot="session-turn-result-file-tile"
-      data-variant={chip() ? "chip" : "thumb"}
+      data-variant={visual() ? "thumb" : "doc"}
       data-role={props.file.role}
       role="button"
       tabIndex={0}
@@ -211,45 +199,23 @@ function ResultFileTile(props: {
       }}
     >
       <Show
-        when={chip()}
-        fallback={
-          <>
-            <div data-slot="session-turn-result-file-preview">
-              <Show
-                when={props.preview}
-                fallback={
-                  <div data-slot="session-turn-result-file-placeholder">
-                    <FileIcon
-                      node={{ path: props.file.name, type: "file" }}
-                      style={{ width: "30px", height: "30px" }}
-                    />
-                    <span>{ext()}</span>
-                  </div>
-                }
-              >
-                {(content) => content()}
-              </Show>
-            </div>
-            <div data-slot="session-turn-result-file-caption">
-              <div data-slot="session-turn-result-cta">{cta()}</div>
-              <Show when={resultFileHowLabel(props.file, i18n.locale())}>
-                {(label) => <div data-slot="session-turn-result-file-how">{label()}</div>}
-              </Show>
-            </div>
-          </>
-        }
+        when={visual()}
+        fallback={<div data-slot="session-turn-result-file-title">{folderTitle(props.file)}</div>}
       >
-        <div data-slot="session-turn-result-file-glyph" data-tone={glyph().tone}>
-          {glyph().mark}
-        </div>
-        <div data-slot="session-turn-result-file-meta">
-          <div data-slot="session-turn-result-file-name">{props.file.name}</div>
-          <div data-slot="session-turn-result-file-sub">{resultFileTypeLabel(props.file.kind, i18n.locale())}</div>
-          <Show when={resultFileHowLabel(props.file, i18n.locale())}>
-            {(label) => <div data-slot="session-turn-result-file-how">{label()}</div>}
+        <div data-slot="session-turn-result-file-preview">
+          <Show
+            when={props.preview}
+            fallback={
+              <div data-slot="session-turn-result-file-placeholder">
+                <FileIcon node={{ path: props.file.name, type: "file" }} style={{ width: "22px", height: "22px" }} />
+              </div>
+            }
+          >
+            {(content) => content()}
           </Show>
         </div>
       </Show>
+      <div data-slot="session-turn-result-file-name">{clipName(props.file.name)}</div>
     </div>
   )
 }
@@ -996,7 +962,7 @@ export function SessionTurn(
                         <Show when={reasoningParts().length > 0}>
                           <div data-slot="session-turn-reasoning-body">
                             <For each={reasoningParts()}>
-                              {(item) => <Markdown text={item.text} cacheKey={item.id} />}
+                              {(item) => <Markdown text={item.text} cacheKey={item.id} streaming={live()} />}
                             </For>
                           </div>
                         </Show>

@@ -5,7 +5,7 @@ import { DialogSettings } from "@/components/dialog-settings"
 import { DisconnectedPanel } from "@/thesis/DisconnectedPanel"
 import { CommandPalette } from "@/thesis/CommandPalette"
 import { HelpOverlay } from "@/thesis/HelpOverlay"
-import { HomeParticles } from "@/thesis/HomeParticles"
+import { InkWashBg } from "@/shell/ink-wash-bg"
 import { ToastContainer } from "@/thesis/Toast"
 import { uiStore } from "@/thesis/store/ui"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
@@ -76,14 +76,14 @@ export default function DomainGuide(): JSX.Element {
   }
 
   return (
-    <div class="thesis-root cs-home">
+    <div class="thesis-root cs-home cs-ink-home">
+      <InkWashBg plate="/ink-wash-project-bg.png?v=dushan" strength={0.42} />
       <ToastContainer />
       <HelpOverlay open={uiStore.helpOpen()} onClose={() => uiStore.setHelpOpen(false)} />
       <CommandPalette open={uiStore.paletteOpen()} onClose={() => uiStore.setPaletteOpen(false)} />
       <DisconnectedPanel />
 
       <main class="thesis-scroll cs-home-main">
-        <HomeParticles />
         <div class="cs-workbench-inner">
           <div class="cs-workbench-header">
             <div class="cs-workbench-brand-block">

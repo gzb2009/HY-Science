@@ -32,7 +32,7 @@ function actionBtn(primary = false, danger = false): JSX.CSSProperties {
     background: danger ? "var(--color-error, #ef4444)" : primary ? "var(--color-accent)" : "var(--color-bg-elevated)",
     color: danger || primary ? "var(--color-on-accent)" : "var(--color-text)",
     "font-family": FONT_MONO,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     "font-weight": 500,
   }
 }
@@ -53,7 +53,7 @@ export function confirmDialog(
       () => (
         <div style={card()}>
           <div style={{ padding: "18px 20px 8px" }}>
-            <div style={{ "font-family": FONT_SERIF, "font-size": "19px", color: "var(--color-text)" }}>
+            <div style={{ "font-family": FONT_SERIF, "font-size": "1.357rem", color: "var(--color-text)" }}>
               {opts.title}
             </div>
             <Show when={opts.message}>
@@ -61,7 +61,7 @@ export function confirmDialog(
                 style={{
                   "margin-top": "8px",
                   "font-family": FONT_SANS,
-                  "font-size": "13px",
+                  "font-size": "0.929rem",
                   color: "var(--color-text-muted)",
                   "line-height": 1.5,
                 }}
@@ -109,7 +109,7 @@ export function promptDialog(
       () => (
         <div style={card()}>
           <div style={{ padding: "18px 20px 8px" }}>
-            <div style={{ "font-family": FONT_SERIF, "font-size": "19px", color: "var(--color-text)" }}>
+            <div style={{ "font-family": FONT_SERIF, "font-size": "1.357rem", color: "var(--color-text)" }}>
               {opts.title}
             </div>
             <Show when={opts.message}>
@@ -117,7 +117,7 @@ export function promptDialog(
                 style={{
                   "margin-top": "8px",
                   "font-family": FONT_SANS,
-                  "font-size": "13px",
+                  "font-size": "0.929rem",
                   color: "var(--color-text-muted)",
                   "line-height": 1.5,
                 }}
@@ -144,7 +144,7 @@ export function promptDialog(
                 background: "var(--color-bg)",
                 color: "var(--color-text)",
                 "font-family": FONT_MONO,
-                "font-size": "12px",
+                "font-size": "0.857rem",
               }}
             />
           </div>
@@ -189,7 +189,7 @@ export function alertDialog(
             <div
               style={{
                 "font-family": FONT_SERIF,
-                "font-size": "19px",
+                "font-size": "1.357rem",
                 color: opts.danger ? "var(--color-error, #ef4444)" : "var(--color-text)",
               }}
             >
@@ -200,7 +200,7 @@ export function alertDialog(
                 style={{
                   "margin-top": "8px",
                   "font-family": FONT_SANS,
-                  "font-size": "13px",
+                  "font-size": "0.929rem",
                   color: "var(--color-text-muted)",
                   "line-height": 1.5,
                 }}

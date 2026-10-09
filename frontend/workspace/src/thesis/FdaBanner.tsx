@@ -127,7 +127,7 @@ export function FdaChip(): JSX.Element {
           border: "1px solid color-mix(in srgb, var(--color-warning) 35%, transparent)",
           color: "color-mix(in srgb, var(--color-warning) 65%, var(--color-text))",
           "font-family": FONT_MONO,
-          "font-size": "11px",
+          "font-size": "0.786rem",
           "font-weight": 400,
         }}
         onMouseEnter={(e) =>
@@ -173,7 +173,7 @@ function FdaSheet(props: {
         <p
           style={{
             "font-family": FONT_SANS,
-            "font-size": "13px",
+            "font-size": "0.929rem",
             color: "var(--color-text-muted)",
             "line-height": 1.55,
             margin: 0,
@@ -190,7 +190,7 @@ function FdaSheet(props: {
               "flex-direction": "column",
               gap: "4px",
               "font-family": FONT_MONO,
-              "font-size": "12px",
+              "font-size": "0.857rem",
               color: "var(--color-text)",
             }}
           >
@@ -216,7 +216,7 @@ function FdaSheet(props: {
                 background: "var(--color-accent)",
                 color: "var(--color-on-accent)",
                 "font-family": FONT_MONO,
-                "font-size": "11px",
+                "font-size": "0.786rem",
                 "font-weight": 400,
                 display: "inline-flex",
                 "align-items": "center",
@@ -242,7 +242,7 @@ function FdaSheet(props: {
               background: "var(--color-surface-solid)",
               border: "1px solid var(--color-border)",
               "font-family": FONT_MONO,
-              "font-size": "11px",
+              "font-size": "0.786rem",
               color: "var(--color-text)",
               opacity: busy() ? 0.5 : 1,
               display: "inline-flex",
@@ -262,7 +262,7 @@ function FdaSheet(props: {
               padding: "7px 12px",
               "border-radius": "4px",
               "font-family": FONT_MONO,
-              "font-size": "11px",
+              "font-size": "0.786rem",
               color: "var(--color-text-muted)",
             }}
           >
@@ -273,7 +273,7 @@ function FdaSheet(props: {
           <div
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               "padding-top": "4px",
               "border-top": "1px dashed var(--color-border)",
@@ -293,7 +293,7 @@ export const FdaBanner = FdaChip
 function kbd(): JSX.CSSProperties {
   return {
     "font-family": FONT_CODE,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     padding: "1px 5px",
     "border-radius": "4px",
     background: "var(--color-bg-elevated)",

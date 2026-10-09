@@ -36,6 +36,10 @@ import {
   IconGitBranch,
 } from "@/thesis/shared/Icon"
 
+function filesPaneLive() {
+  return centerTabs.filesOpen() && centerTabs.active() === "files"
+}
+
 interface FileNode {
   name: string
   path: string
@@ -165,8 +169,10 @@ export function FileExplorer(props: {
   }
 
   const [entries] = createResource(
-    () => [cwd(), refreshKey(), scope()] as const,
-    async ([dir, , s]) => {
+    () => (filesPaneLive() ? ([cwd(), refreshKey(), scope()] as const) : undefined),
+    async (args) => {
+      if (!args) return [] as FileNode[]
+      const [dir, , s] = args
       if (s === "artifacts") return [] as FileNode[]
       setPermissionError(null)
       if (!dir) return [] as FileNode[]
@@ -341,7 +347,7 @@ export function FileExplorer(props: {
                             <div
                               style={{
                                 "font-family": FONT_SANS,
-                                "font-size": "11px",
+                                "font-size": "0.786rem",
                                 color: "var(--color-text-faint)",
                                 "margin-top": "8px",
                                 "line-height": 1.4,
@@ -442,14 +448,14 @@ function HostFolderBody(props: {
           >
             <IconFolder size={20} strokeWidth={1.4} />
             <div
-              style={{ "font-family": FONT_SANS, "font-size": "13px", "font-weight": 500, color: "var(--color-text)" }}
+              style={{ "font-family": FONT_SANS, "font-size": "0.929rem", "font-weight": 500, color: "var(--color-text)" }}
             >
               Can't read this folder
             </div>
             <div
               style={{
                 "font-family": FONT_SANS,
-                "font-size": "12px",
+                "font-size": "0.857rem",
                 color: "var(--color-text-faint)",
                 "line-height": 1.5,
                 "max-width": "320px",
@@ -468,7 +474,7 @@ function HostFolderBody(props: {
                 "border-radius": "4px",
                 border: "1px solid var(--color-border)",
                 "font-family": FONT_MONO,
-                "font-size": "11px",
+                "font-size": "0.786rem",
                 color: "var(--color-text)",
               }}
             >
@@ -659,17 +665,10 @@ function ArtifactsGrid(props: {
   const [showHidden, setShowHidden] = createSignal(false)
   const [menu, setMenu] = createSignal<{ path: string; x: number; y: number } | undefined>()
   const [data] = createResource(
-    () =>
-      [
-        props.directory,
-        refresh(),
-        props.browseMode,
-        [...(props.taskFileNames ?? [])].sort().join("\0"),
-        [...(props.recentTurnFileNames ?? [])].sort().join("\0"),
-        (props.taskResultFiles ?? []).map((f) => f.path).join("\0"),
-        (props.recentResultFiles ?? []).map((f) => f.path).join("\0"),
-      ] as const,
-    async ([dir]) => {
+    () => (filesPaneLive() ? ([props.directory, refresh(), props.browseMode] as const) : undefined),
+    async (args) => {
+      if (!args) return [] as FileNode[]
+      const [dir] = args
       if (!dir) return [] as FileNode[]
       try {
         const res: any = await sdk.client.file.list({ directory: dir, path: "." })
@@ -982,7 +981,7 @@ function ArtifactsGrid(props: {
           <div
             style={{
               padding: "8px 14px",
-              "font-size": "11px",
+              "font-size": "0.786rem",
               color: "var(--color-text-faint)",
               "border-bottom": "1px solid var(--color-border-weak-base)",
             }}
@@ -1177,7 +1176,7 @@ function ArtifactCard(props: {
         <span
           style={{
             "font-family": FONT_SANS,
-            "font-size": "13px",
+            "font-size": "0.929rem",
             "font-weight": 600,
             color: "var(--color-text)",
             overflow: "hidden",
@@ -1187,7 +1186,7 @@ function ArtifactCard(props: {
         >
           {props.node.name}
         </span>
-        <span style={{ "font-family": FONT_SANS, "font-size": "11px", color: "var(--color-text-faint)" }}>
+        <span style={{ "font-family": FONT_SANS, "font-size": "0.786rem", color: "var(--color-text-faint)" }}>
           {subtitle(props.node)}
         </span>
       </div>
@@ -1217,7 +1216,7 @@ function FileThumb(props: { node: FileNode }): JSX.Element {
         <span
           style={{
             "font-family": FONT_MONO,
-            "font-size": "11px",
+            "font-size": "0.786rem",
             "font-weight": 700,
             color: "var(--color-text-muted)",
             "letter-spacing": "0.06em",
@@ -1228,7 +1227,7 @@ function FileThumb(props: { node: FileNode }): JSX.Element {
         <span
           style={{
             "font-family": FONT_SANS,
-            "font-size": "11px",
+            "font-size": "0.786rem",
             color: "var(--color-text-faint)",
             overflow: "hidden",
             "text-overflow": "ellipsis",
@@ -1301,7 +1300,7 @@ function ArtifactListRow(props: {
         <span
           style={{
             "font-family": FONT_SANS,
-            "font-size": "13px",
+            "font-size": "0.929rem",
             "font-weight": 600,
             color: "var(--color-text)",
             overflow: "hidden",
@@ -1319,12 +1318,12 @@ function ArtifactListRow(props: {
           </Show>
           {props.node.name}
         </span>
-        <span style={{ "font-family": FONT_SANS, "font-size": "11px", color: "var(--color-text-faint)" }}>
+        <span style={{ "font-family": FONT_SANS, "font-size": "0.786rem", color: "var(--color-text-faint)" }}>
           {kindLabel(props.node.name)} · {subtitle(props.node)}
         </span>
       </div>
       <span
-        style={{ "font-family": FONT_MONO, "font-size": "10px", color: "var(--color-text-faint)", "flex-shrink": 0 }}
+        style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-faint)", "flex-shrink": 0 }}
       >
         {compactBytes(props.node.size)}
       </span>
@@ -1416,7 +1415,7 @@ function MenuRow(props: { icon: JSX.Element; label: string; onClick: () => void;
         padding: "8px 9px",
         "border-radius": "6px",
         "font-family": FONT_SANS,
-        "font-size": "13px",
+        "font-size": "0.929rem",
         color: props.danger ? "#c0392b" : "var(--color-text)",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg-subtle)")}
@@ -1525,7 +1524,7 @@ function TypeChip(props: { kind: "num" | "str" }): JSX.Element {
         "border-radius": "3px",
         "flex-shrink": 0,
         "font-family": FONT_MONO,
-        "font-size": "9px",
+        "font-size": "0.643rem",
         "font-weight": 600,
         "letter-spacing": "-0.02em",
         background: num
@@ -1576,7 +1575,7 @@ function TableThumb(props: { directory: string; node: FileNode }): JSX.Element {
           }}
         >
           <TableGlyph size={28} />
-          <span style={{ "font-family": FONT_MONO, "font-size": "10px", color: "var(--color-text-faint)" }}>
+          <span style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-faint)" }}>
             {ext(props.node.name).toUpperCase() || "TABLE"} · {compactBytes(props.node.size)}
           </span>
         </div>
@@ -1597,7 +1596,7 @@ function TableThumb(props: { directory: string; node: FileNode }): JSX.Element {
           <div
             style={{
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               "letter-spacing": "0.01em",
             }}
@@ -1621,7 +1620,7 @@ function TableThumb(props: { directory: string; node: FileNode }): JSX.Element {
                   <span
                     style={{
                       "font-family": FONT_SANS,
-                      "font-size": "12px",
+                      "font-size": "0.857rem",
                       color: "var(--color-text)",
                       overflow: "hidden",
                       "text-overflow": "ellipsis",
@@ -1634,7 +1633,7 @@ function TableThumb(props: { directory: string; node: FileNode }): JSX.Element {
               )}
             </For>
             <Show when={meta().fields.length > 5}>
-              <span style={{ "font-family": FONT_MONO, "font-size": "10px", color: "var(--color-text-faint)" }}>
+              <span style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-faint)" }}>
                 +{meta().fields.length - 5} more
               </span>
             </Show>
@@ -1688,7 +1687,7 @@ function TablePreview(props: {
             </span>
             <Show when={table()}>
               {(meta) => (
-                <span style={{ "font-family": FONT_MONO, "font-size": "11px", color: "var(--color-text-faint)" }}>
+                <span style={{ "font-family": FONT_MONO, "font-size": "0.786rem", color: "var(--color-text-faint)" }}>
                   {meta().rows.toLocaleString()} × {meta().cols}
                 </span>
               )}
@@ -1710,7 +1709,7 @@ function TablePreview(props: {
                     display: "grid",
                     "place-items": "center",
                     "font-family": FONT_SANS,
-                    "font-size": "13px",
+                    "font-size": "0.929rem",
                     color: "var(--color-text-faint)",
                   }}
                 >
@@ -1726,7 +1725,7 @@ function TablePreview(props: {
                     "border-collapse": "separate",
                     "border-spacing": 0,
                     "font-family": FONT_SANS,
-                    "font-size": "12px",
+                    "font-size": "0.857rem",
                   }}
                 >
                   <thead>
@@ -1797,7 +1796,7 @@ function TablePreview(props: {
                 padding: "8px 14px",
                 "border-top": "1px solid var(--color-border)",
                 "font-family": FONT_MONO,
-                "font-size": "11px",
+                "font-size": "0.786rem",
                 color: "var(--color-text-faint)",
               }}
             >
@@ -1878,7 +1877,7 @@ function ImagePreview(props: {
                 <button type="button" style={previewBtn()} onClick={() => step(-1)}>
                   ‹
                 </button>
-                <span style={{ "font-family": FONT_MONO, "font-size": "11px", color: "var(--color-text-faint)" }}>
+                <span style={{ "font-family": FONT_MONO, "font-size": "0.786rem", color: "var(--color-text-faint)" }}>
                   {index() + 1}/{props.images.length}
                 </span>
                 <button type="button" style={previewBtn()} onClick={() => step(1)}>
@@ -1895,7 +1894,7 @@ function ImagePreview(props: {
                 <span
                   style={{
                     "font-family": FONT_MONO,
-                    "font-size": "10px",
+                    "font-size": "0.714rem",
                     color: "var(--color-text-faint)",
                     width: "34px",
                   }}
@@ -1999,7 +1998,7 @@ function FilesToolbar(props: {
         <span
           style={{
             "font-family": FONT_SANS,
-            "font-size": "12px",
+            "font-size": "0.857rem",
             "font-weight": 600,
             color: "var(--color-text)",
             "flex-shrink": 0,
@@ -2031,17 +2030,17 @@ function FilesToolbar(props: {
               flex: 1,
               "min-width": 0,
               "font-family": FONT_SANS,
-              "font-size": "12px",
+              "font-size": "0.857rem",
               color: "var(--color-text)",
             }}
           />
         </div>
-        <span style={{ "font-size": "11px", color: "var(--color-text-faint)", "white-space": "nowrap" }}>
+        <span style={{ "font-size": "0.786rem", color: "var(--color-text-faint)", "white-space": "nowrap" }}>
           {props.count} 项
         </span>
         <Show when={props.meta}>
           {(meta) => (
-            <span style={{ "font-size": "10px", color: "var(--color-text-faint)", "white-space": "nowrap" }}>
+            <span style={{ "font-size": "0.714rem", color: "var(--color-text-faint)", "white-space": "nowrap" }}>
               {meta()}
             </span>
           )}
@@ -2131,7 +2130,7 @@ function pillBtn(active: boolean): JSX.CSSProperties {
     padding: "4px 9px",
     "border-radius": "4px",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "font-weight": active ? 600 : 500,
     color: active ? "var(--color-text)" : "var(--color-text-muted)",
     background: active ? "var(--color-surface-solid)" : "transparent",
@@ -2165,7 +2164,7 @@ function colHeader(): JSX.CSSProperties {
     gap: "10px",
     padding: "6px 16px",
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     "letter-spacing": "0.08em",
     "text-transform": "uppercase",
     color: "var(--color-text-faint)",
@@ -2188,7 +2187,7 @@ function row(ignored: boolean): JSX.CSSProperties {
     width: "100%",
     padding: "7px 16px",
     "font-family": FONT_MONO,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     color: "var(--color-text-muted)",
     opacity: ignored ? 0.5 : 1,
     "font-style": ignored ? "italic" : "normal",
@@ -2201,7 +2200,7 @@ function cell(): JSX.CSSProperties {
     width: "78px",
     "text-align": "right",
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text-faint)",
     "flex-shrink": 0,
   } as JSX.CSSProperties
@@ -2221,7 +2220,7 @@ function card(ignored: boolean): JSX.CSSProperties {
     border: "1px solid var(--color-border)",
     background: "var(--color-surface-solid)",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text-muted)",
     opacity: ignored ? 0.5 : 1,
     transition: "background 120ms ease",
@@ -2317,7 +2316,7 @@ function previewBar(): JSX.CSSProperties {
     border: "0 solid var(--color-border)",
     "border-bottom-width": "1px",
     "font-family": FONT_SANS,
-    "font-size": "13px",
+    "font-size": "0.929rem",
     color: "var(--color-text)",
   } as JSX.CSSProperties
 }
@@ -2342,7 +2341,7 @@ function emptyMsg(): JSX.CSSProperties {
     "place-items": "center",
     padding: "40px 20px",
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text-faint)",
     "text-align": "center",
   } as JSX.CSSProperties

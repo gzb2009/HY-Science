@@ -19,7 +19,7 @@
 }
 
 [data-component="choice-card"] [data-slot="choice-question"] {
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 450;
   line-height: 1.45;
   color: var(--text-strong);
@@ -27,7 +27,7 @@
 
 [data-component="choice-card"] [data-slot="choice-answer"] {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 0.929rem;
   line-height: 1.45;
   color: var(--text-weak);
 }
@@ -74,14 +74,14 @@
 }
 
 [data-component="choice-card"] [data-slot="choice-sheet-hint"] {
-  font-size: 12px;
+  font-size: 0.857rem;
   line-height: 1.4;
   color: var(--text-weak);
 }
 
 [data-component="choice-card"] [data-slot="choice-sheet-title"] {
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: 1.071rem;
   font-weight: 650;
   line-height: 1.45;
 }
@@ -132,7 +132,7 @@
   border-radius: 999px;
   background: var(--surface-base);
   color: var(--text-weak);
-  font-size: 12px;
+  font-size: 0.857rem;
   font-weight: 650;
 }
 
@@ -151,13 +151,13 @@
 }
 
 [data-component="choice-card"] [data-slot="choice-option-label"] {
-  font-size: 13px;
+  font-size: 0.929rem;
   font-weight: 550;
   line-height: 1.4;
 }
 
 [data-component="choice-card"] [data-slot="choice-option-note"] {
-  font-size: 12px;
+  font-size: 0.857rem;
   line-height: 1.45;
   color: var(--text-weak);
 }
@@ -182,7 +182,7 @@
   border-top: 1px solid var(--border-weak-base);
   background: transparent;
   color: var(--text-weak);
-  font-size: 13px;
+  font-size: 0.929rem;
   text-align: left;
 }
 
@@ -202,7 +202,7 @@
   border: none;
   background: transparent;
   color: var(--text-strong);
-  font-size: 13px;
+  font-size: 0.929rem;
   outline: none;
 }
 
@@ -214,7 +214,7 @@
   border-radius: 999px;
   background: var(--surface-raised-base, #fff);
   color: var(--text-strong);
-  font-size: 12px;
+  font-size: 0.857rem;
   cursor: pointer;
 }
 

@@ -191,7 +191,7 @@ export function HYscienceFileTree(props: {
                 style={{
                   padding: "18px",
                   "font-family": FONT_MONO,
-                  "font-size": "11px",
+                  "font-size": "0.786rem",
                   color: "var(--color-text-faint)",
                 }}
               >
@@ -248,7 +248,7 @@ export function HYscienceFileTree(props: {
                 <div
                   style={{
                     "font-family": FONT_SANS,
-                    "font-size": "11px",
+                    "font-size": "0.786rem",
                     color: "var(--color-text-faint)",
                     "line-height": 1.5,
                     "max-width": "300px",
@@ -269,7 +269,7 @@ export function HYscienceFileTree(props: {
                       "border-radius": "4px",
                       border: "1px solid var(--color-border)",
                       "font-family": FONT_MONO,
-                      "font-size": "11px",
+                      "font-size": "0.786rem",
                       color: "var(--color-text)",
                     }}
                   >
@@ -348,7 +348,7 @@ export function HYscienceFileTree(props: {
           class="tab-fig"
           style={{
             "font-family": FONT_MONO,
-            "font-size": "10px",
+            "font-size": "0.714rem",
             color: "var(--color-text-faint)",
             "letter-spacing": "0.04em",
           }}
@@ -436,7 +436,7 @@ function Node(props: {
               style={{
                 "padding-left": `${(props.depth + 1) * 10 + 20}px`,
                 "font-family": FONT_MONO,
-                "font-size": "10px",
+                "font-size": "0.714rem",
                 color: "var(--color-text-faint)",
                 padding: "2px 0",
               }}
@@ -484,7 +484,7 @@ function Node(props: {
           "padding-left": `${props.depth * 12 + 6}px`,
           "border-radius": "4px",
           "font-family": FONT_MONO,
-          "font-size": "12px",
+          "font-size": "0.857rem",
           color: props.node.type === "directory" ? "var(--color-text)" : "var(--color-text-muted)",
           "font-style": props.node.ignored ? "italic" : "normal",
           transition: "background 120ms ease",
@@ -520,7 +520,7 @@ function Node(props: {
             style={{
               "padding-left": `${(props.depth + 1) * 12 + 6}px`,
               "font-family": FONT_MONO,
-              "font-size": "10px",
+              "font-size": "0.714rem",
               color: "var(--color-text-faint)",
               padding: "2px 0",
             }}

@@ -32,7 +32,7 @@ export const ICON_SIZE = {
 /** The one uppercase "eyebrow" label spec — mirror of .thesis-section-label. */
 export const sectionTitle: JSX.CSSProperties = {
   "font-family": FONT_SANS,
-  "font-size": "10px",
+  "font-size": "0.714rem",
   "font-weight": 400,
   "letter-spacing": "0.08em",
   "text-transform": "uppercase",

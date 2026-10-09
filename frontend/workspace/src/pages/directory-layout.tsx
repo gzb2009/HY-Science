@@ -36,7 +36,7 @@ export default function Layout(props: ParentProps) {
     navigate("/")
   })
   return (
-    <Show when={worktree()}>
+    <Show when={worktree()} keyed>
       <SDKProvider directory={workspaceDir()}>
         <SyncProvider>
           {iife(() => {

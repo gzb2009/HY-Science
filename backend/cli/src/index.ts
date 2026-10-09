@@ -30,6 +30,7 @@ import { ImportCommand } from "./cli/cmd/import"
 import { AcpCommand } from "./cli/cmd/acp"
 import { EOL } from "os"
 import { WebCommand } from "./cli/cmd/web"
+import { DesktopCommand } from "./cli/cmd/desktop"
 import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { KeysCommand } from "./cli/cmd/auth"
@@ -107,6 +108,7 @@ const cli = yargs(hideBin(process.argv))
   .command(UninstallCommand)
   .command(ServeCommand)
   .command(WebCommand)
+  .command(DesktopCommand)
   .command(ModelsCommand)
   .command(SkillCommand)
   .command(StatsCommand)

@@ -54,7 +54,7 @@ export function BlockProgress(props: BlockProgressProps): JSX.Element {
     <span
       style={{
         "font-family": FONT_MONO,
-        "font-size": "11px",
+        "font-size": "0.786rem",
         color: "var(--color-text-muted)",
         display: "inline-flex",
         "align-items": "center",
@@ -63,7 +63,7 @@ export function BlockProgress(props: BlockProgressProps): JSX.Element {
     >
       <span style={{ "letter-spacing": "0.04em" }}>[{bar()}]</span>
       <Show when={props.label}>
-        <span style={{ color: "var(--color-text-faint)", "font-size": "10px" }}>{props.label}</span>
+        <span style={{ color: "var(--color-text-faint)", "font-size": "0.714rem" }}>{props.label}</span>
       </Show>
     </span>
   )

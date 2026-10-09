@@ -198,7 +198,7 @@ export function SequenceViewer(props: ArtifactRenderProps) {
           "align-items": "center",
           gap: "10px",
           padding: "5px 10px",
-          "font-size": "11px",
+          "font-size": "0.786rem",
           color: "#8a8a8a",
           background: "rgba(128,128,128,0.08)",
           "border-bottom": "1px solid rgba(128,128,128,0.2)",
@@ -234,7 +234,7 @@ export function SequenceViewer(props: ArtifactRenderProps) {
                   "justify-content": "flex-end",
                   "padding-right": "8px",
                   "padding-bottom": "1px",
-                  "font-size": "11px",
+                  "font-size": "0.786rem",
                   color: "#8a8a8a",
                   "user-select": "none",
                 }}
@@ -252,7 +252,7 @@ export function SequenceViewer(props: ArtifactRenderProps) {
                           width: `${CELL_W}px`,
                           "text-align": "right",
                           "white-space": "nowrap",
-                          "font-size": "9px",
+                          "font-size": "0.643rem",
                           "line-height": `${RULER_H}px`,
                           color: "#9a9a9a",
                           "user-select": "none",
@@ -275,7 +275,7 @@ export function SequenceViewer(props: ArtifactRenderProps) {
                             height: `${CELL_H}px`,
                             "line-height": `${CELL_H}px`,
                             "text-align": "center",
-                            "font-size": "12px",
+                            "font-size": "0.857rem",
                             "font-weight": "bold",
                             background: bg ?? "transparent",
                             color: bg ? "#ffffff" : ch === "-" || ch === "." ? "#c7c7c7" : "#555",
@@ -293,7 +293,7 @@ export function SequenceViewer(props: ArtifactRenderProps) {
         </For>
 
         <Show when={truncated()}>
-          <div style={{ "font-size": "11px", color: "#8a8a8a", "padding-top": "2px" }}>
+          <div style={{ "font-size": "0.786rem", color: "#8a8a8a", "padding-top": "2px" }}>
             showing first {MAX_RESIDUES.toLocaleString()} of {model().seq.length.toLocaleString()} residues
           </div>
         </Show>

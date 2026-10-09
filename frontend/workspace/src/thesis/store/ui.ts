@@ -9,7 +9,7 @@ import {
   rightReserved,
 } from "@/thesis/column-width"
 
-export type RightPaneTab = "now" | "evidence" | "run" | "agents"
+export type RightPaneTab = string
 export type ImagePreview = {
   directory: string
   path: string
@@ -19,15 +19,8 @@ export type ImagePreview = {
 }
 export type ReviewSelection = { sessionID: string; messageID: string }
 
-const PANE_OPEN_KEY = "thesis-rightpane-open-v3"
-
 function readPaneOpen(): boolean {
-  try {
-    const raw = localStorage.getItem(PANE_OPEN_KEY)
-    return raw === null ? false : raw !== "0"
-  } catch {
-    return false
-  }
+  return false
 }
 
 const [helpOpen, setHelpOpen] = createSignal(false)
@@ -66,9 +59,6 @@ const [prefillSend, setPrefillSend] = createSignal(false)
 const [reviewSelection, setReviewSelection] = createSignal<ReviewSelection>()
 
 function setRightPaneOpen(v: boolean) {
-  try {
-    localStorage.setItem(PANE_OPEN_KEY, v ? "1" : "0")
-  } catch {}
   setRightPaneOpenRaw(v)
 }
 

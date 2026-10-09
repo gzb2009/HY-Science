@@ -178,7 +178,7 @@ function skillsHeader(): JSX.CSSProperties {
 function skillsTitle(): JSX.CSSProperties {
   return {
     "font-family": "var(--font-mono)",
-    "font-size": "11px",
+    "font-size": "0.786rem",
     "font-weight": 700,
     color: "var(--color-text)",
   }
@@ -187,7 +187,7 @@ function skillsTitle(): JSX.CSSProperties {
 function skillsHint(): JSX.CSSProperties {
   return {
     "font-family": "var(--font-sans)",
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text-faint)",
   }
 }
@@ -212,7 +212,7 @@ function searchInput(): JSX.CSSProperties {
     flex: 1,
     "min-width": 0,
     "font-family": FONT_SANS,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     color: "var(--color-text)",
   }
 }
@@ -228,7 +228,7 @@ function groupHeader(): JSX.CSSProperties {
     width: "100%",
     padding: "7px 10px",
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text-faint)",
     "text-transform": "uppercase",
     "letter-spacing": "0.04em",
@@ -238,7 +238,7 @@ function groupHeader(): JSX.CSSProperties {
 function groupLabel(): JSX.CSSProperties {
   return {
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     "text-transform": "uppercase",
     "letter-spacing": "0.04em",
     color: "var(--color-text-faint)",
@@ -248,7 +248,7 @@ function groupLabel(): JSX.CSSProperties {
 function groupCount(): JSX.CSSProperties {
   return {
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text-faint)",
     opacity: 0.6,
   }
@@ -272,7 +272,7 @@ function skillRow(): JSX.CSSProperties {
 function skillName(): JSX.CSSProperties {
   return {
     "font-family": FONT_MONO,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text)",
     "flex-shrink": 0,
   }
@@ -281,7 +281,7 @@ function skillName(): JSX.CSSProperties {
 function skillDesc(): JSX.CSSProperties {
   return {
     "font-family": FONT_SANS,
-    "font-size": "11px",
+    "font-size": "0.786rem",
     color: "var(--color-text-muted)",
     overflow: "hidden",
     "text-overflow": "ellipsis",
@@ -316,7 +316,7 @@ function emptyText(): JSX.CSSProperties {
   return {
     margin: 0,
     "font-family": FONT_SANS,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     color: "var(--color-text-faint)",
   }
 }
@@ -326,7 +326,7 @@ function skillsFooter(): JSX.CSSProperties {
     padding: "7px 10px",
     "border-top": "1px solid var(--color-border)",
     "font-family": FONT_MONO,
-    "font-size": "10px",
+    "font-size": "0.714rem",
     color: "var(--color-text-faint)",
   }
 }

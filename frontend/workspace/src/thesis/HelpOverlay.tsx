@@ -60,7 +60,7 @@ export function HelpOverlay(props: HelpOverlayProps): JSX.Element {
             <span
               style={{
                 "font-family": FONT_SERIF,
-                "font-size": "22px",
+                "font-size": "1.571rem",
                 "letter-spacing": "-0.01em",
                 color: "var(--color-text)",
               }}
@@ -98,7 +98,7 @@ export function HelpOverlay(props: HelpOverlayProps): JSX.Element {
                   <div
                     style={{
                       "font-family": FONT_MONO,
-                      "font-size": "10px",
+                      "font-size": "0.714rem",
                       "letter-spacing": "0.08em",
                       "text-transform": "uppercase",
                       color: "var(--color-text-faint)",
@@ -122,7 +122,7 @@ export function HelpOverlay(props: HelpOverlayProps): JSX.Element {
                               <kbd
                                 style={{
                                   "font-family": FONT_MONO,
-                                  "font-size": "10px",
+                                  "font-size": "0.714rem",
                                   padding: "2px 6px",
                                   border: "1px solid var(--color-border)",
                                   "border-bottom-width": "2px",
@@ -139,7 +139,7 @@ export function HelpOverlay(props: HelpOverlayProps): JSX.Element {
                         <span
                           style={{
                             "font-family": FONT_SANS,
-                            "font-size": "13px",
+                            "font-size": "0.929rem",
                             color: "var(--color-text-muted)",
                             flex: 1,
                           }}

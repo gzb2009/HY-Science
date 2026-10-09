@@ -1,7 +1,7 @@
 import { createEffect, createMemo, createSignal, For, Show, type JSX } from "solid-js"
 import { useNavigate, useParams } from "@solidjs/router"
-import { base64Encode } from "@hysci/util/encode"
 import type { Project, Session } from "@hysci/sdk/v2/client"
+import { projectSessionHref } from "@/utils/route-session"
 import { DropdownMenu } from "@hysci/ui/dropdown-menu"
 import { useDialog } from "@hysci/ui/context/dialog"
 import { DialogProjectForm, type ProjectFormValues } from "@/components/dialog-project-form"
@@ -23,7 +23,7 @@ import { uiStore } from "@/thesis/store/ui"
 import { useGlobalKeys } from "@/thesis/useGlobalKeys"
 import { CommandPalette } from "@/thesis/CommandPalette"
 import { HelpOverlay } from "@/thesis/HelpOverlay"
-import { HomeParticles } from "@/thesis/HomeParticles"
+import { InkWashBg } from "@/shell/ink-wash-bg"
 import { projectPrefs } from "@/thesis/store/projectPrefs"
 import { projectMetaLocal } from "@/thesis/store/projectMetaLocal"
 import { confirmDialog } from "@/thesis/dialogs"
@@ -37,7 +37,6 @@ import { isResultDirectory, normalizeResultFolderName, resultFolderName } from "
 import { runningSessionCount } from "@/thesis/project-session-status"
 import { domainById, isDomainId, projectDomainId } from "@/domain/registry"
 import { provisionDomainWorkspace, resolveDomainWorkspace } from "@/utils/domainWorkspace"
-import { rememberDomain } from "@/domain/store"
 import {
   IconCircle,
   IconClock,
@@ -83,11 +82,6 @@ export default function Home(): JSX.Element {
   const language = useLanguage()
   const fetchFn = () => platform.fetch ?? fetch
   const domain = createMemo(() => domainById(params.id))
-
-  createEffect(() => {
-    const id = domain()?.id
-    if (id) rememberDomain(id)
-  })
 
   const projects = createMemo(() => {
     projectMetaLocal.all()
@@ -212,14 +206,18 @@ export default function Home(): JSX.Element {
     projectPrefs.unhide(directory)
     layout.projects.open(directory)
     server.projects.touch(directory)
-    navigate(`/${base64Encode(directory)}/session`)
+    const [child] = sync.child(resolveProjectWorkingDir(directory), { bootstrap: false })
+    const latest = child.session
+      .filter((s) => !s.parentID && !s.time?.archived && !isEmptyDraftSession(s, child.message[s.id]))
+      .sort((a, b) => sessionUpdatedAt(b) - sessionUpdatedAt(a))[0]
+    navigate(projectSessionHref(directory, latest?.id))
   }
 
   function openSession(directory: string, sessionId: string) {
     projectPrefs.unhide(directory)
     layout.projects.open(directory)
     server.projects.touch(directory)
-    navigate(`/${base64Encode(directory)}/session/${sessionId}`)
+    navigate(projectSessionHref(directory, sessionId))
   }
 
   async function applyProjectMeta(directory: string, values: ProjectFormValues) {
@@ -384,14 +382,14 @@ export default function Home(): JSX.Element {
   useGlobalKeys({ onNew: () => openNewProjectDialog() })
 
   return (
-    <div class="thesis-root cs-home">
+    <div class="thesis-root cs-home cs-ink-home">
+      <InkWashBg plate="/ink-wash-project-bg.png?v=dushan" strength={0.42} />
       <ToastContainer />
       <HelpOverlay open={uiStore.helpOpen()} onClose={() => uiStore.setHelpOpen(false)} />
       <CommandPalette open={uiStore.paletteOpen()} onClose={() => uiStore.setPaletteOpen(false)} />
       <DisconnectedPanel />
 
       <main class="thesis-scroll cs-home-main">
-        <HomeParticles />
         <div class="cs-workbench-inner">
           <div class="cs-workbench-header">
             <div class="cs-workbench-brand-block">
@@ -411,9 +409,6 @@ export default function Home(): JSX.Element {
               </div>
             </div>
             <div class="cs-workbench-actions">
-              <button type="button" class="cs-btn-ghost" onClick={() => navigate("/domains")}>
-                {language.t("domain.guide.switch")}
-              </button>
               <HomeUserMenu onSettings={openSettings} />
             </div>
           </div>

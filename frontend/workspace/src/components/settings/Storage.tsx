@@ -252,7 +252,7 @@ export default Storage
 function bannerStyle(color: string, border: string): JSX.CSSProperties {
   return {
     "font-family": FONT_SANS,
-    "font-size": "12px",
+    "font-size": "0.857rem",
     "line-height": 1.5,
     color,
     border: `1px solid ${border}`,
