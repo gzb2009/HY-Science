@@ -26,7 +26,10 @@ function paraText(xml: string) {
     else if (match[0].startsWith("<w:tab")) parts.push("\t")
     else parts.push("\n")
   }
-  return parts.join("").replace(/[ \t]+\n/g, "\n").trim()
+  return parts
+    .join("")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim()
 }
 
 function cellText(xml: string) {

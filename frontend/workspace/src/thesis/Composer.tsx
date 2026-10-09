@@ -8,13 +8,7 @@ import { useLanguage } from "@/context/language"
 import { useLocal } from "@/context/local"
 import { useModels, type ModelKey } from "@/context/models"
 import { FONT_MONO, FONT_SANS } from "@/styles/tokens"
-import {
-  IconArrowUp,
-  IconChevronDown,
-  IconPaperclip,
-  IconStop,
-  IconX,
-} from "@/thesis/shared/Icon"
+import { IconArrowUp, IconChevronDown, IconPaperclip, IconStop, IconX } from "@/thesis/shared/Icon"
 import { recipeMark } from "@/domain/imc-flow"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
 import { ComposerSlotProvider } from "@/shell/composer-slot"
@@ -1858,7 +1852,6 @@ export function Composer(): JSX.Element {
                           </Show>
                         </div>
                       </Show>
-
                     </div>
                   )}
                 </Show>
@@ -1935,11 +1928,21 @@ export function Composer(): JSX.Element {
                             taskControl() === item.id ? "var(--color-accent-subtle)" : "transparent"
                         }}
                       >
-                        <span style={{ "font-family": FONT_SANS, "font-size": "var(--text-base)", color: "var(--color-text)" }}>
+                        <span
+                          style={{
+                            "font-family": FONT_SANS,
+                            "font-size": "var(--text-base)",
+                            color: "var(--color-text)",
+                          }}
+                        >
                           {item.label}
                         </span>
                         <span
-                          style={{ "font-family": FONT_SANS, "font-size": "var(--text-sm)", color: "var(--color-text-faint)" }}
+                          style={{
+                            "font-family": FONT_SANS,
+                            "font-size": "var(--text-sm)",
+                            color: "var(--color-text-faint)",
+                          }}
                         >
                           {item.description}
                         </span>

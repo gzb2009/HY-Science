@@ -268,7 +268,10 @@ async function tally(params: Record<string, unknown>) {
 async function digest(file: string) {
   const bytes = await Bun.file(file).arrayBuffer()
   const hash = await crypto.subtle.digest("SHA-256", bytes)
-  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16)
+  return [...new Uint8Array(hash)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16)
 }
 
 async function exists(file: string) {

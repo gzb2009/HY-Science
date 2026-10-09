@@ -292,7 +292,8 @@ export const dict = {
   "dialog.project.new.resultHint": "Outputs stay in result/ inside this project workspace.",
   "dialog.project.new.isolateFailed": "Could not isolate this project from the parent folder. Try a different folder.",
   "dialog.project.research.label": "Analysis direction",
-  "dialog.project.research.hint": "Protocol is optional and stays with the project. Unlocked does not pin a pipeline; switch when a specialist analysis should run.",
+  "dialog.project.research.hint":
+    "Protocol is optional and stays with the project. Unlocked does not pin a pipeline; switch when a specialist analysis should run.",
   "dialog.project.research.notes": "Research notes, constraints, or preferred methods",
   "dialog.project.new.description": "Description",
   "dialog.project.new.descriptionHint":
@@ -547,7 +548,8 @@ export const dict = {
   "home.capabilities.model.executionHint": "Local model for mature IMC recipes. Must support tool calling.",
   "home.capabilities.model.executionNone": "Unset — mature recipes stay on the default model",
   "home.capabilities.model.local": "Local OpenAI-compatible",
-  "home.capabilities.model.localHint": "Ollama, LM Studio, and similar local servers. The model must support tool calling.",
+  "home.capabilities.model.localHint":
+    "Ollama, LM Studio, and similar local servers. The model must support tool calling.",
   "home.capabilities.model.localName": "Name",
   "home.capabilities.model.localBase": "Base URL",
   "home.capabilities.model.localModel": "Model ID",
@@ -1011,7 +1013,8 @@ export const dict = {
   "domain.drift.stay": "Stay here to keep discussing methods",
   "domain.guide.empty": "No projects in this domain yet. Create one to start.",
   "protocol.label": "Protocol",
-  "protocol.hint": "Protocol is optional and stays with the project. Unlocked does not pin a pipeline; switch when a specialist analysis should run.",
+  "protocol.hint":
+    "Protocol is optional and stays with the project. Unlocked does not pin a pipeline; switch when a specialist analysis should run.",
   "protocol.apply": "Use {{name}}",
   "protocol.applied": "Protocol is now {{name}}",
   "domain.imc.title": "Spatial protein imaging",

@@ -390,7 +390,9 @@ export default function Page(): JSX.Element {
           row.research = { ...row.research, ...research }
         }),
       )
-      toast.success(language.t("protocol.applied", { name: language.t(`domain.${id}.title` as "domain.general.title") }))
+      toast.success(
+        language.t("protocol.applied", { name: language.t(`domain.${id}.title` as "domain.general.title") }),
+      )
     } catch (err) {
       toast.error(language.t("common.requestFailed"), err instanceof Error ? err.message : String(err))
     } finally {
@@ -455,9 +457,7 @@ export default function Page(): JSX.Element {
         current: path === current,
       })
     }
-    return [...by.values()].sort(
-      (a, b) => Number(b.current) - Number(a.current) || a.name.localeCompare(b.name, "zh"),
-    )
+    return [...by.values()].sort((a, b) => Number(b.current) - Number(a.current) || a.name.localeCompare(b.name, "zh"))
   })
 
   function latestSessionId(directory: string) {
@@ -823,8 +823,7 @@ export default function Page(): JSX.Element {
           onOpenProject={(worktree) => {
             uiStore.setImagePreview(undefined)
             const here = projectWorktree()
-            const same =
-              worktree === here || resolveProjectWorkingDir(worktree) === resolveProjectWorkingDir(here)
+            const same = worktree === here || resolveProjectWorkingDir(worktree) === resolveProjectWorkingDir(here)
             if (same && params.id && params.id !== "new") {
               centerTabs.showChat()
               return
@@ -854,32 +853,32 @@ export default function Page(): JSX.Element {
           }}
         >
           <CenterTabStrip
-              chatTitle={chatTitle()}
-              plan={
-                floatActions({
-                  statuses: (params.id ? (sync.data.todo[params.id] ?? []) : []).map((item) => item.status),
-                  codePaths: taskResultFiles().map((file) => file.path),
-                }).plan
-              }
-              notebook={
-                floatActions({
-                  statuses: (params.id ? (sync.data.todo[params.id] ?? []) : []).map((item) => item.status),
-                  codePaths: taskResultFiles().map((file) => file.path),
-                }).notebook
-              }
-              onPlan={() => {
-                uiStore.setRightPaneTab("plan")
-                uiStore.setRightPaneOpen(true)
-              }}
-              onNotebook={(path) => {
-                uiStore.setRightPaneTab(path)
-                uiStore.setRightPaneOpen(true)
-              }}
-              onCloseChat={() => {
-                centerTabs.showChat()
-                void newSession()
-              }}
-            />
+            chatTitle={chatTitle()}
+            plan={
+              floatActions({
+                statuses: (params.id ? (sync.data.todo[params.id] ?? []) : []).map((item) => item.status),
+                codePaths: taskResultFiles().map((file) => file.path),
+              }).plan
+            }
+            notebook={
+              floatActions({
+                statuses: (params.id ? (sync.data.todo[params.id] ?? []) : []).map((item) => item.status),
+                codePaths: taskResultFiles().map((file) => file.path),
+              }).notebook
+            }
+            onPlan={() => {
+              uiStore.setRightPaneTab("plan")
+              uiStore.setRightPaneOpen(true)
+            }}
+            onNotebook={(path) => {
+              uiStore.setRightPaneTab(path)
+              uiStore.setRightPaneOpen(true)
+            }}
+            onCloseChat={() => {
+              centerTabs.showChat()
+              void newSession()
+            }}
+          />
 
           <div
             class="cs-session-stage"
@@ -985,12 +984,7 @@ export default function Page(): JSX.Element {
                                 <Show
                                   when={message.role === "user" && switchFromParts(sync.data.part[message.id] ?? [])}
                                 >
-                                  {(hit) => (
-                                    <DomainSwitchCard
-                                      hit={hit()}
-                                      onApply={(id) => void setProtocol(id)}
-                                    />
-                                  )}
+                                  {(hit) => <DomainSwitchCard hit={hit()} onApply={(id) => void setProtocol(id)} />}
                                 </Show>
                                 {/* Space, not a rule — the bubbles already separate turns. */}
                                 <Show when={index() < turnMessages().length - 1}>
@@ -1121,87 +1115,87 @@ function CenterTabStrip(props: {
   return (
     <div class="cs-center-tabs">
       <div class="cs-center-tabs-scroll thesis-scroll">
-      <Show when={centerTabs.chatOpen()}>
-        <div
-          role="tab"
-          class={`cs-center-tab${active() === "chat" ? " cs-center-tab-active" : ""}`}
-          onClick={() => centerTabs.showChat()}
-          title={props.chatTitle}
-        >
-          <span class="cs-center-tab-label">{props.chatTitle}</span>
-          <button
-            type="button"
-            aria-label="close tab"
-            class="cs-center-tab-close"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => closeTab(e, props.onCloseChat)}
-          >
-            <IconX size={11} strokeWidth={1.8} />
-          </button>
-        </div>
-      </Show>
-      <For each={centerTabs.docs()}>
-        {(doc) => (
+        <Show when={centerTabs.chatOpen()}>
           <div
             role="tab"
-            class={`cs-center-tab${active() === doc.id ? " cs-center-tab-active" : ""}`}
-            onClick={() => centerTabs.setActive(doc.id)}
-            title={doc.name}
+            class={`cs-center-tab${active() === "chat" ? " cs-center-tab-active" : ""}`}
+            onClick={() => centerTabs.showChat()}
+            title={props.chatTitle}
           >
-            <IconFile size={12} strokeWidth={1.6} />
-            <span class="cs-center-tab-label">{doc.name}</span>
+            <span class="cs-center-tab-label">{props.chatTitle}</span>
             <button
               type="button"
               aria-label="close tab"
               class="cs-center-tab-close"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => closeTab(e, () => centerTabs.closeDoc(doc.id))}
+              onClick={(e) => closeTab(e, props.onCloseChat)}
             >
               <IconX size={11} strokeWidth={1.8} />
             </button>
           </div>
-        )}
-      </For>
+        </Show>
+        <For each={centerTabs.docs()}>
+          {(doc) => (
+            <div
+              role="tab"
+              class={`cs-center-tab${active() === doc.id ? " cs-center-tab-active" : ""}`}
+              onClick={() => centerTabs.setActive(doc.id)}
+              title={doc.name}
+            >
+              <IconFile size={12} strokeWidth={1.6} />
+              <span class="cs-center-tab-label">{doc.name}</span>
+              <button
+                type="button"
+                aria-label="close tab"
+                class="cs-center-tab-close"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => closeTab(e, () => centerTabs.closeDoc(doc.id))}
+              >
+                <IconX size={11} strokeWidth={1.8} />
+              </button>
+            </div>
+          )}
+        </For>
       </div>
       <div class="cs-center-tab-end">
-      <div class="cs-center-tab-actions">
-        <Show when={props.plan}>
-          {(status) => (
-            <button
-              type="button"
-              class="cs-plan-chip"
-              aria-label="plan"
-              title={`Plan — ${status()}`}
-              data-active={uiStore.rightPaneOpen() && uiStore.rightPaneTab() === "plan" ? "true" : undefined}
-              onClick={() => props.onPlan()}
-            >
-              <IconTherefore size={16} strokeWidth={1.5} />
-            </button>
-          )}
-        </Show>
-        <Show when={props.notebook}>
-          {(path) => (
-            <button
-              type="button"
-              aria-label="notebook"
-              title="Open the live kernel notebook — watch cells stream and run code in the agent's kernels"
-              data-active={uiStore.rightPaneOpen() && uiStore.rightPaneTab() === path() ? "true" : undefined}
-              onClick={() => props.onNotebook(path())}
-            >
-              <IconMatrix size={15} strokeWidth={1.5} />
-            </button>
-          )}
-        </Show>
-      </div>
-      <button
-        type="button"
-        class={`cs-center-tab cs-center-files${filesOn() ? " cs-center-tab-active" : ""}`}
-        title={language.t("sidebar.files")}
-        onClick={() => centerTabs.showFiles()}
-      >
-        <IconFolder size={14} strokeWidth={1.6} />
-        <span class="cs-center-tab-label">{language.t("sidebar.files")}</span>
-      </button>
+        <div class="cs-center-tab-actions">
+          <Show when={props.plan}>
+            {(status) => (
+              <button
+                type="button"
+                class="cs-plan-chip"
+                aria-label="plan"
+                title={`Plan — ${status()}`}
+                data-active={uiStore.rightPaneOpen() && uiStore.rightPaneTab() === "plan" ? "true" : undefined}
+                onClick={() => props.onPlan()}
+              >
+                <IconTherefore size={16} strokeWidth={1.5} />
+              </button>
+            )}
+          </Show>
+          <Show when={props.notebook}>
+            {(path) => (
+              <button
+                type="button"
+                aria-label="notebook"
+                title="Open the live kernel notebook — watch cells stream and run code in the agent's kernels"
+                data-active={uiStore.rightPaneOpen() && uiStore.rightPaneTab() === path() ? "true" : undefined}
+                onClick={() => props.onNotebook(path())}
+              >
+                <IconMatrix size={15} strokeWidth={1.5} />
+              </button>
+            )}
+          </Show>
+        </div>
+        <button
+          type="button"
+          class={`cs-center-tab cs-center-files${filesOn() ? " cs-center-tab-active" : ""}`}
+          title={language.t("sidebar.files")}
+          onClick={() => centerTabs.showFiles()}
+        >
+          <IconFolder size={14} strokeWidth={1.6} />
+          <span class="cs-center-tab-label">{language.t("sidebar.files")}</span>
+        </button>
       </div>
     </div>
   )
@@ -1784,4 +1778,3 @@ function ArtifactPdfThumb(props: { directory: string; file: ResultFile }): JSX.E
 
   return <canvas data-slot="session-turn-result-pdf-preview" ref={canvas} aria-label={`${props.file.name} 首页预览`} />
 }
-

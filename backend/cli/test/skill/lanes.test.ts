@@ -23,12 +23,12 @@ describe("laneOf", () => {
 
 describe("theme gate", () => {
   test("opens the manuscript lane on an imaging project and keeps full-text download out", () => {
-    expect(themeAllows("imc", "HY_lane-manuscript")).toBe(true)
-    expect(themeAllows("imc", "HY_manuscript-response")).toBe(true)
+    expect(themeAllows("imc", "scientific-writing")).toBe(true)
+    expect(themeAllows("imc", "peer-review")).toBe(true)
     expect(themeAllows("imc", "nature-downloader")).toBe(false)
     expect(themeAllows("imc", "nature-writing")).toBe(false)
-    expect(themeAllows("single-cell", "HY_bulk-rnaseq")).toBe(true)
-    expect(themeAllows("genomics", "HY_qiime2")).toBe(true)
-    expect(themeAllows("imc", "HY_qiime2")).toBe(false)
+    expect(themeAllows("single-cell", "scanpy")).toBe(true)
+    expect(themeAllows("genomics", "pysam")).toBe(true)
+    expect(themeAllows("imc", "pysam")).toBe(false)
   })
 })

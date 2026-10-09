@@ -68,4 +68,3 @@ export function RightPane(props: { sessionID?: string }): JSX.Element {
     </Show>
   )
 }
-

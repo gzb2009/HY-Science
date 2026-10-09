@@ -8,10 +8,7 @@ import { RecipeRoute } from "../../src/recipe/route"
 import { RecipeUpgrade } from "../../src/recipe/upgrade"
 import { Manifest } from "../../src/recipe/schema"
 
-const manifest = path.join(
-  import.meta.dir,
-  "../../skills/biology/imc-analysis/recipe.json",
-)
+const manifest = path.join(import.meta.dir, "../../skills/biology/imc-analysis/recipe.json")
 
 describe("recipe.manifest", () => {
   test("parses IMC cards and keeps expert-only steps out of ready set", async () => {

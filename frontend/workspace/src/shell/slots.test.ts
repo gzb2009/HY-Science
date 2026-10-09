@@ -27,8 +27,8 @@ describe("shell slots", () => {
     expect(slotEntries("inspector").map((entry) => entry.id)).toEqual(["a", "b"])
     setSlotGate("agents", true)
     expect(slotEntries("inspector").map((entry) => entry.id)).toEqual(["a", "b", "agents"])
-    expect(slotOpen(slotEntries("center")[0] ?? { id: "x", slot: "center", order: 0, component: () => null as never })).toBe(
-      true,
-    )
+    expect(
+      slotOpen(slotEntries("center")[0] ?? { id: "x", slot: "center", order: 0, component: () => null as never }),
+    ).toBe(true)
   })
 })

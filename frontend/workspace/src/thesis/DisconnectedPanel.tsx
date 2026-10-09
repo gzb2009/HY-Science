@@ -38,7 +38,12 @@ export function DisconnectedPanel(): JSX.Element {
         />
         <div style={{ flex: 1, "min-width": 0 }}>
           <div
-            style={{ "font-family": FONT_SANS, "font-size": "0.893rem", "font-weight": 500, color: "var(--color-text)" }}
+            style={{
+              "font-family": FONT_SANS,
+              "font-size": "0.893rem",
+              "font-weight": 500,
+              color: "var(--color-text)",
+            }}
           >
             Can't reach your local HYscience server
           </div>

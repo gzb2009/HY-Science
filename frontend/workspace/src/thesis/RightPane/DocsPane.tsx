@@ -15,9 +15,7 @@ import { IconChevronLeft } from "@/thesis/shared/Icon"
 
 type FileKind = "docx" | "md" | "pdf" | "pptx" | "code"
 
-type Doc =
-  | { id: "plan"; kind: "plan" }
-  | { id: string; kind: FileKind; path: string; name: string }
+type Doc = { id: "plan"; kind: "plan" } | { id: string; kind: FileKind; path: string; name: string }
 
 type FilePayload = {
   content?: string
@@ -74,7 +72,11 @@ export function DocsPane(props: { sessionID?: string; onCollapse: () => void }):
     const id = props.sessionID
     if (!id) return ""
     const text = firstUserMessageText(sync.data.message[id], sync.data.part)
-    const line = text.split("\n").find((item) => item.trim())?.trim() ?? ""
+    const line =
+      text
+        .split("\n")
+        .find((item) => item.trim())
+        ?.trim() ?? ""
     return line.length > 96 ? `${line.slice(0, 96)}…` : line
   })
 
@@ -95,9 +97,7 @@ export function DocsPane(props: { sessionID?: string; onCollapse: () => void }):
       <div class="cs-docs-body">
         <Show when={reading()} fallback={<ToolBody sessionID={props.sessionID} />}>
           <Show when={chosen()} fallback={<p class="cs-docs-empty">{language.t("rightpane.doc.empty")}</p>}>
-            {(doc) => (
-              <DocPaper doc={doc()} steps={todos()} title={title()} subtitle={subtitle()} />
-            )}
+            {(doc) => <DocPaper doc={doc()} steps={todos()} title={title()} subtitle={subtitle()} />}
           </Show>
         </Show>
       </div>
@@ -185,22 +185,22 @@ function DocFile(props: { directory: string; path: string; kind: FileKind }): JS
   return (
     <Show when={!data.loading} fallback={<p class="cs-docs-empty">{language.t("rightpane.doc.loading")}</p>}>
       <Show when={!data.error} fallback={<p class="cs-docs-empty">{language.t("rightpane.doc.missing")}</p>}>
-      <Switch>
-        <Match when={props.kind === "md"}>
-          <div class="cs-docs-read">
-            <Markdown text={fileText(payload())} />
-          </div>
-        </Match>
-        <Match when={props.kind === "code"}>
-          <Notebook name={props.path} text={fileText(payload())} />
-        </Match>
-        <Match when={props.kind === "pdf" && payload()?.encoding === "base64" && payload()?.content}>
-          <PdfViewer kind="pdf" data={{ base64: payload()?.content }} />
-        </Match>
-        <Match when={props.kind === "docx" || props.kind === "pptx"}>
-          <OfficePreview preview={payload()?.preview} />
-        </Match>
-      </Switch>
+        <Switch>
+          <Match when={props.kind === "md"}>
+            <div class="cs-docs-read">
+              <Markdown text={fileText(payload())} />
+            </div>
+          </Match>
+          <Match when={props.kind === "code"}>
+            <Notebook name={props.path} text={fileText(payload())} />
+          </Match>
+          <Match when={props.kind === "pdf" && payload()?.encoding === "base64" && payload()?.content}>
+            <PdfViewer kind="pdf" data={{ base64: payload()?.content }} />
+          </Match>
+          <Match when={props.kind === "docx" || props.kind === "pptx"}>
+            <OfficePreview preview={payload()?.preview} />
+          </Match>
+        </Switch>
       </Show>
     </Show>
   )
@@ -248,5 +248,3 @@ function stem(name: string) {
   if (dot <= 0) return base
   return base.slice(0, dot)
 }
-
-

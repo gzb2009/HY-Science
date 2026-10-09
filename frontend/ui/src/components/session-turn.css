@@ -782,7 +782,9 @@
       width: 54%;
     }
 
-    [data-slot="session-turn-result-plate"][data-tone="code"] [data-slot="session-turn-result-plate-lines"] span:nth-child(odd) {
+    [data-slot="session-turn-result-plate"][data-tone="code"]
+      [data-slot="session-turn-result-plate-lines"]
+      span:nth-child(odd) {
       margin-left: 8px;
     }
 
