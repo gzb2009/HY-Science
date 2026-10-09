@@ -43,9 +43,7 @@ or `Caveat` headings.
 ### Conclusion Language Check
 Classify every quantitative claim before delivery:
 - `[candidate]`: no independent validation
-  -> "Differential expression analysis identified N candidate genes
-     (|log2FC| > 1, padj < 0.05) in [condition] vs [control]. These
-     findings are exploratory and require independent validation."
+  -> "N candidate genes (|log2FC| > 1, padj < 0.05); exploratory."
 - `[observed]`: current dataset only
   -> "Observed in this dataset; requires replication."
 - `[validated]`: independent cohort or orthogonal assay

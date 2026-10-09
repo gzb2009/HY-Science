@@ -32,6 +32,7 @@ describe("agent.definitions.builtin", () => {
     expect(keys).toContain("research")
     expect(keys).toContain("biology")
     expect(keys).toContain("compaction")
-    expect(keys).toHaveLength(14)
+    expect(keys).toContain("recipe-executor")
+    expect(keys).toHaveLength(15)
   })
 })

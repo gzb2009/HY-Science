@@ -42,12 +42,15 @@ export async function openDesktopWindow(url: string) {
     return false
   }
   const profile = path.join(Global.Path.data, "desktop-chrome")
-  const child = Bun.spawn([bin, `--app=${url}`, `--user-data-dir=${profile}`, "--no-first-run", "--disable-extensions"], {
-    stdout: "ignore",
-    stderr: "ignore",
-    stdin: "ignore",
-    detached: true,
-  })
+  const child = Bun.spawn(
+    [bin, `--app=${url}`, `--user-data-dir=${profile}`, "--no-first-run", "--disable-extensions"],
+    {
+      stdout: "ignore",
+      stderr: "ignore",
+      stdin: "ignore",
+      detached: true,
+    },
+  )
   child.unref()
   return true
 }

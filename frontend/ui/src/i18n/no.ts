@@ -30,6 +30,7 @@ export const dict: Record<Keys, string> = {
   "ui.sessionTurn.resultFile.spreadsheet": "Regneark",
   "ui.sessionTurn.resultFile.table": "Tabell",
   "ui.sessionTurn.resultFile.file": "Fil",
+  "ui.sessionTurn.resultFiles": "Leveranser",
   "ui.sessionTurn.diff.showMore": "Vis flere endringer ({{count}})",
 
   "ui.sessionTurn.retry.retrying": "Prøver igjen",

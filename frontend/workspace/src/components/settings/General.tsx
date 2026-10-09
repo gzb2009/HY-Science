@@ -156,8 +156,8 @@ export default function General() {
               <div class="px-4 py-3">
                 <p class="text-12-regular text-text-weak">
                   Signed out — run{" "}
-                  <code style={{ "font-family": FONT_CODE, "font-size": "0.786rem" }}>hyscience connect login</code> in a
-                  terminal to reconnect this machine.
+                  <code style={{ "font-family": FONT_CODE, "font-size": "0.786rem" }}>hyscience connect login</code> in
+                  a terminal to reconnect this machine.
                 </p>
               </div>
             </Show>
@@ -256,7 +256,9 @@ const IntentCard: Component<{ active: boolean; title: string; body: string; onCl
     <div style={{ display: "flex", "align-items": "center", "justify-content": "space-between" }}>
       <span class="text-14-medium text-text-strong">{props.title}</span>
       <Show when={props.active}>
-        <span style={{ "font-family": FONT_SANS, "font-size": "0.786rem", color: "var(--color-text-muted)" }}>active</span>
+        <span style={{ "font-family": FONT_SANS, "font-size": "0.786rem", color: "var(--color-text-muted)" }}>
+          active
+        </span>
       </Show>
     </div>
     <span class="text-12-regular text-text-weak" style={{ "line-height": 1.5 }}>

@@ -2,11 +2,7 @@ import { For, Show, createMemo, type JSX } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { ArtifactLightbox } from "@/thesis/ArtifactLightbox"
 import { uiStore } from "@/thesis/store/ui"
-import {
-  IconBookOpen,
-  IconGitBranch,
-  IconTerminal,
-} from "@/thesis/shared/Icon"
+import { IconBookOpen, IconGitBranch, IconTerminal } from "@/thesis/shared/Icon"
 import { NowTab } from "@/thesis/RightPane/NowTab"
 import { EvidenceTab } from "@/thesis/RightPane/EvidenceTab"
 import { RunTab } from "@/thesis/RightPane/RunTab"
@@ -62,9 +58,5 @@ registerSlot({ id: "composer.imc", slot: "composer.extra", order: 0, component: 
 
 export function SlotViews(props: { slot: SlotName } & SlotProps): JSX.Element {
   const list = createMemo(() => slotEntries(props.slot))
-  return (
-    <For each={list()}>
-      {(entry) => <Dynamic component={entry.component} {...props} />}
-    </For>
-  )
+  return <For each={list()}>{(entry) => <Dynamic component={entry.component} {...props} />}</For>
 }

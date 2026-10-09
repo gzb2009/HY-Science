@@ -100,10 +100,7 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
 
   const parameters = z.object({
     name: z.string().optional().describe(`The skill name to load directly${hint}`),
-    category: z
-      .string()
-      .optional()
-      .describe("Browse one lane: assay, evidence, design, manuscript, or compute"),
+    category: z.string().optional().describe("Browse one lane: assay, evidence, design, manuscript, or compute"),
     query: z
       .string()
       .optional()

@@ -109,8 +109,12 @@ export function ArtifactLightbox(props: { artifact: ImagePreview; onClose: () =>
       requestAnimationFrame(() => {
         if (!before) return
         const ratio = el.scrollWidth / before
-        el.scrollLeft = (el.scrollLeft + event.clientX - el.getBoundingClientRect().left) * ratio - (event.clientX - el.getBoundingClientRect().left)
-        el.scrollTop = (el.scrollTop + event.clientY - el.getBoundingClientRect().top) * ratio - (event.clientY - el.getBoundingClientRect().top)
+        el.scrollLeft =
+          (el.scrollLeft + event.clientX - el.getBoundingClientRect().left) * ratio -
+          (event.clientX - el.getBoundingClientRect().left)
+        el.scrollTop =
+          (el.scrollTop + event.clientY - el.getBoundingClientRect().top) * ratio -
+          (event.clientY - el.getBoundingClientRect().top)
       })
     }
     el.addEventListener("wheel", onWheel, { passive: false })

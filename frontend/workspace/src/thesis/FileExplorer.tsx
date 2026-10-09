@@ -448,7 +448,12 @@ function HostFolderBody(props: {
           >
             <IconFolder size={20} strokeWidth={1.4} />
             <div
-              style={{ "font-family": FONT_SANS, "font-size": "0.929rem", "font-weight": 500, color: "var(--color-text)" }}
+              style={{
+                "font-family": FONT_SANS,
+                "font-size": "0.929rem",
+                "font-weight": 500,
+                color: "var(--color-text)",
+              }}
             >
               Can't read this folder
             </div>
@@ -1323,7 +1328,12 @@ function ArtifactListRow(props: {
         </span>
       </div>
       <span
-        style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-faint)", "flex-shrink": 0 }}
+        style={{
+          "font-family": FONT_MONO,
+          "font-size": "0.714rem",
+          color: "var(--color-text-faint)",
+          "flex-shrink": 0,
+        }}
       >
         {compactBytes(props.node.size)}
       </span>

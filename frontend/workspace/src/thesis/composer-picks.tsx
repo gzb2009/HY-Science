@@ -44,10 +44,7 @@ export function WorkspacePick(props: {
       </button>
       <Show when={props.open}>
         <div class="cs-workspace-menu" role="menu">
-          <For
-            each={props.projects}
-            fallback={<div class="cs-scope-empty">没有其他项目</div>}
-          >
+          <For each={props.projects} fallback={<div class="cs-scope-empty">没有其他项目</div>}>
             {(project) => (
               <button
                 type="button"

@@ -118,7 +118,11 @@ export function HomeModelDock(): JSX.Element {
     const base = localBase().trim()
     const modelID = localModel().trim()
     if (!name || !base || !modelID || busy()) return
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "local-openai"
+    const id =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "local-openai"
     setBusy(true)
     try {
       await sync.updateConfig({

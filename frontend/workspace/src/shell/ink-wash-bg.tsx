@@ -70,7 +70,7 @@ function mount(
   }
 
   const seed = () => {
-    const n = Math.round((w * h) / 38000 * state.density)
+    const n = Math.round(((w * h) / 38000) * state.density)
     while (specks.length < n) specks.push(speck())
     if (specks.length > n) specks.length = n
   }
