@@ -1761,6 +1761,10 @@ export type Config = {
    */
   small_model?: string
   /**
+   * Local OpenAI-compatible model for mature recipe execution in the format of provider/model
+   */
+  execution_model?: string
+  /**
    * Default agent to use when none is specified. Must be a primary agent. Falls back to 'research' if not set or if the specified agent is invalid.
    */
   default_agent?: string

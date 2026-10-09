@@ -56,6 +56,7 @@ function resetRightPaneWidth() {
 const [imagePreview, setImagePreviewRaw] = createSignal<ImagePreview>()
 const [prefill, setPrefill] = createSignal<string | undefined>(undefined)
 const [prefillSend, setPrefillSend] = createSignal(false)
+const [prefillRecipe, setPrefillRecipe] = createSignal<string | undefined>(undefined)
 const [reviewSelection, setReviewSelection] = createSignal<ReviewSelection>()
 
 function setRightPaneOpen(v: boolean) {
@@ -89,6 +90,8 @@ export const uiStore = {
   setPrefill,
   prefillSend,
   setPrefillSend,
+  prefillRecipe,
+  setPrefillRecipe,
   reviewSelection,
   setReviewSelection,
 }

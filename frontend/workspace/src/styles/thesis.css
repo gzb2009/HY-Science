@@ -4775,6 +4775,15 @@ html[data-color-scheme="dark"] .thesis-overlay {
 .cs-imc-flow-dock {
   position: relative;
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-imc-flow-status {
+  color: var(--color-text-faint);
+  font-family: var(--font-sans);
+  font-size: 11px;
 }
 
 .cs-imc-flow-trigger {

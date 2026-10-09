@@ -15,6 +15,7 @@ import {
   IconStop,
   IconX,
 } from "@/thesis/shared/Icon"
+import { recipeMark } from "@/domain/imc-flow"
 import { AgentIcon } from "@/thesis/shared/AgentIcon"
 import { ComposerSlotProvider } from "@/shell/composer-slot"
 import { SlotViews } from "@/shell/builtin"
@@ -89,6 +90,7 @@ export function Composer(): JSX.Element {
   const server = useServer()
 
   const [text, setText] = createSignal("")
+  const [recipeId, setRecipeId] = createSignal<string | undefined>(undefined)
   const [model, setModel] = createSignal<ModelKey | undefined>(undefined)
   const agent = (): AgentName => "research"
   createEffect(() => local.agent.set(agent()))
@@ -300,8 +302,10 @@ export function Composer(): JSX.Element {
     if (!pending) return
     const send = uiStore.prefillSend()
     setText(pending)
+    setRecipeId(uiStore.prefillRecipe())
     uiStore.setPrefill(undefined)
     uiStore.setPrefillSend(false)
+    uiStore.setPrefillRecipe(undefined)
     if (textareaRef) {
       textareaRef.focus()
       textareaRef.style.height = "auto"
@@ -1132,6 +1136,15 @@ export function Composer(): JSX.Element {
         hybio: true,
         text: `<ui-locale code="${language.locale()}" />`,
       })
+      if (recipeId()) {
+        textParts.push({
+          id: Identifier.ascending("part"),
+          type: "text",
+          hybio: true,
+          text: recipeMark(recipeId()!),
+        })
+        setRecipeId(undefined)
+      }
 
       const promptParts = [...textParts, ...filePartsBase]
 
@@ -1405,8 +1418,9 @@ export function Composer(): JSX.Element {
           </Show>
           <ComposerSlotProvider
             value={{
-              insert: (value) => {
+              insert: (value, recipe) => {
                 grow(value)
+                if (recipe) setRecipeId(recipe)
                 textareaRef?.focus()
               },
             }}

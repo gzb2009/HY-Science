@@ -1191,6 +1191,10 @@ export type Config = {
    */
   small_model?: string
   /**
+   * Local OpenAI-compatible model for mature recipe execution in the format of provider/model
+   */
+  execution_model?: string
+  /**
    * Custom username to display in conversations instead of system username
    */
   username?: string

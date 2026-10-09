@@ -35,6 +35,25 @@ test("loads config with defaults when no files exist", async () => {
   })
 })
 
+test("loads execution_model next to model and small_model", async () => {
+  await using tmp = await tmpdir({
+    config: {
+      model: "anthropic/claude-sonnet-4",
+      small_model: "anthropic/claude-haiku-4-5",
+      execution_model: "local-openai/qwen2.5:7b",
+    },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const config = await Config.get()
+      expect(config.model).toBe("anthropic/claude-sonnet-4")
+      expect(config.small_model).toBe("anthropic/claude-haiku-4-5")
+      expect(config.execution_model).toBe("local-openai/qwen2.5:7b")
+    },
+  })
+})
+
 test("loads JSON config file", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {

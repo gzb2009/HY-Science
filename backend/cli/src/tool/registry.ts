@@ -33,6 +33,7 @@ import { ArtifactTool } from "./artifact"
 import { LearnTool } from "./learn"
 import { ScienceTools } from "./science"
 import { ProvenanceTools } from "./provenance"
+import { ImcRecipeTool } from "./imc-recipe"
 import { NotebookTool } from "./notebook"
 import { RKernelTool } from "./rkernel"
 import { RemoteTool } from "./remote"
@@ -153,6 +154,7 @@ export namespace ToolRegistry {
       ...BiologyTools,
       ...ScienceTools,
       ...ProvenanceTools,
+      ImcRecipeTool,
       NotebookTool,
       RKernelTool,
       RemoteTool,

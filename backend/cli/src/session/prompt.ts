@@ -38,6 +38,7 @@ import { RLMArtifacts } from "./rlm/artifacts"
 import { OutputClean } from "./output-clean"
 import { ProjectMemory } from "./project-memory"
 import { ulid } from "ulid"
+import { RecipeRoute, RecipeUpgrade } from "../recipe"
 import { spawn } from "child_process"
 import { Command } from "../command"
 import { $, fileURLToPath } from "bun"
@@ -249,6 +250,15 @@ export namespace SessionPrompt {
       return message
     }
 
+    const result = await loop(input.sessionID)
+    const pack = RecipeUpgrade.consume(input.sessionID)
+    if (!pack) return result
+    await createUserMessage({
+      sessionID: input.sessionID,
+      agent: "research",
+      model: await Provider.defaultModel(),
+      parts: [{ type: "text", hybio: true, text: RecipeUpgrade.render(pack) }],
+    })
     return loop(input.sessionID)
   })
 
@@ -952,6 +962,16 @@ export namespace SessionPrompt {
         ? TaskProfile.agent(Instance.project.research)
         : requested
     const agent = routed === requested ? requestedAgent : await Agent.get(routed)
+    const text = input.parts
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join("\n")
+    const recipe = await RecipeRoute.resolve({
+      subdomain: Instance.project.research?.subdomain,
+      text,
+    })
+    const next = recipe ? await Agent.get(recipe.agent) : agent
+    const model = recipe?.model ?? input.model ?? next.model ?? (await lastModel(input.sessionID))
     // Regenerate ID if client-provided one would sort before existing messages
     // (48-bit Identifier timestamp field wraps every ~2.2y; cross-clock drift
     // in pre-existing sessions can cause new IDs to sort below old ones).
@@ -964,8 +984,8 @@ export namespace SessionPrompt {
         created: Date.now(),
       },
       tools: input.tools,
-      agent: agent.name,
-      model: input.model ?? agent.model ?? (await lastModel(input.sessionID)),
+      agent: next.name,
+      model,
       system: input.system,
       variant: input.variant,
       tier: input.tier,

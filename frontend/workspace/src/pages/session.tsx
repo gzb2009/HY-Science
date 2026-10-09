@@ -1511,8 +1511,9 @@ function SessionRow(props: {
   )
 }
 
-function launchWelcome(prompt: string) {
+function launchWelcome(prompt: string, recipe?: string) {
   uiStore.setPrefillSend(false)
+  uiStore.setPrefillRecipe(recipe)
   uiStore.setPrefill(prompt)
 }
 
@@ -1608,7 +1609,7 @@ function ChatWelcome(props: {
                     <button
                       type="button"
                       class="cs-chat-welcome-flow-card"
-                      onClick={() => launchWelcome(language.t(step[2]))}
+                      onClick={() => launchWelcome(language.t(step[2]), step[4])}
                     >
                       <span class="cs-chat-welcome-flow-mark">
                         <Glyph size={16} strokeWidth={1.6} />

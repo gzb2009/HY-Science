@@ -2,11 +2,8 @@
 """
 IMC/PCF Analysis Pipeline — Python rewrite of R/imcRtools workflows.
 
-支持三种深度学习分割器，并内置 Otsu 回退:
-  --segmenter stardist   StarDist (基于深度学习的核分割, 推荐)
-  --segmenter cellpose   Cellpose (通用细胞分割, 支持自定义模型)
-  --segmenter mesmer     DeepCell Mesmer (组织级多细胞分割)
-  --segmenter otsu       Otsu + 分水岭 (无需额外安装)
+分割方法见 imc_segment.METHODS：经典 otsu/li/adaptive/log/hmax，
+深度学习 stardist/cellpose/mesmer（不可用时回退 otsu）。
 
 Usage:
     python imc_pipeline.py --input-dir <dir> --panel <panel.csv> --output-dir <out> --segmenter stardist
@@ -15,6 +12,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
 from dataclasses import dataclass, field
@@ -40,37 +38,11 @@ try:
 except ImportError:
     HAS_SKIMAGE = False
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Available Segmenters
-# ══════════════════════════════════════════════════════════════════════════════
-
-SEGMENTERS = {
-    "stardist": {
-        "name": "StarDist",
-        "description": "基于深度学习的细胞核分割，适合类圆形核，速度快、精度高。推荐用于 IMC/IF 数据。",
-        "pip": "stardist",
-        "import": "stardist",
-    },
-    "cellpose": {
-        "name": "Cellpose",
-        "description": "通用细胞分割，支持细胞质/细胞核，可加载自定义模型。适合不规则形态细胞。",
-        "pip": "cellpose",
-        "import": "cellpose",
-    },
-    "mesmer": {
-        "name": "DeepCell Mesmer",
-        "description": "组织级多细胞分割，能同时分割核和细胞质边界。适合复杂组织微环境分析。",
-        "pip": "deepcell",
-        "import": "deepcell",
-    },
-    "otsu": {
-        "name": "Otsu + Watershed",
-        "description": "内置阈值分割，无需额外安装，适合快速预览或作为回退方法。",
-        "pip": "",
-        "import": "skimage",
-    },
-}
+from imc_segment import METHODS as SEGMENTERS
+from imc_segment import run as run_segment
+from imc_segment import segment_cellpose, segment_mesmer, segment_otsu, segment_stardist
+from imc_qc import METHODS as QC_METHODS
+from imc_qc import run as run_qc
 
 
 def list_segmenters():
@@ -79,8 +51,6 @@ def list_segmenters():
     for i, info in enumerate(SEGMENTERS.values(), 1):
         print(f"  [{i}] {info['name']}")
         print(f"      {info['description']}")
-        install = f"pip install {info['pip']}" if info.get("pip") else "无需额外安装"
-        print(f"      {install}")
         print()
     print("  [q] 退出")
 
@@ -103,77 +73,6 @@ def pick_segmenter(choice: str = None) -> str:
         if sel.isdigit() and 1 <= int(sel) <= len(keys):
             return keys[int(sel) - 1]
         print(f"❌ 无效选择: '{sel}'，请重新输入")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Segmentation Backends
-# ══════════════════════════════════════════════════════════════════════════════
-
-def segment_otsu(dna_channel: np.ndarray) -> np.ndarray:
-    """Otsu 阈值 + 分水岭 (fallback, 无需额外安装)。"""
-    positive = dna_channel[dna_channel > 0]
-    threshold = float(positive.mean()) if positive.size else 10.0
-    mask = dna_channel > threshold
-    dist = ndimage.distance_transform_edt(mask)
-    markers, _ = ndimage.label(mask)
-    from skimage.segmentation import watershed
-    return watershed(-dist, markers, mask=mask).astype(np.int32)
-
-
-def segment_stardist(dna_channel: np.ndarray) -> np.ndarray:
-    """StarDist 核分割（2D，预训练模型）。"""
-    try:
-        from stardist.models import StarDist2D
-        from csbdeep.utils import normalize
-
-        model = StarDist2D.from_pretrained("2D_versatile_fluo")
-        img_norm = normalize(dna_channel.astype(np.float32))
-        labels, _ = model.predict_instances(img_norm, n_tiles=1)
-        return labels.astype(np.int32)
-    except Exception as exc:
-        print(f"⚠️  StarDist 分割不可用 ({exc})，回退到 Otsu 分割...")
-        return segment_otsu(dna_channel)
-
-
-def segment_cellpose(dna_channel: np.ndarray, diameter: float = None) -> np.ndarray:
-    """Cellpose 分割（nuclei 模型）。"""
-    try:
-        from cellpose import models
-
-        model = models.Cellpose(gpu=False, model_type="nuclei")
-        masks, _, _, _ = model.eval(
-            dna_channel.astype(np.float32),
-            diameter=diameter,
-            channels=[0, 0],
-        )
-        return masks.astype(np.int32)
-    except Exception as exc:
-        print(f"⚠️  Cellpose 分割不可用 ({exc})，回退到 Otsu 分割...")
-        return segment_otsu(dna_channel)
-
-
-def segment_mesmer(dna_channel: np.ndarray, membrane_channels: np.ndarray = None) -> np.ndarray:
-    """DeepCell Mesmer 组织级多细胞分割。"""
-    try:
-        from deepcell.applications import Mesmer
-
-        app = Mesmer()
-        # Mesmer expects (H, W, C) with nuclear + membrane channels.
-        membrane = membrane_channels if (
-            membrane_channels is not None
-            and membrane_channels.ndim == 2
-            and membrane_channels.shape == dna_channel.shape
-        ) else dna_channel
-        img_input = np.stack([dna_channel, membrane], axis=-1)[None, ...]
-        labels = np.asarray(app.predict(img_input, image_mpp=0.5))
-        if labels.ndim == 4:
-            return labels[0, :, :, 0].astype(np.int32)
-        if labels.ndim == 3:
-            return labels[0].astype(np.int32)
-        raise ValueError(f"Mesmer 输出 shape 不是 (1,H,W[,C]): {labels.shape}")
-    except Exception as exc:
-        print(f"⚠️  Mesmer 分割不可用 ({exc})，回退到 Otsu 分割...")
-        return segment_otsu(dna_channel)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -214,6 +113,34 @@ class IMCPipeline:
         info = SEGMENTERS[self.segmenter]
         print(f"\n🔬 使用分割方法: {info['name']}")
         print(f"   {info['description']}")
+
+    def save_cells(self, name: str):
+        self.data.cells.to_csv(self.output_dir / name, index=False)
+        return self
+
+    def load_cells(self, name: str):
+        path = self.output_dir / name
+        if not path.exists():
+            raise FileNotFoundError(f"missing checkpoint: {path}")
+        self.data.cells = pd.read_csv(path)
+        if "sample_id" in self.data.cells.columns:
+            self.data.samples = self.data.cells["sample_id"].unique().tolist()
+        return self
+
+    def inspect(self):
+        tiffs = sorted(self.input_dir.glob("*.tiff")) + sorted(self.input_dir.glob("*.tif"))
+        report = {
+            "input_dir": str(self.input_dir),
+            "tiff_count": len(tiffs),
+            "tiffs": [item.name for item in tiffs],
+            "panel": self.channel_names,
+            "ok": len(tiffs) > 0 and len(self.channel_names) > 0,
+        }
+        (self.output_dir / "inspect.json").write_text(json.dumps(report, indent=2))
+        print(json.dumps(report, ensure_ascii=False))
+        if not report["ok"]:
+            raise SystemExit(2)
+        return report
 
     def _load_panel(self, path: str) -> pd.DataFrame:
         df = pd.read_csv(path)
@@ -268,14 +195,6 @@ class IMCPipeline:
         mask_dir.mkdir(parents=True, exist_ok=True)
         all_cells = []
 
-        # 选择分割函数
-        seg_fn = {
-            "stardist": segment_stardist,
-            "cellpose": segment_cellpose,
-            "mesmer": segment_mesmer,
-            "otsu": segment_otsu,
-        }[self.segmenter]
-
         def channel_means(regionmask, intensity_image):
             return np.mean(intensity_image[regionmask], axis=0)
 
@@ -291,9 +210,11 @@ class IMCPipeline:
             if not 0 <= nucleus_channel < n_ch:
                 raise ValueError(f"{sample_id}: nucleus_channel {nucleus_channel} 超出 0..{n_ch-1}")
             dna = img[nucleus_channel]
-
-            # 调用选定的分割器
-            labels = seg_fn(dna)
+            result = run_segment(dna, self.segmenter, fallback="otsu", min_area=min_area)
+            labels = result.labels
+            used = result.method
+            if result.error:
+                print(f"  ⚠ {result.error}")
 
             # 提取细胞特征
             props = measure.regionprops_table(
@@ -313,7 +234,7 @@ class IMCPipeline:
 
             all_cells.append(cell_df)
             tifffile.imwrite(mask_dir / f"{sample_id}_mask.tiff", labels.astype(np.uint32))
-            print(f"  ✓ {sample_id}: {len(cell_df)} 细胞 ({self.segmenter})")
+            print(f"  ✓ {sample_id}: {len(cell_df)} 细胞 ({used})")
 
         empty_cols = ["cell_id", "y", "x", "area"]
         empty_cols += [f"ch_{c}" for c in range(len(self.channel_names))]
@@ -334,23 +255,22 @@ class IMCPipeline:
 
     # ── QC ────────────────────────────────────────────────────────────
 
-    def qc_filter(self, min_intensity_pct: float = 0.01, max_area_factor: float = 3.0):
-        cells = self.data.cells
-        if len(cells) == 0:
+    def qc_filter(self, min_intensity_pct: float = 0.01, max_area_factor: float = 3.0, method: str = "combined"):
+        result = run_qc(
+            self.data.cells,
+            method=method,
+            min_intensity_pct=min_intensity_pct,
+            max_area_factor=max_area_factor,
+        )
+        if result.error == "empty":
             print("  ⚠ 无细胞数据，跳过 QC")
             return self
-        if "area" not in cells.columns:
+        if result.error == "missing area":
             print("  ⚠ 缺少 area 列，跳过 QC")
             return self
-        area_median = cells["area"].median()
-        mask = (cells["area"] >= 20) & (cells["area"] <= area_median * max_area_factor)
-        dna_cols = [c for c in cells.columns if c.startswith("intensity_DNA")]
-        if dna_cols:
-            mask &= cells[dna_cols[0]] > cells[dna_cols[0]].quantile(min_intensity_pct)
-        before = len(cells)
-        self.data.cells = cells[mask].reset_index(drop=True)
-        after = len(self.data.cells)
-        print(f"  ✓ QC: {before} → {after} 细胞 ({after/before*100:.0f}% 保留)")
+        self.data.cells = result.cells
+        keep = result.after / result.before * 100 if result.before else 0
+        print(f"  ✓ QC ({result.method}): {result.before} → {result.after} 细胞 ({keep:.0f}% 保留)")
         return self
 
     # ── Clustering ────────────────────────────────────────────────────
@@ -365,18 +285,19 @@ class IMCPipeline:
             print("  ⚠ 未找到强度列")
             return self
         X = StandardScaler().fit_transform(cells[ch_cols].values)
-        pca = PCA(n_components=min(n_pcs, X.shape[1]))
+        pca = PCA(n_components=min(n_pcs, X.shape[1], max(1, len(cells) - 1)))
         X_pca = pca.fit_transform(X)
         n = n_clusters or max(5, int(len(cells) ** 0.5 / 3))
         km = KMeans(n_clusters=min(n, len(cells)), random_state=42, n_init=10)
         cells["cluster"] = km.fit_predict(X_pca).astype(str)
-        try:
-            import umap
-            emb = umap.UMAP(random_state=42).fit_transform(X_pca)
-            cells["umap1"] = emb[:, 0]
-            cells["umap2"] = emb[:, 1]
-        except ImportError:
-            pass
+        if len(cells) >= 10:
+            try:
+                import umap
+                emb = umap.UMAP(random_state=42).fit_transform(X_pca)
+                cells["umap1"] = emb[:, 0]
+                cells["umap2"] = emb[:, 1]
+            except ImportError:
+                pass
         print(f"  ✓ 聚类: {n} 个类群")
         return self
 
@@ -465,7 +386,7 @@ class IMCPipeline:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="IMC 分析管道 (StarDist / Cellpose / Mesmer / Otsu)",
+        description="IMC 分析管道（分割 + QC + 聚类 + 邻域）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 分割器:
@@ -489,6 +410,13 @@ def main():
     parser.add_argument("--k", type=int, default=20)
     parser.add_argument("--n-niches", type=int, default=6)
     parser.add_argument("--min-area", type=int, default=50)
+    parser.add_argument("--n-pcs", type=int, default=30)
+    parser.add_argument("--n-clusters", type=int, default=None)
+    parser.add_argument("--min-intensity-pct", type=float, default=0.01)
+    parser.add_argument("--max-area-factor", type=float, default=3.0)
+    parser.add_argument("--qc-method", choices=list(QC_METHODS.keys()), default="combined")
+    parser.add_argument("--step", default="run",
+                        choices=["inspect", "preprocess", "segment", "qc", "cluster", "neighborhood", "run"])
     parser.add_argument("--non-interactive", action="store_true",
                         help="非交互模式，未指定 --segmenter 时回退到 Otsu")
     args = parser.parse_args()
@@ -506,16 +434,57 @@ def main():
         segmenter = pick_segmenter()
 
     pipe = IMCPipeline(args.input_dir, args.panel, args.output_dir, segmenter=segmenter)
+    apply_step(pipe, args)
+    return 0
+
+
+def apply_step(pipe: IMCPipeline, args):
+    if args.step == "inspect":
+        pipe.inspect()
+        return
+    if args.step == "preprocess":
+        pipe.preprocess()
+        return
+    if args.step == "segment":
+        pipe.segment(nucleus_channel=args.nucleus_channel, min_area=args.min_area)
+        pipe.save_cells("cells_segment.csv")
+        return
+    if args.step == "qc":
+        pipe.load_cells("cells_segment.csv")
+        pipe.qc_filter(
+            min_intensity_pct=args.min_intensity_pct,
+            max_area_factor=args.max_area_factor,
+            method=args.qc_method,
+        )
+        pipe.save_cells("cells_qc.csv")
+        return
+    if args.step == "cluster":
+        pipe.load_cells("cells_qc.csv")
+        pipe.cluster(n_pcs=args.n_pcs, n_clusters=args.n_clusters)
+        pipe.save_cells("cells_cluster.csv")
+        return
+    if args.step == "neighborhood":
+        pipe.load_cells("cells_cluster.csv")
+        pipe.cellular_neighborhood(k=args.k, n_niches=args.n_niches)
+        pipe.cell_interaction()
+        pipe.save_cells("cells_full.csv")
+        return
     if args.preprocess:
         pipe.preprocess()
     pipe.segment(nucleus_channel=args.nucleus_channel, min_area=args.min_area)
-    pipe.qc_filter()
-    pipe.cluster()
+    pipe.save_cells("cells_segment.csv")
+    pipe.qc_filter(
+        min_intensity_pct=args.min_intensity_pct,
+        max_area_factor=args.max_area_factor,
+        method=args.qc_method,
+    )
+    pipe.save_cells("cells_qc.csv")
+    pipe.cluster(n_pcs=args.n_pcs, n_clusters=args.n_clusters)
+    pipe.save_cells("cells_cluster.csv")
     pipe.cellular_neighborhood(k=args.k, n_niches=args.n_niches)
     pipe.cell_interaction()
-    pipe.data.cells.to_csv(pipe.output_dir / "cells_full.csv", index=False)
+    pipe.save_cells("cells_full.csv")
     print(f"\n✅ 管道完成: {pipe.output_dir}")
-    return 0
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
-import { createEffect, createSignal, For, onCleanup, Show, type JSX } from "solid-js"
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, type JSX } from "solid-js"
+import { useParams } from "@solidjs/router"
 import { IMC_STEPS } from "@/domain/imc-flow"
 import { useLanguage } from "@/context/language"
+import { useSync } from "@/context/sync"
 import { IconChevronDown } from "@/thesis/shared/Icon"
 import { shellHost } from "./host"
 import { useComposerSlot } from "./composer-slot"
@@ -9,6 +11,17 @@ import { centerTabs } from "@/thesis/store/centerTabs"
 export function ImcDock(): JSX.Element {
   const language = useLanguage()
   const composer = useComposerSlot()
+  const params = useParams()
+  const sync = useSync()
+  const recipeStatus = createMemo(() => {
+    if (!params.id) return undefined
+    const users = (sync.data.message[params.id] ?? []).filter((item) => item.role === "user")
+    const last = users.at(-1)
+    if (last?.agent === "recipe-executor") return "local" as const
+    const prev = users.at(-2)
+    if (last?.agent === "research" && prev?.agent === "recipe-executor") return "upgrade" as const
+    return undefined
+  })
   const [open, setOpen] = createSignal(false)
   let root: HTMLDivElement | undefined
   createEffect(() => {
@@ -43,6 +56,13 @@ export function ImcDock(): JSX.Element {
           {language.t("chat.welcome.imc.flow.title")}
           <IconChevronDown size={11} strokeWidth={1.6} />
         </button>
+        <Show when={recipeStatus()}>
+          <span class="cs-imc-flow-status">
+            {recipeStatus() === "local"
+              ? language.t("chat.welcome.imc.flow.local")
+              : language.t("chat.welcome.imc.flow.upgrade")}
+          </span>
+        </Show>
         <Show when={open()}>
           <div class="cs-imc-flow-pop" role="menu">
             <div class="cs-chat-welcome-flow-grid">
@@ -55,7 +75,7 @@ export function ImcDock(): JSX.Element {
                       class="cs-chat-welcome-flow-card"
                       role="menuitem"
                       onClick={() => {
-                        composer.insert(language.t(step[2]))
+                        composer.insert(language.t(step[2]), step[4])
                         setOpen(false)
                       }}
                     >

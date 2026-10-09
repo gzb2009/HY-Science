@@ -1,6 +1,6 @@
 import { createContext, useContext } from "solid-js"
 
-const ComposerSlotContext = createContext<{ insert: (text: string) => void }>({
+const ComposerSlotContext = createContext<{ insert: (text: string, recipe?: string) => void }>({
   insert: () => undefined,
 })
 
