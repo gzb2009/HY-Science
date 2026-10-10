@@ -69,7 +69,9 @@ function Grid(props: { rows: string[][]; sheet?: boolean }): JSX.Element {
                 <Show when={props.sheet}>
                   <th data-role="gutter">{index() + 2}</th>
                 </Show>
-                <For each={Array.from({ length: cols() }, (_, col) => row[col] ?? "")}>{(cell) => <td>{cell}</td>}</For>
+                <For each={Array.from({ length: cols() }, (_, col) => row[col] ?? "")}>
+                  {(cell) => <td title={cell}>{cell}</td>}
+                </For>
               </tr>
             )}
           </For>

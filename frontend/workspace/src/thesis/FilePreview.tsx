@@ -3,8 +3,11 @@ import {
   createResource,
   createEffect,
   createMemo,
+  onMount,
+  onCleanup,
   type JSX,
   Show,
+  For,
   Suspense,
   Switch,
   Match,
@@ -97,7 +100,68 @@ const LANG: Record<string, string> = {
   log: "text",
 }
 
-type Kind = "markdown" | "pdf" | "image" | "code" | "binary" | "office"
+const TEXT_EXT = new Set([
+  "py",
+  "pyi",
+  "pyx",
+  "ipynb",
+  "ts",
+  "tsx",
+  "js",
+  "jsx",
+  "mjs",
+  "cjs",
+  "json",
+  "jsonl",
+  "md",
+  "mdx",
+  "markdown",
+  "csv",
+  "tsv",
+  "txt",
+  "log",
+  "text",
+  "r",
+  "rmd",
+  "yaml",
+  "yml",
+  "toml",
+  "ini",
+  "cfg",
+  "sh",
+  "bash",
+  "zsh",
+  "css",
+  "scss",
+  "html",
+  "xml",
+  "sql",
+  "tex",
+  "latex",
+  "sty",
+  "cls",
+  "bib",
+  "c",
+  "h",
+  "cpp",
+  "cc",
+  "hpp",
+  "rs",
+  "go",
+  "java",
+  "kt",
+  "rb",
+  "php",
+  "lua",
+  "jl",
+])
+
+function decodeBase64(value: string) {
+  const bytes = Uint8Array.from(atob(value), (char) => char.charCodeAt(0))
+  return new TextDecoder().decode(bytes)
+}
+
+type Kind = "markdown" | "pdf" | "image" | "code" | "binary" | "office" | "sheet"
 
 type FileData = { content?: string; encoding?: string; mimeType?: string; preview?: OfficePreviewData }
 
@@ -146,11 +210,16 @@ export function FileView(props: {
     if (file.error) return
     return file()
   }
-  const isBinary = () => data()?.encoding === "base64"
+  const isBinary = () => data()?.encoding === "base64" && !TEXT_EXT.has(e())
   const mime = () => data()?.mimeType ?? ""
   const b64 = () => data()?.content ?? ""
   const dataUrl = () => `data:${mime() || "application/octet-stream"};base64,${b64()}`
-  const text = () => (!data() || isBinary() ? "" : (data()!.content ?? ""))
+  const text = () => {
+    if (!data()) return ""
+    if (data()?.encoding !== "base64") return data()!.content ?? ""
+    if (!TEXT_EXT.has(e())) return ""
+    return decodeBase64(data()!.content ?? "")
+  }
   const dirty = () => draft() !== savedText()
 
   const kind = createMemo<Kind>(() => {
@@ -163,6 +232,7 @@ export function FileView(props: {
     }
     if (x === "md" || x === "markdown" || x === "mdx") return "markdown"
     if (x === "pdf") return "pdf"
+    if (x === "csv" || x === "tsv") return "sheet"
     // .tex / .latex / .sty / .cls are source files → highlighted "code" view
     // (LANG maps them to the shiki `latex` grammar). They are NEVER routed to
     // KaTeX, which blanks on a full \documentclass document.
@@ -185,6 +255,7 @@ export function FileView(props: {
   createEffect(() => {
     props.path
     setZoom(1)
+    setShowSource(false)
   })
 
   const save = async () => {
@@ -221,7 +292,8 @@ export function FileView(props: {
     } catch {}
   }
 
-  const toggleable = () => kind() === "markdown" || kind() === "code"
+  const toggleable = () => kind() === "markdown" || kind() === "code" || kind() === "sheet"
+  const framed = () => kind() === "sheet" || kind() === "code" || (kind() === "markdown" && showSource())
 
   return (
     <Suspense
@@ -324,7 +396,17 @@ export function FileView(props: {
             <button
               type="button"
               onClick={() => setShowSource((v) => !v)}
-              title={showSource() ? "rendered view" : kind() === "code" ? "edit source" : "raw source"}
+              title={
+                kind() === "sheet"
+                  ? showSource()
+                    ? "表格"
+                    : "原文"
+                  : showSource()
+                    ? "rendered view"
+                    : kind() === "code"
+                      ? "edit source"
+                      : "raw source"
+              }
               style={iconBtn(showSource())}
             >
               <Show when={showSource()} fallback={<IconBraces size={13} strokeWidth={1.6} />}>
@@ -431,26 +513,26 @@ export function FileView(props: {
               style={{
                 flex: 1,
                 "min-height": 0,
-                overflow: "auto",
+                "min-width": 0,
+                display: "flex",
+                "flex-direction": "column",
+                overflow: framed() ? "hidden" : "auto",
                 background: "var(--color-bg-subtle)",
               }}
             >
               <Switch>
-                {/* markdown */}
                 <Match when={kind() === "markdown" && !showSource()}>
-                  <div style={{ padding: "22px 26px", "max-width": "820px", margin: "0 auto" }}>
+                  <div style={{ padding: "22px 26px", width: "100%", "box-sizing": "border-box" }}>
                     <Markdown class="thesis-md" text={draft()} />
                   </div>
                 </Match>
 
-                {/* pdf */}
                 <Match when={kind() === "pdf"}>
                   <div style={{ padding: "14px" }}>
                     <PdfViewer kind="pdf" data={{ base64: b64(), maxPages: 40 }} height={100000} />
                   </div>
                 </Match>
 
-                {/* image */}
                 <Match when={kind() === "image"}>
                   <div
                     style={{
@@ -483,7 +565,6 @@ export function FileView(props: {
                   </div>
                 </Match>
 
-                {/* binary */}
                 <Match when={kind() === "binary"}>
                   <div
                     style={{
@@ -509,39 +590,21 @@ export function FileView(props: {
                   </div>
                 </Match>
 
-                {/* code / text — editable source, or highlighted read view */}
-                <Match when={kind() === "code" && showSource()}>
+                <Match when={(kind() === "code" || kind() === "sheet") && showSource()}>
                   <textarea
                     value={draft()}
                     spellcheck={false}
                     onInput={(ev) => setDraft(ev.currentTarget.value)}
-                    class="thesis-scroll"
-                    style={{
-                      all: "unset",
-                      "box-sizing": "border-box",
-                      display: "block",
-                      width: "100%",
-                      "min-height": "100%",
-                      padding: "16px 18px",
-                      "font-family": FONT_CODE,
-                      "font-size": "0.857rem",
-                      "line-height": 1.65,
-                      color: "var(--color-text)",
-                      "white-space": "pre",
-                      "tab-size": 2,
-                    }}
+                    class="hy-source-edit thesis-scroll"
                   />
                 </Match>
+
+                <Match when={kind() === "sheet"}>
+                  <SheetView text={draft()} name={name()} />
+                </Match>
+
                 <Match when={kind() === "code" || (kind() === "markdown" && showSource())}>
-                  <div style={{ padding: "14px 16px" }}>
-                    <Markdown
-                      class="thesis-md"
-                      text={fence(
-                        showSource() && kind() !== "code" ? langFor(kind(), e()) : (LANG[e()] ?? "text"),
-                        draft(),
-                      )}
-                    />
-                  </div>
+                  <SourceView text={shownText(name(), draft())} />
                 </Match>
               </Switch>
             </div>
@@ -552,18 +615,167 @@ export function FileView(props: {
   )
 }
 
-function langFor(k: Kind, x: string): string {
-  if (k === "markdown") return "markdown"
-  return LANG[x] ?? "text"
+const ROW = 32
+
+function isNumeric(value: string) {
+  const t = value.trim()
+  if (!t) return false
+  return /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(t)
 }
 
-// Wrap raw file text in a fenced code block so the shared Markdown renderer
-// (marked + shiki) syntax-highlights it. Guards against content that already
-// contains a triple backtick by widening the fence.
-function fence(lang: string, body: string): string {
-  let ticks = "```"
-  while (body.includes(ticks)) ticks += "`"
-  return `${ticks}${lang}\n${body}\n${ticks}`
+function splitCells(line: string, sep: string) {
+  const out: string[] = []
+  let cur = ""
+  let quoted = false
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      if (quoted && line[i + 1] === '"') {
+        cur += '"'
+        i++
+        continue
+      }
+      quoted = !quoted
+      continue
+    }
+    if (char === sep && !quoted) {
+      out.push(cur)
+      cur = ""
+      continue
+    }
+    cur += char
+  }
+  out.push(cur)
+  return out
+}
+
+function parseSheet(text: string, name: string) {
+  const sep = ext(name) === "tsv" ? "\t" : ","
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0)
+  if (!lines.length) return { cols: [] as { name: string; num: boolean }[], rows: [] as string[][] }
+  const rows = lines.slice(1).map((line) => splitCells(line, sep))
+  const head = splitCells(lines[0], sep)
+  const cols = head.map((label, index) => {
+    const sample = rows
+      .slice(0, 24)
+      .map((row) => (row[index] ?? "").trim())
+      .filter(Boolean)
+    return { name: label.trim() || `列 ${index + 1}`, num: sample.length > 0 && sample.every(isNumeric) }
+  })
+  return { cols, rows }
+}
+
+function shownText(name: string, text: string) {
+  if (!name.toLowerCase().endsWith(".json")) return text
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    return text
+  }
+}
+
+function SourceView(props: { text: string }) {
+  const lines = createMemo(() => {
+    const raw = props.text.replace(/\r\n/g, "\n")
+    const parts = raw.endsWith("\n") ? raw.slice(0, -1).split("\n") : raw.split("\n")
+    return parts.length ? parts : [""]
+  })
+  return (
+    <div class="hy-source thesis-scroll">
+      <For each={lines()}>
+        {(line, index) => (
+          <div class="hy-source-line">
+            <span class="hy-source-no">{index() + 1}</span>
+            <code>{line.length ? line : " "}</code>
+          </div>
+        )}
+      </For>
+    </div>
+  )
+}
+
+function SheetView(props: { text: string; name: string }) {
+  const sheet = createMemo(() => parseSheet(props.text, props.name))
+  const tracks = () => `52px repeat(${Math.max(sheet().cols.length, 1)}, minmax(132px, 180px))`
+  const [top, setTop] = createSignal(0)
+  const [view, setView] = createSignal(480)
+  let node: HTMLDivElement | undefined
+
+  const measure = () => {
+    if (!node) return
+    setView(node.clientHeight)
+  }
+
+  onMount(() => {
+    measure()
+    const watch = new ResizeObserver(measure)
+    if (node) watch.observe(node)
+    onCleanup(() => watch.disconnect())
+  })
+
+  createEffect(() => {
+    props.name
+    setTop(0)
+    if (node) node.scrollTop = 0
+  })
+
+  const start = createMemo(() => Math.max(0, Math.floor((top() - 34) / ROW) - 8))
+  const slice = createMemo(() => sheet().rows.slice(start(), start() + Math.ceil(view() / ROW) + 14))
+
+  return (
+    <div class="hy-sheet">
+      <div
+        class="hy-sheet-scroll thesis-scroll"
+        ref={(el) => (node = el)}
+        onScroll={(event) => setTop(event.currentTarget.scrollTop)}
+      >
+        <div class="hy-sheet-head" style={{ "grid-template-columns": tracks() }}>
+          <span class="hy-sheet-gutter hy-sheet-corner" />
+          <For each={sheet().cols}>
+            {(col) => (
+              <span class="hy-sheet-h" data-num={col.num ? "true" : undefined} title={col.name}>
+                {col.name}
+              </span>
+            )}
+          </For>
+        </div>
+        <Show
+          when={sheet().rows.length > 0}
+          fallback={<div class="hy-sheet-empty">{sheet().cols.length ? "没有数据行" : "空表"}</div>}
+        >
+          <div class="hy-sheet-space" style={{ height: `${sheet().rows.length * ROW}px` }}>
+            <For each={slice()}>
+              {(row, index) => {
+                const at = () => start() + index()
+                return (
+                  <div
+                    class="hy-sheet-row"
+                    data-alt={at() % 2 ? "true" : undefined}
+                    style={{ top: `${at() * ROW}px`, height: `${ROW}px`, "grid-template-columns": tracks() }}
+                  >
+                    <span class="hy-sheet-gutter">{at() + 1}</span>
+                    <For each={sheet().cols}>
+                      {(col, ci) => (
+                        <span class="hy-sheet-cell" data-num={col.num ? "true" : undefined} title={row[ci()] ?? ""}>
+                          {row[ci()] ?? ""}
+                        </span>
+                      )}
+                    </For>
+                  </div>
+                )
+              }}
+            </For>
+          </div>
+        </Show>
+      </div>
+      <div class="hy-sheet-status">
+        {sheet().rows.length.toLocaleString()} 行 · {sheet().cols.length} 列
+      </div>
+    </div>
+  )
 }
 
 function iconBtn(active = false): JSX.CSSProperties {

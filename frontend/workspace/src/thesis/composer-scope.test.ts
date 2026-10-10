@@ -9,11 +9,20 @@ describe("composer scope", () => {
     expect(rules.find((item) => item.permission === "external_directory")?.action).toBe("deny")
   })
 
-  test("workspace allows inside and asks outside", () => {
+  test("ask confirms commands, outside files, and network", () => {
+    const rules = scopeRules("ask")
+    expect(rules.find((item) => item.permission === "edit")?.action).toBe("allow")
+    expect(rules.find((item) => item.permission === "bash")?.action).toBe("ask")
+    expect(rules.find((item) => item.permission === "external_directory")?.action).toBe("ask")
+    expect(rules.find((item) => item.permission === "webfetch")?.action).toBe("ask")
+  })
+
+  test("workspace allows routine work and asks on risk", () => {
     const rules = scopeRules("workspace")
     expect(rules.find((item) => item.permission === "edit")?.action).toBe("allow")
     expect(rules.find((item) => item.permission === "external_directory")?.action).toBe("ask")
     expect(rules.find((item) => item.permission === "destructive")?.action).toBe("ask")
+    expect(rules.find((item) => item.permission === "webfetch")?.action).toBe("allow")
   })
 
   test("trust allows any file or command", () => {

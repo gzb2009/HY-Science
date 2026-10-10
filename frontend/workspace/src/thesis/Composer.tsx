@@ -44,7 +44,6 @@ import { sessionTitleLocal } from "@/thesis/store/sessionTitleLocal"
 import { ensureDirectory } from "@/utils/projectResult"
 import { Binary } from "@hysci/util/binary"
 import { produce } from "solid-js/store"
-import { mergesContext, startsTask, taskControls, type TaskControl } from "@/thesis/task-control"
 import { isUserStopError } from "@hysci/ui/session-result"
 import {
   CONTEXT_DIR,
@@ -67,6 +66,7 @@ import {
   type ModelCostShape,
 } from "./composer/model-utils"
 import { AttachmentChip, CONTROL_LABEL, FloatingControls, Segmented } from "./composer/controls"
+import { ContextMeter } from "./composer/ContextMeter"
 
 export function Composer(): JSX.Element {
   const params = useParams()
@@ -145,14 +145,10 @@ export function Composer(): JSX.Element {
     model: ModelKey
     variant: string | undefined
     fast: boolean | undefined
-    taskControl: TaskControl | undefined
   }
   const [queue, setQueue] = createSignal<QueuedPrompt[]>([])
   const [inflight, setInflight] = createSignal(false)
   const [lastSent, setLastSent] = createSignal("")
-  const [taskControl, setTaskControl] = createSignal<TaskControl>()
-  const [taskControlOpen, setTaskControlOpen] = createSignal(false)
-  const selectedTaskControl = createMemo(() => taskControls.find((item) => item.id === taskControl()))
   createEffect(
     on(
       () => params.id,
@@ -230,7 +226,6 @@ export function Composer(): JSX.Element {
     setEffortOpen(false)
     setWorkspaceOpen(false)
     setScopeOpen(false)
-    setTaskControlOpen(false)
   })
   createEffect(
     on(
@@ -240,7 +235,6 @@ export function Composer(): JSX.Element {
         setEffortOpen(false)
         setWorkspaceOpen(false)
         setScopeOpen(false)
-        setTaskControlOpen(false)
       },
       { defer: true },
     ),
@@ -986,12 +980,10 @@ export function Composer(): JSX.Element {
       model: chosen,
       variant: models.variant.get(chosen),
       fast: isGpt55(chosen.modelID) ? fast() : undefined,
-      taskControl: taskControl(),
     }
     // Clear the input immediately in both paths so typing can continue.
     setText("")
     setAttachments([])
-    setTaskControl(undefined)
     if (textareaRef) textareaRef.style.height = "auto"
 
     // Mid-turn sends queue; the drain effect below fires them when idle.
@@ -1172,8 +1164,6 @@ export function Composer(): JSX.Element {
           variant: p.variant,
           fast: p.fast,
           parts: promptParts,
-          newTask: startsTask(p.taskControl),
-          mergeTaskContext: mergesContext(p.taskControl),
         } as any)
         .catch((e: any) => {
           if (isUserStopError(e)) return
@@ -1374,41 +1364,6 @@ export function Composer(): JSX.Element {
                 {(a) => <AttachmentChip att={a} onRemove={() => removeAttachment(a.id)} />}
               </For>
             </div>
-          </Show>
-          <Show when={selectedTaskControl()}>
-            {(control) => (
-              <div
-                style={{
-                  display: "flex",
-                  "align-items": "center",
-                  gap: "6px",
-                  width: "fit-content",
-                  padding: "3px 6px 3px 8px",
-                  border: "1px solid var(--color-border)",
-                  "border-radius": "4px",
-                  background: "var(--color-accent-subtle)",
-                  "font-family": FONT_MONO,
-                  "font-size": "var(--text-xs)",
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                <span>{control().label}</span>
-                <button
-                  type="button"
-                  title="继续当前任务"
-                  aria-label="继续当前任务"
-                  onClick={() => setTaskControl(undefined)}
-                  style={{
-                    all: "unset",
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    color: "var(--color-text-faint)",
-                  }}
-                >
-                  <IconX size={11} strokeWidth={1.5} />
-                </button>
-              </div>
-            )}
           </Show>
           <ComposerSlotProvider
             value={{
@@ -1858,101 +1813,6 @@ export function Composer(): JSX.Element {
               </Portal>
             </Show>
 
-            <div style={{ position: "relative", display: "inline-flex" }}>
-              <button
-                type="button"
-                title="任务控制"
-                aria-label="任务控制"
-                aria-expanded={taskControlOpen()}
-                onClick={() => setTaskControlOpen((open) => !open)}
-                style={{
-                  all: "unset",
-                  "box-sizing": "border-box",
-                  cursor: "pointer",
-                  height: "28px",
-                  padding: "0 7px",
-                  color: taskControl() ? "var(--color-text)" : "var(--color-text-faint)",
-                  display: "inline-flex",
-                  "align-items": "center",
-                  gap: "3px",
-                  "border-radius": "4px",
-                  background: taskControlOpen() ? "var(--color-accent-subtle)" : "transparent",
-                  "font-family": FONT_MONO,
-                  "font-size": "var(--text-sm)",
-                }}
-              >
-                任务
-                <IconChevronDown size={10} strokeWidth={1.5} />
-              </button>
-              <Show when={taskControlOpen()}>
-                <div
-                  role="menu"
-                  style={{
-                    position: "absolute",
-                    bottom: "34px",
-                    left: 0,
-                    width: "260px",
-                    padding: "4px",
-                    background: "var(--color-surface-solid)",
-                    border: "1px solid var(--color-border-strong)",
-                    "border-radius": "4px",
-                    "box-shadow": "var(--shadow-md)",
-                    "z-index": 40,
-                  }}
-                >
-                  <For each={taskControls}>
-                    {(item) => (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setTaskControl(item.id)
-                          setTaskControlOpen(false)
-                          textareaRef?.focus()
-                        }}
-                        style={{
-                          all: "unset",
-                          "box-sizing": "border-box",
-                          cursor: "pointer",
-                          display: "flex",
-                          "flex-direction": "column",
-                          gap: "2px",
-                          width: "100%",
-                          padding: "7px 8px",
-                          "border-radius": "4px",
-                          background: taskControl() === item.id ? "var(--color-accent-subtle)" : "transparent",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-bg-elevated)")}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background =
-                            taskControl() === item.id ? "var(--color-accent-subtle)" : "transparent"
-                        }}
-                      >
-                        <span
-                          style={{
-                            "font-family": FONT_SANS,
-                            "font-size": "var(--text-base)",
-                            color: "var(--color-text)",
-                          }}
-                        >
-                          {item.label}
-                        </span>
-                        <span
-                          style={{
-                            "font-family": FONT_SANS,
-                            "font-size": "var(--text-sm)",
-                            color: "var(--color-text-faint)",
-                          }}
-                        >
-                          {item.description}
-                        </span>
-                      </button>
-                    )}
-                  </For>
-                </div>
-              </Show>
-            </div>
-
             <button
               type="button"
               title={language.t("composer.attach")}
@@ -2106,6 +1966,11 @@ export function Composer(): JSX.Element {
             </Show>
           </div>
         </div>
+        <ContextMeter
+          providerID={model()?.providerID}
+          modelID={model()?.modelID}
+          limit={selectedInfo()?.limit?.context ?? 0}
+        />
         <FloatingControls
           effortOpen={effortOpen}
           setEffortOpen={setEffortOpen}

@@ -248,7 +248,7 @@ export namespace ResearchContext {
     suggestion: string // natural language hint for the LLM
   }
 
-  export function evaluate(entities: Entities): CompletenessReport {
+  export function evaluate(entities: Entities, mode?: "plan" | "work"): CompletenessReport {
     const present: string[] = []
     const missing: string[] = []
 
@@ -271,7 +271,11 @@ export namespace ResearchContext {
 
     const suggestion =
       missing.length > 0
-        ? `Current known: ${present.join(", ") || "(none)"}. Missing: ${missing.join(", ")}. Ask every still-open result-changing slot in one question tool call before designing or analyzing.`
+        ? `Current known: ${present.join(", ") || "(none)"}. Missing: ${missing.join(", ")}. ${
+            mode === "plan"
+              ? "This turn is a plan only. Write the plan and name these as assumptions. Do not ask unless one fact blocks the plan."
+              : "Ask every still-open result-changing slot in one question tool call before designing or analyzing."
+          }`
         : "All key entities known. Proceed to answer."
 
     return { level, present, missing, suggestion }

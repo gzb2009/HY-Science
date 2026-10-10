@@ -13,6 +13,7 @@ import { artifactMetaLocal } from "@/thesis/store/artifactMetaLocal"
 import { artifactImageUrl } from "@/utils/artifactPreview"
 import { isResultFolderName } from "@/utils/projectResult"
 import { filterLatestFileNodes, artifactPathsMatch, type ResultFile } from "@hysci/ui/session-result"
+import { FileTypeCard } from "@hysci/ui/file-type-mark"
 import { alertDialog, confirmDialog, promptDialog } from "@/thesis/dialogs"
 import { toast } from "@/thesis/Toast"
 import {
@@ -1029,9 +1030,10 @@ function ArtifactsGrid(props: {
             <div
               style={{
                 padding: "14px",
-                display: "grid",
-                "grid-template-columns": "repeat(auto-fill, minmax(178px, 1fr))",
-                gap: "12px",
+                display: "flex",
+                "flex-wrap": "wrap",
+                "align-items": "flex-start",
+                gap: "4px",
               }}
             >
               <For each={rows()}>
@@ -1136,111 +1138,33 @@ function ArtifactCard(props: {
   onMenu: (event: MouseEvent) => void
 }): JSX.Element {
   const starred = () => !!artifactMetaLocal.get(props.directory, props.node.path).starred
+  const base = () => {
+    const name = props.node.name
+    const cut = Math.max(name.lastIndexOf("/"), name.lastIndexOf("\\"))
+    return cut >= 0 ? name.slice(cut + 1) : name
+  }
   return (
     <div
       role="button"
       tabIndex={0}
+      class="hy-deliverable"
       onClick={props.onOpen}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return
         event.preventDefault()
         props.onOpen()
       }}
-      title={props.node.absolute}
+      title={props.node.name}
       style={artifactCard()}
     >
-      <div style={artifactThumb()}>
-        <Show
-          when={isImage(props.node.name)}
-          fallback={
-            <Show when={isTable(props.node.name)} fallback={<FileThumb node={props.node} />}>
-              <TableThumb directory={props.directory} node={props.node} />
-            </Show>
-          }
-        >
-          <ImageThumb directory={props.directory} node={props.node} />
-        </Show>
-        <Show when={starred()}>
-          <span style={{ position: "absolute", top: "8px", left: "8px", color: "#d4a017" }}>
-            <IconStarFilled size={13} strokeWidth={1.5} />
-          </span>
-        </Show>
-        <div style={artifactActions()}>
-          <ArtifactQuick onDownload={props.onDownload} onMenu={props.onMenu} />
-        </div>
-      </div>
-      <div
-        style={{
-          padding: "9px 10px 10px",
-          display: "flex",
-          "flex-direction": "column",
-          gap: "4px",
-          "text-align": "left",
-        }}
-      >
-        <span
-          style={{
-            "font-family": FONT_SANS,
-            "font-size": "0.929rem",
-            "font-weight": 600,
-            color: "var(--color-text)",
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            "white-space": "nowrap",
-          }}
-        >
-          {props.node.name}
+      <FileTypeCard name={base()} />
+      <Show when={starred()}>
+        <span style={{ position: "absolute", top: "8px", left: "8px", color: "#d4a017", "z-index": 1 }}>
+          <IconStarFilled size={13} strokeWidth={1.5} />
         </span>
-        <span style={{ "font-family": FONT_SANS, "font-size": "0.786rem", color: "var(--color-text-faint)" }}>
-          {subtitle(props.node)}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function FileThumb(props: { node: FileNode }): JSX.Element {
-  const label = () => ext(props.node.name).toUpperCase() || "FILE"
-  return (
-    <div
-      style={{
-        height: "100%",
-        padding: "18px",
-        display: "flex",
-        "flex-direction": "column",
-        "justify-content": "space-between",
-        background: "linear-gradient(135deg, var(--color-bg-subtle), var(--color-surface-solid))",
-        color: "var(--color-text-faint)",
-      }}
-    >
-      <div style={{ display: "flex", "align-items": "center", "justify-content": "space-between" }}>
-        <ExtBadge name={props.node.name} />
-        <IconFile size={18} strokeWidth={1.3} />
-      </div>
-      <div style={{ display: "flex", "flex-direction": "column", gap: "5px", "min-width": 0 }}>
-        <span
-          style={{
-            "font-family": FONT_MONO,
-            "font-size": "0.786rem",
-            "font-weight": 700,
-            color: "var(--color-text-muted)",
-            "letter-spacing": "0.06em",
-          }}
-        >
-          {label()}
-        </span>
-        <span
-          style={{
-            "font-family": FONT_SANS,
-            "font-size": "0.786rem",
-            color: "var(--color-text-faint)",
-            overflow: "hidden",
-            "text-overflow": "ellipsis",
-            "white-space": "nowrap",
-          }}
-        >
-          {props.node.name}
-        </span>
+      </Show>
+      <div class="hy-deliverable-actions" style={artifactActions()}>
+        <ArtifactQuick onDownload={props.onDownload} onMenu={props.onMenu} />
       </div>
     </div>
   )
@@ -1546,111 +1470,6 @@ function TypeChip(props: { kind: "num" | "str" }): JSX.Element {
     >
       {num ? "123" : "Aa"}
     </span>
-  )
-}
-
-function TableThumb(props: { directory: string; node: FileNode }): JSX.Element {
-  const sdk = useSDK()
-  const delimited = () => isDelimited(props.node.name)
-  const [file] = createResource(
-    () => (delimited() ? ([props.directory, props.node.path] as const) : undefined),
-    async (input) => {
-      if (!input) return ""
-      const res: any = await sdk.client.file.read({ directory: input[0], path: input[1] })
-      const data = (res?.data ?? res) as FileData
-      return data.content ?? ""
-    },
-  )
-  const summary = createMemo(() => {
-    if (!delimited()) return null
-    const text = file()
-    if (!text) return null
-    return parseTable(text, props.node.name)
-  })
-  return (
-    <Show
-      when={summary()}
-      fallback={
-        <div
-          style={{
-            height: "100%",
-            display: "flex",
-            "flex-direction": "column",
-            "align-items": "center",
-            "justify-content": "center",
-            gap: "8px",
-            padding: "12px",
-            color: "var(--color-text-muted)",
-            background: "linear-gradient(180deg, var(--color-bg-subtle) 0%, var(--color-surface-solid) 100%)",
-          }}
-        >
-          <TableGlyph size={28} />
-          <span style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-faint)" }}>
-            {ext(props.node.name).toUpperCase() || "TABLE"} · {compactBytes(props.node.size)}
-          </span>
-        </div>
-      }
-    >
-      {(meta) => (
-        <div
-          style={{
-            height: "100%",
-            display: "flex",
-            "flex-direction": "column",
-            gap: "6px",
-            padding: "12px 12px 10px",
-            "box-sizing": "border-box",
-            background: "linear-gradient(180deg, var(--color-bg-subtle) 0%, var(--color-surface-solid) 100%)",
-          }}
-        >
-          <div
-            style={{
-              "font-family": FONT_MONO,
-              "font-size": "0.714rem",
-              color: "var(--color-text-faint)",
-              "letter-spacing": "0.01em",
-            }}
-          >
-            {meta().rows.toLocaleString()} rows · {meta().cols} columns
-          </div>
-          <div
-            style={{
-              flex: 1,
-              "min-height": 0,
-              display: "flex",
-              "flex-direction": "column",
-              gap: "5px",
-              overflow: "hidden",
-            }}
-          >
-            <For each={meta().fields.slice(0, 5)}>
-              {(field) => (
-                <div style={{ display: "flex", "align-items": "center", gap: "7px", "min-width": 0 }}>
-                  <TypeChip kind={field.kind} />
-                  <span
-                    style={{
-                      "font-family": FONT_SANS,
-                      "font-size": "0.857rem",
-                      color: "var(--color-text)",
-                      overflow: "hidden",
-                      "text-overflow": "ellipsis",
-                      "white-space": "nowrap",
-                    }}
-                  >
-                    {field.name}
-                  </span>
-                </div>
-              )}
-            </For>
-            <Show when={meta().fields.length > 5}>
-              <span style={{ "font-family": FONT_MONO, "font-size": "0.714rem", color: "var(--color-text-faint)" }}>
-                +{meta().fields.length - 5} more
-              </span>
-            </Show>
-          </div>
-        </div>
-      )}
-    </Show>
   )
 }
 
@@ -2241,24 +2060,13 @@ function artifactCard(): JSX.CSSProperties {
   return {
     all: "unset",
     cursor: "pointer",
-    display: "flex",
-    "flex-direction": "column",
-    "border-radius": "10px",
-    border: "1px solid var(--color-border)",
-    background: "var(--color-surface-solid)",
-    overflow: "hidden",
-    "box-shadow": "0 1px 2px rgba(15,23,42,0.04)",
-    transition: "transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease",
-  } as JSX.CSSProperties
-}
-
-function artifactThumb(): JSX.CSSProperties {
-  return {
     position: "relative",
-    height: "168px",
-    background: "var(--color-bg-subtle)",
-    border: "0 solid var(--color-border)",
-    "border-bottom-width": "1px",
+    display: "flex",
+    width: "118px",
+    height: "142px",
+    "flex-shrink": 0,
+    "border-radius": "12px",
+    background: "transparent",
     overflow: "hidden",
   } as JSX.CSSProperties
 }

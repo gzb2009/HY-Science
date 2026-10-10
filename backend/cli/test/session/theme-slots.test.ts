@@ -39,6 +39,21 @@ describe("ThemeSlots", () => {
     expect(ids).not.toContain("segmentation")
   })
 
+  test("a plan-only request writes the plan instead of opening a questionnaire", () => {
+    const text = "帮我要一份详细的IMC分析计划，暂且只是做计划，从原始数据的处理到分析的点"
+    expect(ThemeSlots.planOnly(text)).toBe(true)
+    expect(ThemeSlots.intent(contract(text), text)).toEqual([])
+    const item = msg(text)
+    ThemeSlots.inject(item, contract(text), "imc")
+    const block = item.parts.find((part) => part.type === "text" && (part as MessageV2.TextPart).hybio) as
+      | MessageV2.TextPart
+      | undefined
+    expect(block?.text).toContain('intent="plan"')
+    expect(block?.text).not.toContain("[tissue]")
+    expect(block?.text).not.toContain("One question tool call")
+    expect(ThemeSlots.planOnly("帮我设计一个 IMC panel")).toBe(false)
+  })
+
   test("inject copies option lists and does not invent a modality card", () => {
     const item = msg("帮我设计一个 IMC panel")
     ThemeSlots.inject(item, contract("帮我设计一个 IMC panel"), "imc")

@@ -1,5 +1,5 @@
 import { createEffect, For, onCleanup, Show, type JSX } from "solid-js"
-import { IconChevronDown, IconFolder, IconShield } from "@/thesis/shared/Icon"
+import { IconAlertTriangle, IconChevronDown, IconFolder, IconPlay, IconShield } from "@/thesis/shared/Icon"
 import { SCOPES, type Scope } from "@/thesis/composer-scope"
 
 function useDismiss(open: () => boolean, root: () => HTMLElement | undefined, close: () => void) {
@@ -77,7 +77,12 @@ export function ScopePick(props: {
     () => root,
     () => props.onClose(),
   )
-  const current = () => SCOPES.find((item) => item.id === props.value) ?? SCOPES[2]
+  const current = () => SCOPES.find((item) => item.id === props.value) ?? SCOPES[1]
+  const mark = () => {
+    if (props.value === "trust") return <IconAlertTriangle size={13} strokeWidth={1.6} />
+    if (props.value === "ask") return <IconShield size={13} strokeWidth={1.6} />
+    return <IconPlay size={13} strokeWidth={1.6} />
+  }
   return (
     <div class="cs-scope-pick" ref={root}>
       <button
@@ -89,26 +94,33 @@ export function ScopePick(props: {
         title={current().hint}
         onClick={() => props.onToggle()}
       >
-        <IconShield size={13} strokeWidth={1.6} />
+        {mark()}
         <span>{current().label}</span>
         <IconChevronDown size={11} strokeWidth={1.6} />
       </button>
       <Show when={props.open}>
         <div class="cs-scope-menu" data-place="up" role="menu">
           <For each={SCOPES}>
-            {(item) => (
-              <button
-                type="button"
-                role="menuitem"
-                class="cs-scope-item"
-                data-current={item.id === props.value ? "true" : undefined}
-                data-scope={item.id}
-                onClick={() => props.onPick(item.id)}
-              >
-                <span class="cs-scope-item-title">{item.label}</span>
-                <span class="cs-scope-item-hint">{item.hint}</span>
-              </button>
-            )}
+            {(item) => {
+              const Mark = item.id === "trust" ? IconAlertTriangle : item.id === "ask" ? IconShield : IconPlay
+              return (
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="cs-scope-item"
+                  data-current={item.id === props.value ? "true" : undefined}
+                  data-scope={item.id}
+                  onClick={() => props.onPick(item.id)}
+                >
+                  <Mark size={15} strokeWidth={1.6} />
+                  <span class="cs-scope-item-title">{item.label}</span>
+                  <Show when={item.id === props.value}>
+                    <span class="cs-scope-check">✓</span>
+                  </Show>
+                  <span class="cs-scope-item-hint">{item.hint}</span>
+                </button>
+              )
+            }}
           </For>
         </div>
       </Show>

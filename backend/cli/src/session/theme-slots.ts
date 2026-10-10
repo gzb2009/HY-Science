@@ -23,8 +23,11 @@ export namespace ThemeSlots {
 
   export type Spec = { theme: BiologyTheme; ask: Ask[]; extra: RegExp }
 
-  const DESIGN = /设计|方案|panel|面板|marker list|实验设计|study design|experiment design/i
+  const DESIGN = /设计|方案|panel|面板|marker list|实验设计|study design|experiment design|计划/i
   const COMPUTE = /分析|注释|聚类|跑|分割|质控|变异|deconvolv|annotate|cluster|segment|align/i
+  const PLAN = /计划|plan/i
+  const PLAN_ONLY =
+    /(?:只是|只|先|暂且|暂时).{0,12}(?:做|出|写)?计划|计划(?:就行|即可|为主)|不要(?:执行|跑数据|开始分析)|plan only/i
   const KEY = "theme-slots"
 
   const SPECIES = /\b(human|mouse|rat|zebrafish|pig|monkey|macaque)\b|人|小鼠|大鼠|斑马鱼|猪|猴/i
@@ -256,7 +259,12 @@ export namespace ThemeSlots {
     return SPECS[theme]
   }
 
+  export function planOnly(text: string) {
+    return PLAN.test(text) && PLAN_ONLY.test(text)
+  }
+
   export function intent(contract: AgentRouter.Contract, text: string): Kind[] {
+    if (planOnly(text)) return []
     if (contract.intent === "direct_answer" && !DESIGN.test(text) && !COMPUTE.test(text)) return []
     if (contract.intent === "literature_verification" && !DESIGN.test(text) && !COMPUTE.test(text)) return []
     if (contract.intent === "meta_conversation") return []
@@ -291,6 +299,16 @@ export namespace ThemeSlots {
     return lines.join("\n")
   }
 
+  export function planNote(theme?: string) {
+    return [
+      `<${KEY} theme="${theme ?? "general"}" intent="plan">`,
+      "The user asked for a plan only. Write the plan now. Do not call the question tool.",
+      "Put each open slot in the plan as a named assumption and say what would change.",
+      "Ask one question only when the plan cannot be written without that single fact.",
+      `</${KEY}>`,
+    ].join("\n")
+  }
+
   export function inject(userMessage: MessageV2.WithParts, contract: AgentRouter.Contract, theme?: string) {
     if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text.includes(`<${KEY} `))) return
     const text = userMessage.parts
@@ -301,6 +319,17 @@ export namespace ThemeSlots {
       .filter((part): part is MessageV2.TextPart => part.type === "text" && !part.hybio)
       .map((part) => part.text)
       .join("\n")
+    if (planOnly(user)) {
+      userMessage.parts.push({
+        id: Identifier.ascending("part"),
+        messageID: userMessage.info.id,
+        sessionID: userMessage.info.sessionID,
+        type: "text",
+        text: planNote(theme),
+        hybio: true,
+      })
+      return
+    }
     const kinds = intent(contract, user)
     const slots = open(theme, text, kinds)
     if (slots.length === 0 || !theme) return

@@ -37,6 +37,7 @@ import { Markdown } from "./markdown"
 import { Accordion } from "./accordion"
 import { StickyAccordionHeader } from "./sticky-accordion-header"
 import { FileIcon } from "./file-icon"
+import { FileTypeCard } from "./file-type-mark"
 import { Icon } from "./icon"
 import { IconButton } from "./icon-button"
 import { Card } from "./card"
@@ -112,40 +113,22 @@ function computeStatusFromPart(part: PartType | undefined, t: Translator): strin
 
 const STRIP = 5
 
-function plateMark(name: string) {
-  const dot = name.lastIndexOf(".")
-  const ext = dot > 0 ? name.slice(dot + 1) : "file"
-  return ext.slice(0, 4).toLowerCase()
-}
-
-function plateTone(kind: ResultFile["kind"]) {
-  if (kind === "xlsx" || kind === "csv" || kind === "tsv") return "sheet"
-  if (kind === "code" || kind === "json") return "code"
-  if (kind === "pdf") return "pdf"
-  if (kind === "docx" || kind === "md") return "doc"
-  if (kind === "pptx") return "deck"
-  if (kind === "png" || kind === "jpg" || kind === "svg") return "image"
-  return "file"
-}
-
-function TypePlate(props: { file: ResultFile }) {
-  const tone = () => plateTone(props.file.kind)
-  return (
-    <div data-slot="session-turn-result-plate" data-tone={tone()}>
-      <Show when={tone() === "sheet"}>
-        <div data-slot="session-turn-result-plate-grid" />
-      </Show>
-      <Show when={tone() !== "sheet"}>
-        <div data-slot="session-turn-result-plate-lines">
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-      </Show>
-      <span data-slot="session-turn-result-plate-mark">{plateMark(props.file.name)}</span>
-    </div>
-  )
+export function reasoningNodes(text: string) {
+  const hits: string[] = []
+  for (const raw of text.split("\n")) {
+    const line = raw.trim()
+    if (!line) continue
+    const bold = line.match(/^\*\*(.+?)\*\*/)
+    const labeled = /^(?:因此|所以|先|需要|假设|结论)/.test(line)
+    const body = bold?.[1] ?? (labeled ? line.replace(/^[#>*\-\d.\s]+/, "") : "")
+    const node = body.replace(/\*\*/g, "").trim()
+    if (node.length < 2) continue
+    const short = node.length > 42 ? `${node.slice(0, 42)}…` : node
+    if (hits.includes(short)) continue
+    hits.push(short)
+    if (hits.length >= 4) break
+  }
+  return hits
 }
 
 function ResultFileCards(props: {
@@ -162,13 +145,15 @@ function ResultFileCards(props: {
   return (
     <Show when={props.files.length > 0}>
       <section data-slot="session-turn-result-files" aria-label={label()}>
-        <div data-slot="session-turn-result-files-label">{label()}</div>
+        <div data-slot="session-turn-result-files-label">
+          <span>{label()}</span>
+          <span data-slot="session-turn-result-files-count">{props.files.length}</span>
+        </div>
         <div data-slot="session-turn-result-files-strip" data-open={open() ? "true" : undefined}>
           <For each={shown()}>
             {(file) => (
               <ResultFileTile
                 file={file}
-                preview={props.renderFilePreview?.(file)}
                 onOpenFile={props.onOpenFile}
                 onPreviewFile={props.onPreviewFile}
               />
@@ -178,10 +163,10 @@ function ResultFileCards(props: {
             <button
               type="button"
               data-slot="session-turn-result-files-more"
-              aria-label={`+${remaining()} more`}
+              aria-label={i18n.t("ui.sessionTurn.resultFiles.more", { count: String(remaining()) })}
               onClick={() => setOpen(true)}
             >
-              +{remaining()} more
+              {i18n.t("ui.sessionTurn.resultFiles.more", { count: String(remaining()) })}
             </button>
           </Show>
         </div>
@@ -192,7 +177,6 @@ function ResultFileCards(props: {
 
 function ResultFileTile(props: {
   file: ResultFile
-  preview?: JSX.Element
   onOpenFile?: (path: string) => void
   onPreviewFile?: (path: string) => void
 }) {
@@ -219,12 +203,7 @@ function ResultFileTile(props: {
         open()
       }}
     >
-      <div data-slot="session-turn-result-file-preview">
-        <Show when={props.preview} fallback={<TypePlate file={props.file} />}>
-          {(content) => content()}
-        </Show>
-      </div>
-      <div data-slot="session-turn-result-file-name">{props.file.name}</div>
+      <FileTypeCard name={props.file.name} />
     </div>
   )
 }
@@ -266,6 +245,7 @@ function TurnTraceTrigger(props: {
   disabled: boolean
   label: string
   duration: string
+  nodes: string[]
   onToggle: () => void
 }) {
   return (
@@ -310,6 +290,11 @@ function TurnTraceTrigger(props: {
           <span aria-live="off">{props.duration}</span>
         </Show>
       </Button>
+      <Show when={!props.expanded && props.nodes.length > 0}>
+        <ol data-slot="session-turn-trace-nodes">
+          <For each={props.nodes}>{(node) => <li>{node}</li>}</For>
+        </ol>
+      </Show>
     </div>
   )
 }
@@ -445,6 +430,18 @@ export function SessionTurn(
       }
     }
     return out
+  })
+
+  const traceNodes = createMemo(() => {
+    const hits: string[] = []
+    for (const part of reasoningParts()) {
+      for (const node of reasoningNodes(part.text)) {
+        if (hits.includes(node)) continue
+        hits.push(node)
+        if (hits.length >= 4) return hits
+      }
+    }
+    return hits
   })
 
   const textParts = createMemo(() => {
@@ -948,6 +945,7 @@ export function SessionTurn(
                             awaitingChoice() || retry() ? workingLabel() : i18n.t("ui.messagePart.reasoning.title")
                           }
                           duration={store.duration}
+                          nodes={traceNodes()}
                           onToggle={() => props.onStepsExpandedToggle?.()}
                         />
                       </Show>
@@ -960,6 +958,7 @@ export function SessionTurn(
                               disabled={!canExpand()}
                               label={workingLabel()}
                               duration={store.duration}
+                              nodes={traceNodes()}
                               onToggle={() => props.onStepsExpandedToggle?.()}
                             />
                           </Portal>

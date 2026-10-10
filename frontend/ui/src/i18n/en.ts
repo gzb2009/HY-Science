@@ -31,6 +31,7 @@ export const dict = {
   "ui.sessionTurn.resultFile.table": "Table",
   "ui.sessionTurn.resultFile.file": "File",
   "ui.sessionTurn.resultFiles": "Deliverables",
+  "ui.sessionTurn.resultFiles.more": "{{count}} more",
   "ui.sessionTurn.diff.showMore": "Show more changes ({{count}})",
 
   "ui.sessionTurn.retry.retrying": "retrying",

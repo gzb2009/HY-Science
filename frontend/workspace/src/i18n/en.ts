@@ -699,6 +699,7 @@ export const dict = {
   "chat.jumpPrev": "Previous",
   "sidebar.files": "Files",
   "sidebar.filesDesc": "Browse project files",
+  "session.deliverables": "Delivered files",
   "layout.resizeSidebar": "Resize sidebar",
   "layout.resizeInspector": "Resize inspector",
   "layout.resizeHint": "Drag to resize. Double-click to reset.",
@@ -1071,4 +1072,15 @@ export const dict = {
   "composer.model": "select model",
   "composer.attach": "attach file (or drop / paste)",
   "composer.send": "send",
+
+  "context.window": "Context window",
+  "context.window.hint":
+    "How full this task's context is. Compressing summarizes earlier turns, waits a moment, and uses the current model.",
+  "context.window.system": "System prompt and tools",
+  "context.window.skill": "Skills",
+  "context.window.skill.count": "Skills ({{count}})",
+  "context.window.message": "Messages",
+  "context.window.compress": "Compress context",
+  "context.window.compressing": "Compressing…",
+  "context.window.failed": "Could not compress context",
 }
