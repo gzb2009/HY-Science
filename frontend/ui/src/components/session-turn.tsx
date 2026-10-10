@@ -151,13 +151,7 @@ function ResultFileCards(props: {
         </div>
         <div data-slot="session-turn-result-files-strip" data-open={open() ? "true" : undefined}>
           <For each={shown()}>
-            {(file) => (
-              <ResultFileTile
-                file={file}
-                onOpenFile={props.onOpenFile}
-                onPreviewFile={props.onPreviewFile}
-              />
-            )}
+            {(file) => <ResultFileTile file={file} onOpenFile={props.onOpenFile} onPreviewFile={props.onPreviewFile} />}
           </For>
           <Show when={remaining() > 0}>
             <button

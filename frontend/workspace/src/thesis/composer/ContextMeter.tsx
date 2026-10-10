@@ -4,7 +4,14 @@ import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { useLanguage } from "@/context/language"
 import { toast } from "@/thesis/Toast"
-import { fillRatio, formatSlice, measureContext, usageBand, type ContextSliceId, type ContextUsage } from "./context-meter"
+import {
+  fillRatio,
+  formatSlice,
+  measureContext,
+  usageBand,
+  type ContextSliceId,
+  type ContextUsage,
+} from "./context-meter"
 import "./context-meter.css"
 
 const ORDER: ContextSliceId[] = ["system", "skill", "message"]
