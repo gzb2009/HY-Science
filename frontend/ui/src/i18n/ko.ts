@@ -18,7 +18,7 @@ export const dict = {
   "ui.sessionTurn.resultFile.open": "열기",
   "ui.sessionTurn.resultFile.showInFiles": "Files에서 보기",
   "ui.sessionTurn.resultFile.showInFolder": "폴더에서 보기",
-  "ui.sessionTurn.resultFile.openInExcel": "Microsoft Excel에서 열기",
+  "ui.sessionTurn.resultFile.openInExcel": "Open in a spreadsheet",
   "ui.sessionTurn.resultFile.openInApp": "열기",
   "ui.sessionTurn.resultFile.viewExcel": "{{name}} Excel 보기",
   "ui.sessionTurn.resultFile.viewFile": "{{name}} 보기",

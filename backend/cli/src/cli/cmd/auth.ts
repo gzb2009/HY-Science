@@ -330,8 +330,8 @@ export const AuthLoginCommand = cmd({
             // with a ChatGPT subscription is a first-class, discoverable choice.
             {
               value: "openai-codex",
-              label: "Sign in with ChatGPT subscription",
-              hint: "use your ChatGPT Plus/Pro/Business subscription — no API key",
+              label: "Sign in with a subscription",
+              hint: "use a paid subscription — no API key",
             },
             ...pipe(
               providers,
@@ -344,9 +344,9 @@ export const AuthLoginCommand = cmd({
                 label: x.name,
                 value: x.id,
                 hint: {
-                  hysci: "HYcloud — recommended",
-                  anthropic: "Claude Max or API key",
-                  openai: "API key (to sign in with ChatGPT subscription, use the option above)",
+                  hysci: "HY Cloud — recommended",
+                  anthropic: "pro or max plan, or an API key",
+                  openai: "API key (for a subscription, use the option above)",
                 }[x.id],
               })),
             ),
@@ -453,13 +453,13 @@ async function backendHasOpenaiSubscription(): Promise<boolean | null> {
 
 export const AuthChatGptSigninCommand = cmd({
   command: ["signin", "chatgpt", "codex"],
-  describe: "sign in with ChatGPT subscription (Plus/Pro/Business)",
+  describe: "sign in with a subscription",
   async handler() {
     await Instance.provide({
       directory: process.cwd(),
       async fn() {
         UI.empty()
-        prompts.intro("Sign in with ChatGPT")
+        prompts.intro("Sign in with a subscription")
 
         const existing = await Auth.get("openai-codex")
         if (existing?.type === "oauth") {
@@ -474,14 +474,14 @@ export const AuthChatGptSigninCommand = cmd({
             // through to a fresh OAuth flow. The user expects logging out
             // from the web to clear their CLI session too.
             await Auth.remove("openai-codex")
-            prompts.log.info("ChatGPT subscription was disconnected on the web — starting a fresh login.")
+            prompts.log.info("The subscription was disconnected on the web — starting a fresh login.")
             // fall through to the OAuth flow below
           } else {
             // backend === true (or null/unknown — treat as connected).
             // Ask if the user wants a fresh OAuth despite already being
             // signed in.
             const again = await prompts.confirm({
-              message: "Already signed in to ChatGPT subscription. Sign in again?",
+              message: "Already signed in with a subscription. Sign in again?",
               initialValue: false,
             })
             if (prompts.isCancel(again) || !again) {
@@ -492,7 +492,7 @@ export const AuthChatGptSigninCommand = cmd({
         }
         const plugin = await Plugin.list().then((x) => x.find((p) => p.auth?.provider === "openai-codex"))
         if (!plugin || !plugin.auth) {
-          prompts.log.error("ChatGPT subscription auth plugin not available")
+          prompts.log.error("Subscription sign-in is not available")
           prompts.outro("Done")
           return
         }

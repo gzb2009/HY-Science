@@ -21,7 +21,7 @@ export const dict: Record<Keys, string> = {
   "ui.sessionTurn.resultFile.open": "Åpne",
   "ui.sessionTurn.resultFile.showInFiles": "Vis i Files",
   "ui.sessionTurn.resultFile.showInFolder": "Vis i mappe",
-  "ui.sessionTurn.resultFile.openInExcel": "Åpne i Microsoft Excel",
+  "ui.sessionTurn.resultFile.openInExcel": "Open in a spreadsheet",
   "ui.sessionTurn.resultFile.openInApp": "Åpne",
   "ui.sessionTurn.resultFile.viewExcel": "Vis {{name}} Excel",
   "ui.sessionTurn.resultFile.viewFile": "Vis {{name}}",

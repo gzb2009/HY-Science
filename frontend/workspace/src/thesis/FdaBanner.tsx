@@ -43,8 +43,8 @@ const STEP_TITLE: Record<"mac" | "win" | "linux", string> = {
 
 const STEP_BODY: Record<"mac" | "win" | "linux", string> = {
   mac: "macOS blocks ~/Desktop · ~/Documents · ~/Downloads from any process that doesn't have Full Disk Access. Add the hyscience binary itself to the FDA list — that way it works no matter which shell you launch it from.",
-  win: "Run hyscience from Windows Terminal / PowerShell — not a sandboxed Microsoft Store shell.",
-  linux: "Run hyscience from a system shell, not a confined Snap/Flatpak terminal.",
+  win: "Run hyscience from a system terminal — not a sandboxed store shell.",
+  linux: "Run hyscience from a system shell, not a confined package terminal.",
 }
 
 /**

@@ -1036,7 +1036,7 @@ export namespace Config {
             .nullable()
             .optional()
             .describe(
-              "How LLM inference is paid for. 'managed' routes through the HYcloud wallet (metered credits); 'byok' uses your own provider API keys or first-party OAuth (ChatGPT/Claude Pro/Copilot) and is never billed. Unset or null = auto-detect from the resolved credential.",
+              "How LLM inference is paid for. 'managed' routes through the HY Cloud wallet (metered credits); 'byok' uses your own API keys or a subscription sign-in and is never billed. Unset or null = auto-detect from the resolved credential.",
             ),
           compute: z
             .enum(["managed", "byok"])
