@@ -157,7 +157,7 @@ export const WebCommand = cmd({
       UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, ui)
       UI.empty()
       if (!ok) {
-        UI.println(UI.Style.TEXT_WARNING_BOLD + "  Vite UI is not running on :4444", UI.Style.TEXT_NORMAL)
+        UI.println(UI.Style.TEXT_WARNING_BOLD + "  Interface is not running on :4444", UI.Style.TEXT_NORMAL)
         UI.println(UI.Style.TEXT_DIM, "  cd frontend/workspace && bun run dev -- --port 4444")
       } else {
         UI.println(UI.Style.TEXT_DIM, "  Local source UI only — packed dist is not served.")
@@ -165,7 +165,7 @@ export const WebCommand = cmd({
       if (desktop) {
         process.stdout.write(`HYSCIENCE_DESKTOP_READY ${ui}\n`)
         const native = await openDesktopWindow(ui)
-        if (!native) UI.println(UI.Style.TEXT_DIM, "  Chrome/Edge not found — opened the default browser.")
+        if (!native) UI.println(UI.Style.TEXT_DIM, "  No app window available — opened in the default browser.")
       } else if (!args.noOpen && !args["no-open"]) {
         openUrl(ui)
       }
@@ -193,7 +193,7 @@ export const WebCommand = cmd({
     if (desktop) {
       process.stdout.write(`HYSCIENCE_DESKTOP_READY ${base}\n`)
       const native = await openDesktopWindow(base)
-      if (!native) UI.println(UI.Style.TEXT_DIM, "  Chrome/Edge not found — opened the default browser.")
+      if (!native) UI.println(UI.Style.TEXT_DIM, "  No app window available — opened in the default browser.")
     } else if (!args.noOpen && !args["no-open"]) {
       UI.println(UI.Style.TEXT_DIM, "  Opening your browser… if it doesn't open, visit the URL above.")
       openUrl(base)

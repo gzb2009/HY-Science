@@ -11,14 +11,14 @@ import { IconX } from "@/thesis/shared/Icon"
 import { IconModel } from "./icons"
 
 const BYOK = [
-  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-…" },
-  { id: "openai", label: "OpenAI", placeholder: "sk-…" },
-  { id: "google", label: "Google", placeholder: "AIza…" },
-  { id: "openrouter", label: "OpenRouter", placeholder: "sk-or-…" },
-  { id: "groq", label: "Groq", placeholder: "gsk-…" },
-  { id: "mistral", label: "Mistral", placeholder: "…" },
-  { id: "xai", label: "xAI", placeholder: "xai-…" },
-  { id: "deepseek", label: "DeepSeek", placeholder: "sk-…" },
+  { id: "anthropic", label: "HY Dialogue", placeholder: "API key" },
+  { id: "openai", label: "HY General", placeholder: "API key" },
+  { id: "google", label: "HY Multimodal", placeholder: "API key" },
+  { id: "openrouter", label: "HY Router", placeholder: "API key" },
+  { id: "groq", label: "HY Fast", placeholder: "API key" },
+  { id: "mistral", label: "HY Text", placeholder: "API key" },
+  { id: "xai", label: "HY Reason", placeholder: "API key" },
+  { id: "deepseek", label: "HY Reason", placeholder: "API key" },
 ] as const
 
 const PROVIDER_LABEL: Record<string, string> = Object.fromEntries(BYOK.map((p) => [p.id, p.label]))
@@ -65,7 +65,7 @@ export function HomeModelDock(): JSX.Element {
   const [keyProvider, setKeyProvider] = createSignal<(typeof BYOK)[number]["id"]>(BYOK[0].id)
   const [keyValue, setKeyValue] = createSignal("")
   const [localOpen, setLocalOpen] = createSignal(false)
-  const [localName, setLocalName] = createSignal("Local OpenAI")
+  const [localName, setLocalName] = createSignal("HY Local")
   const [localBase, setLocalBase] = createSignal("http://localhost:11434/v1")
   const [localModel, setLocalModel] = createSignal("")
   const [localKey, setLocalKey] = createSignal("")

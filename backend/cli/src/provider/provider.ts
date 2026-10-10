@@ -1038,7 +1038,7 @@ export namespace Provider {
       database["openai-codex"] = {
         ...baseOpenai,
         id: "openai-codex",
-        name: "ChatGPT subscription",
+        name: "HY Subscription",
         env: [],
         options: {},
         models: codexModels,

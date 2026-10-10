@@ -64,9 +64,7 @@ export async function needsOnboarding(): Promise<boolean> {
 }
 
 async function onboardByok(): Promise<void> {
-  prompts.log.info(
-    "Add a provider API key or sign in with a subscription (ChatGPT, Claude Max, Copilot). Keys stay on this machine.",
-  )
+  prompts.log.info("Add a provider API key or sign in with a subscription. Keys stay on this machine.")
   await AuthLoginCommand.handler({} as never)
 }
 
@@ -81,7 +79,7 @@ export async function runOnboarding(opts?: { force?: boolean }): Promise<void> {
     message: "How do you want to power the models?",
     initialValue: "byok",
     options: [
-      { value: "byok", label: "Your own keys", hint: "Anthropic · OpenAI · Google · 100+ providers" },
+      { value: "byok", label: "Your own keys", hint: "HY sources · 100+ model endpoints" },
       { value: "skip", label: "Not now", hint: "configure later in Settings → Credentials" },
     ],
   })

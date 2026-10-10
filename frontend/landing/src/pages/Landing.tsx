@@ -784,8 +784,8 @@ export default function Landing() {
             </Reveal>
             <Reveal delay={150}>
               <p className={`mt-5 max-w-[44ch] ${P_BIG}`}>
-                Anthropic, OpenAI, Google, and open-weight models through one selector. Requests go straight to the
-                provider, and keys never leave your machine.
+                HY model sources through one selector. Requests go straight to the source, and keys never leave your
+                machine.
               </p>
             </Reveal>
             <Reveal delay={260}>
@@ -806,7 +806,7 @@ export default function Landing() {
               <div className="border border-border/50 bg-[hsl(28,14%,6%)] shadow-[0_30px_90px_-30px_rgba(0,0,0,0.75)]">
                 <img
                   src={modelPickerShot}
-                  alt="The HYscience model selector: Anthropic, OpenAI, and Google models with live pricing and an effort control"
+                  alt="The HYscience model selector: HY model sources with live pricing and an effort control"
                   className="block w-full h-auto select-none"
                   draggable={false}
                   loading="lazy"
@@ -873,7 +873,7 @@ export default function Landing() {
                 },
                 {
                   q: "Which models can it use?",
-                  a: "Anthropic, OpenAI, Google, and dozens of other providers, plus local open-weight models. Models are routed per request, so you can switch mid-project without changing anything else.",
+                  a: "HY model sources, plus a local endpoint. Models are routed per request, so you can switch mid-project without changing anything else.",
                 },
                 {
                   q: "Where does my work live?",

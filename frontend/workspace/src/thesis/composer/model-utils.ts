@@ -4,20 +4,20 @@ import type { ModelSource } from "@/utils/model-cost"
 export const BYOK_URL = URLS.dashboard
 
 export const PROVIDER_LABEL: Record<string, string> = {
-  anthropic: "Anthropic",
-  openai: "OpenAI",
-  "openai-codex": "ChatGPT subscription",
-  google: "Google",
-  "google-vertex": "Google Vertex",
-  "github-copilot": "GitHub Copilot",
-  openrouter: "OpenRouter",
-  vercel: "Vercel",
-  groq: "Groq",
-  mistral: "Mistral",
-  xai: "xAI",
-  cohere: "Cohere",
-  gitlab: "GitLab Duo",
-  hysci: "HYcloud",
+  anthropic: "HY Dialogue",
+  openai: "HY General",
+  "openai-codex": "HY Subscription",
+  google: "HY Multimodal",
+  "google-vertex": "HY Enterprise",
+  "github-copilot": "HY Coding",
+  openrouter: "HY Router",
+  vercel: "HY Gateway",
+  groq: "HY Fast",
+  mistral: "HY Text",
+  xai: "HY Reason",
+  cohere: "HY Retrieve",
+  gitlab: "HY Repository",
+  hysci: "HY Cloud",
 }
 
 // Credential source shown as a single low-weight dot — the one bit that matters

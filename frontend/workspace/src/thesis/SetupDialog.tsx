@@ -22,10 +22,10 @@ export function openSetupDialog(dialog: ReturnType<typeof useDialog>, onDismiss?
 }
 
 const BYOK_PROVIDERS: { id: string; label: string; placeholder: string }[] = [
-  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-…" },
-  { id: "openai", label: "OpenAI", placeholder: "sk-…" },
-  { id: "google", label: "Google", placeholder: "AIza…" },
-  { id: "openrouter", label: "OpenRouter", placeholder: "sk-or-…" },
+  { id: "anthropic", label: "HY Dialogue", placeholder: "API key" },
+  { id: "openai", label: "HY General", placeholder: "API key" },
+  { id: "google", label: "HY Multimodal", placeholder: "API key" },
+  { id: "openrouter", label: "HY Router", placeholder: "API key" },
 ]
 
 type View = "choose" | "byok" | "done"

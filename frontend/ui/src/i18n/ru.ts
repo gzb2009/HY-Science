@@ -18,7 +18,7 @@ export const dict = {
   "ui.sessionTurn.resultFile.open": "Открыть",
   "ui.sessionTurn.resultFile.showInFiles": "Показать в Files",
   "ui.sessionTurn.resultFile.showInFolder": "Показать в папке",
-  "ui.sessionTurn.resultFile.openInExcel": "Открыть в Microsoft Excel",
+  "ui.sessionTurn.resultFile.openInExcel": "Open in a spreadsheet",
   "ui.sessionTurn.resultFile.openInApp": "Открыть",
   "ui.sessionTurn.resultFile.viewExcel": "Просмотр {{name}} Excel",
   "ui.sessionTurn.resultFile.viewFile": "Просмотр {{name}}",

@@ -22,7 +22,7 @@ export const dict = {
   "ui.sessionTurn.resultFile.open": "打开",
   "ui.sessionTurn.resultFile.showInFiles": "在 Files 中显示",
   "ui.sessionTurn.resultFile.showInFolder": "在文件夹中显示",
-  "ui.sessionTurn.resultFile.openInExcel": "用 Microsoft Excel 打开",
+  "ui.sessionTurn.resultFile.openInExcel": "用表格打开",
   "ui.sessionTurn.resultFile.openInApp": "打开",
   "ui.sessionTurn.resultFile.viewExcel": "查看 {{name}} Excel",
   "ui.sessionTurn.resultFile.viewTable": "查看 {{name}} 表格",

@@ -485,10 +485,8 @@ export async function OpenaiSubscriptionAuthPlugin(input: PluginInput): Promise<
                   if (!tokens) {
                     log.warn("openai subscription token refresh failed", { error: String(e) })
                     if (e instanceof OpenaiSubscriptionRefreshInvalidError)
-                      throw new Error("ChatGPT sign-in expired. Reconnect it with `hyscience keys signin`.")
-                    throw new Error(
-                      "ChatGPT subscription is temporarily unavailable (couldn't refresh the access token). Please retry in a moment.",
-                    )
+                      throw new Error("Subscription sign-in expired. Reconnect it with `hyscience keys signin`.")
+                    throw new Error("Subscription sign-in is temporarily unavailable. Please retry in a moment.")
                   }
                 }
               }
@@ -608,7 +606,7 @@ export async function OpenaiSubscriptionAuthPlugin(input: PluginInput): Promise<
       },
       methods: [
         {
-          label: "ChatGPT subscription — Sign in (browser)",
+          label: "HY Subscription — sign in (browser)",
           type: "oauth",
           authorize: async () => {
             let redirectUri: string
@@ -675,7 +673,7 @@ export async function OpenaiSubscriptionAuthPlugin(input: PluginInput): Promise<
           },
         },
         {
-          label: "ChatGPT subscription — Sign in (device code)",
+          label: "HY Subscription — sign in (device code)",
           type: "oauth",
           authorize: async () => {
             const deviceResponse = await fetch(`${ISSUER}/api/accounts/deviceauth/usercode`, {
