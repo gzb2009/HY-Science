@@ -43,8 +43,7 @@ hyscience agent create \
   --path .hyscience \
   --description "Reviews analysis notebooks for data leakage and unsound statistics" \
   --mode subagent \
-  --tools "read,grep,glob" \
-  --model anthropic/claude-sonnet-5
+  --tools "read,grep,glob"
 ```
 
 | Flag | Use |
@@ -53,7 +52,7 @@ hyscience agent create \
 | `--description <text>` | What the agent is for. A model expands this into the name, system prompt, and delegation description. |
 | `--mode <all\|primary\|subagent>` | `primary`: leads a session. `subagent`: only reachable by delegation. `all`: both. |
 | `--tools <tool[,tool...]>` | Allow-list of tools. Anything left off the list is disabled. |
-| `--model <provider/model>` | Default model for this agent. |
+| `--model <source/model>` | Default model for this agent. |
 
 The result is a Markdown file: YAML frontmatter (description, mode, tools) plus a body that is the system prompt. Edit it like any prose file.
 

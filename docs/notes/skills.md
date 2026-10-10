@@ -10,9 +10,9 @@ useful when a skill is unexpectedly "not found".
 The catalog is assembled in `backend/cli/src/skill/skill.ts` from several sources,
 keyed by skill `name`:
 
-1. **Project `.claude/skills/`** — skills committed to the repo being worked in,
-   plus `~/.claude/skills/` (opt out with `HYSCIENCE_DISABLE_CLAUDE_CODE_SKILLS`).
-2. **The Atlas skill catalog** — released builds fetch the index from
+1. **Project skill directories** — skills committed with the repo being worked in,
+   plus the user-level skill directory (opt out with `HYSCIENCE_DISABLE_CLAUDE_CODE_SKILLS`).
+2. **The bundled skill catalog** — released builds fetch the index from
    `/api/cli/skills` (name + description only; content is fetched lazily on first
    use) and cache it. This is the primary source of the bundled library in a
    shipped binary, which carries no skills of its own.

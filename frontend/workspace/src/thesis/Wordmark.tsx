@@ -6,7 +6,7 @@ interface WordmarkProps {
   size?: "sm" | "md" | "lg"
   /** Label only (no logo) for tight spaces. */
   textOnly?: boolean
-  /** Small Beta label under the wordmark (Claude Science–style header). */
+  /** Small Beta label under the wordmark. */
   showBeta?: boolean
   onClick?: () => void
 }

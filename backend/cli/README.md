@@ -29,4 +29,4 @@ See the [repository README](https://github.com/HYscience/HYscience#readme) for t
 
 ## License
 
-Apache License 2.0. See [LICENSE](https://github.com/HYscience/HYscience/blob/main/LICENSE). Not affiliated with Anthropic.
+Apache License 2.0. See [LICENSE](https://github.com/HYscience/HYscience/blob/main/LICENSE).

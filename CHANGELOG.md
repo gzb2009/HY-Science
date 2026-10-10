@@ -10,13 +10,13 @@ tagged release also ships native binaries for Linux, macOS, and Windows.
 
 ### Fixed
 
-- Managed models (e.g. GPT-5.5, Gemini) failed with "isn't connected to your
-  Atlas wallet" or a proxy 401 ("thk\_\* token not found") when a provider key
-  such as `OPENAI_API_KEY` was exported in the shell. Managed-proxy calls now
-  always authorize with the Atlas session token, so an ambient shell key can't
-  shadow it — for OpenAI, Anthropic, Gemini, and OpenRouter.
-- OAuth subscriptions (Sign in with ChatGPT/Codex, Claude Pro/Max, Copilot) are
-  no longer blocked when managed LLM spend is on — they run on your own account,
+- Managed models failed with "isn't connected to your
+  HY Cloud wallet" or a proxy 401 ("thk\_\* token not found") when a provider key
+  was exported in the shell. Managed-proxy calls now
+  always authorize with the HY session token, so an ambient shell key can't
+  shadow it.
+- Subscription sign-in is
+  no longer blocked when managed LLM spend is on — it runs on your own account,
   free of the wallet.
 
 ## v1.2.7 — 2026-07-06
