@@ -15,9 +15,9 @@ When you run `hyscience`, the CLI starts a local server and opens a workspace in
         +--  Agent runtime      sessions, message loop, model routing
         +--  Tool layer         shell, edit, LSP, MCP, science connectors
         +--  Skills             bundled and user-installed skill packs
-        +--  Providers          Anthropic, OpenAI, Google, and 75+ more
+        +--  Providers          HY model sources
         |
-        +--  Atlas client       optional: managed models, wallet, graph
+        +--  HY Cloud            optional: managed models, wallet, graph
 ```
 
 The server binds to `127.0.0.1` and enforces a Host and Origin allowlist. There is no remote mode.

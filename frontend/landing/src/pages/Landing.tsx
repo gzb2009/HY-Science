@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import workspaceShot from "@/assets/workspace.png"
-import modelPickerShot from "@/assets/model-picker.png"
 import heroPlate from "@/assets/hero.webp"
 
 /* HYscience. CMU Concrete, warm dark, coral accents.
-   Same design family as the Atlas landing page.
 
    Type system, used consistently:
      H_HUGE  dither statements and the closing banner only
@@ -387,20 +384,49 @@ function Hero() {
 
 /* --------------------------- Product screenshot ------------------------- */
 
+function Mark({ className = "h-5 w-5" }: { className?: string }) {
+  return <img src="/favicon.svg" alt="" className={`${className} shrink-0`} draggable={false} />
+}
+
 function ProductShot() {
   return (
     <section className="relative w-full overflow-hidden border-t border-border/40">
       <div className="absolute inset-0 graticule opacity-[0.04]" />
       <div className="relative z-10 mx-auto max-w-[1400px] w-full px-6 sm:px-10 py-20 sm:py-24">
         <Reveal>
-          <div className="border border-border/50 bg-[hsl(28,14%,6%)] shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)]">
-            <img
-              src={workspaceShot}
-              alt="The HYscience workspace: a research session with agent selector, model picker, files, terminal, and the research graph"
-              className="block w-full h-auto select-none"
-              draggable={false}
-              decoding="async"
-            />
+          <div className="border border-border/50 bg-[hsl(28,14%,6%)] shadow-[0_40px_120px_-30px_rgba(0,0,0,0.8)] text-foreground">
+            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-[13px]">
+              <Mark />
+              <span className="font-semibold tracking-tight">HY</span>
+              <span className="rounded-full border border-white/20 px-1.5 text-[10px] tracking-[0.14em]">SCIENCE</span>
+            </div>
+            <div className="grid min-h-[420px] grid-cols-1 md:grid-cols-[220px_1fr_240px]">
+              <div className="hidden border-r border-white/10 p-4 md:block">
+                <div className="rounded border border-white/15 px-3 py-2 text-[13px]">+ new session</div>
+              </div>
+              <div className="flex flex-col items-center justify-center px-8 py-16 text-center">
+                <p className="font-serif text-[28px] tracking-tight">What are we working on?</p>
+                <div className="mt-6 flex flex-wrap justify-center gap-2 text-[13px]">
+                  {["research", "biology", "physics", "ml"].map((name) => (
+                    <span key={name} className="rounded border border-white/15 px-3 py-1">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="hidden border-l border-white/10 p-4 text-[12px] text-foreground/50 md:block">
+                <div className="flex items-center gap-2">
+                  <Mark className="h-4 w-4" />
+                  research graph
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-white/10 px-4 py-3">
+              <div className="flex items-center gap-2 text-[12px] text-foreground/70">
+                <Mark className="h-4 w-4" />
+                HY Dialogue
+              </div>
+            </div>
           </div>
         </Reveal>
         <Reveal delay={150}>
@@ -790,7 +816,7 @@ export default function Landing() {
             </Reveal>
             <Reveal delay={260}>
               <div className="mt-7 flex flex-wrap gap-2 text-[13px]">
-                {["No account required", "Local models via Ollama", "Switch mid-project"].map((t) => (
+                {["No account required", "Local models on this machine", "Switch mid-project"].map((t) => (
                   <span
                     key={t}
                     className="inline-flex items-center px-3 py-1.5 border border-border/60 bg-background/40 backdrop-blur-[2px] text-foreground/70"
@@ -803,15 +829,23 @@ export default function Landing() {
           </div>
           <Reveal delay={150} className="col-span-12 lg:col-span-7">
             <div className="lg:ml-auto lg:max-w-[560px]">
-              <div className="border border-border/50 bg-[hsl(28,14%,6%)] shadow-[0_30px_90px_-30px_rgba(0,0,0,0.75)]">
-                <img
-                  src={modelPickerShot}
-                  alt="The HYscience model selector: HY model sources with live pricing and an effort control"
-                  className="block w-full h-auto select-none"
-                  draggable={false}
-                  loading="lazy"
-                  decoding="async"
-                />
+              <div className="border border-border/50 bg-[hsl(28,14%,6%)] shadow-[0_30px_90px_-30px_rgba(0,0,0,0.75)] p-4 text-foreground">
+                <div className="rounded border border-teal-400/70 px-3 py-2 text-[13px] text-foreground/60">
+                  search models
+                </div>
+                <ul className="mt-4 space-y-3 text-[15px]">
+                  {[
+                    ["HY Dialogue", "selected"],
+                    ["HY General", ""],
+                    ["HY Multimodal", ""],
+                  ].map(([name, state]) => (
+                    <li key={name} className="flex items-center gap-3">
+                      <Mark />
+                      <span>{name}</span>
+                      {state ? <span className="ml-auto text-[12px] text-foreground/50">in use</span> : null}
+                    </li>
+                  ))}
+                </ul>
               </div>
               <div className={`mt-5 flex items-center justify-between gap-4 ${CAPTION}`}>
                 <span>The model selector, with live pricing per provider.</span>

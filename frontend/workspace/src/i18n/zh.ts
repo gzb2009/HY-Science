@@ -688,6 +688,7 @@ export const dict = {
   "chat.jumpPrev": "上一条",
   "sidebar.files": "文件",
   "sidebar.filesDesc": "浏览项目文件",
+  "session.deliverables": "交付文件",
   "layout.resizeSidebar": "调整侧栏宽度",
   "layout.resizeInspector": "调整工作台宽度",
   "layout.resizeHint": "拖拽调整宽度，双击恢复默认",
@@ -1039,4 +1040,14 @@ export const dict = {
   "composer.model": "选择模型",
   "composer.attach": "添加文件（或拖入 / 粘贴）",
   "composer.send": "发送",
+
+  "context.window": "上下文窗口",
+  "context.window.hint": "展示当前任务的上下文占用。压缩会摘要较早的内容，需要等一下，并调用当前模型。",
+  "context.window.system": "系统提示词与工具",
+  "context.window.skill": "技能",
+  "context.window.skill.count": "技能（{{count}}个）",
+  "context.window.message": "消息",
+  "context.window.compress": "压缩上下文",
+  "context.window.compressing": "正在压缩…",
+  "context.window.failed": "没能压缩上下文",
 } satisfies Partial<Record<Keys, string>>

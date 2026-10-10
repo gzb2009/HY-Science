@@ -34,6 +34,7 @@ export const dict = {
   "ui.sessionTurn.resultFile.table": "表格",
   "ui.sessionTurn.resultFile.file": "文件",
   "ui.sessionTurn.resultFiles": "交付产物",
+  "ui.sessionTurn.resultFiles.more": "还有 {{count}} 项",
   "ui.sessionTurn.diff.showMore": "显示更多更改（{{count}}）",
 
   "ui.sessionTurn.retry.retrying": "重试中",

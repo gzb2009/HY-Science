@@ -41,7 +41,7 @@ The major scientific databases are wired in as tools, not skills: UniProt, PDB, 
 ## Install third-party skills
 
 ```bash
-hyscience skill add gh:anthropics/superpowers
+hyscience skill add gh:<owner>/<repo>
 hyscience skill list
 ```
 
@@ -65,7 +65,7 @@ Point the project config at extra skill folders with `skills.paths` in `hyscienc
 }
 ```
 
-Sessions started in that directory load those skills, so teammates and CI get the same primed agent. Existing `.claude/skills/` directories are picked up unchanged.
+Sessions started in that directory load those skills, so teammates and CI get the same primed agent.
 
 ## What's next
 

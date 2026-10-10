@@ -19,7 +19,7 @@ Give it a goal. It reads the literature, writes and runs code, runs the experime
 
 ---
 
-HYscience is an AI workbench for scientific research. You give it a goal, and it works through the research loop the way a capable collaborator would. It reads the papers that matter, forms a hypothesis, writes and runs code, runs experiments on real compute, queries the major scientific databases, and writes up the result. It runs as a workspace in your browser and works with any frontier or open-weight model from Anthropic, OpenAI, Google, and dozens of other providers, using your own API keys. No account is required.
+HYscience is an AI workbench for scientific research. You give it a goal, and it works through the research loop the way a capable collaborator would. It reads the papers that matter, forms a hypothesis, writes and runs code, runs experiments on real compute, queries the major scientific databases, and writes up the result. It runs as a workspace in your browser and works with HY model sources, using your own API keys. No account is required.
 
 It is model-agnostic, open source, and built to do real work in machine learning, biology, physics, and chemistry.
 
@@ -51,10 +51,9 @@ Platform binaries are also attached to [GitHub Releases](https://github.com/HYsc
 
 ## Quickstart
 
-Set an API key from any provider (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, and so on) and start the workspace:
+Set a key for the model source you use, then start the workspace:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
 hyscience
 ```
 
@@ -112,5 +111,3 @@ The agent is not sandboxed. The permission system keeps you aware of what the ag
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-
-HYscience is an independent project. It is not affiliated with, endorsed by, or sponsored by Anthropic. "Claude" is a trademark of Anthropic, PBC, used here only to describe compatibility.

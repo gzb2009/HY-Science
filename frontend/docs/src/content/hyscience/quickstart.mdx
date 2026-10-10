@@ -14,12 +14,8 @@ Five minutes from zero to a running research session. No account required.
 
     Or without a global install, `npx hysci` runs the same workbench in one step. The install script (`curl -fsSL https://hyscience.sh/install | bash`) drops a standalone `hyscience` binary into `~/.hyscience/bin`, and platform binaries are attached to every [GitHub release](https://github.com/HYscience/hyscience/releases).
   </Step>
-  <Step title="Set a provider key">
-    ```bash
-    export ANTHROPIC_API_KEY=sk-ant-...   # or OPENAI_API_KEY, GEMINI_API_KEY, ...
-    ```
-
-    Any provider works — bring your own key and it stays on your machine. `hyscience keys add` gives you an interactive sign-in for providers that support it. See [Models](/hyscience/models) for routing and reasoning-effort tiers.
+  <Step title="Add a model key">
+    Add a key in the workspace, or sign in with `hyscience keys add`. The key stays on your machine. See [Models](/hyscience/models) for routing and reasoning-effort tiers.
   </Step>
   <Step title="Open the workspace">
     ```bash

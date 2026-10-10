@@ -1190,11 +1190,12 @@ function CenterTabStrip(props: {
         <button
           type="button"
           class={`cs-center-tab cs-center-files${filesOn() ? " cs-center-tab-active" : ""}`}
-          title={language.t("sidebar.files")}
-          onClick={() => centerTabs.showFiles()}
+          title={language.t("session.deliverables")}
+          aria-expanded={filesOn()}
+          onClick={() => (filesOn() ? centerTabs.closeFiles() : centerTabs.showFiles())}
         >
           <IconFolder size={14} strokeWidth={1.6} />
-          <span class="cs-center-tab-label">{language.t("sidebar.files")}</span>
+          <span class="cs-center-tab-label">{language.t("session.deliverables")}</span>
         </button>
       </div>
     </div>

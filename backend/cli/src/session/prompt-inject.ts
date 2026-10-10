@@ -972,7 +972,7 @@ export async function injectResearchContext(userMessage: MessageV2.WithParts, se
   const text = textParts.map((p) => p.text).join(" ")
   if (!text || text.length < 10) return
   const entities = await ResearchContext.update(sessionID, taskID, text)
-  const report = ResearchContext.evaluate(entities)
+  const report = ResearchContext.evaluate(entities, ThemeSlots.planOnly(text) ? "plan" : "work")
   const hybio = ResearchContext.formatContext(entities, report)
   if (!hybio) return
   userMessage.parts.push({
@@ -1010,7 +1010,7 @@ export function injectInteractionContract(userMessage: MessageV2.WithParts) {
       "## Live interaction (runtime hints; rules are in the system prompt 准则 1–4)",
       "Simple factual or method questions: answer directly. Do not load skills, spawn sub-agents, or outline a pipeline unless asked.",
       "Analysis or compute tasks: at most one short line of what you will do, then start. Never announce tool names.",
-      "Open result-changing slots: one question tool call covering all of them, then stop — not prose in chat, not a later turn.",
+      "Open result-changing slots: one question tool call covering all of them, then stop — not prose in chat, not a later turn. A plan-only request is the exception: write the plan and mark open slots as assumptions.",
       "When extended thinking/reasoning is available, start each major segment with a bold one-line label (e.g. **检查数据文件**) so the UI can show live status.",
       "</system-reminder>",
     ].join("\n"),
@@ -1034,10 +1034,13 @@ export function injectDataGate(
   const planningRe =
     /(?:打算|计划|准备|想要|考虑|可能|也许|还没有|还没做|先了解|设计|方案|思路|怎么(?:做|分析)|如何(?:做|分析)|推荐|建议|protocol|experimental.design)/i
   if (planningRe.test(text) && !contract.mustClarify) {
+    const plan = ThemeSlots.planOnly(text)
     const lines = [
       '<system-reminder id="planning-mode">',
       "## PLANNING MODE",
-      "User is in planning/discussion mode: apply 准则 1–4 and pick the matching 范式 A/B/C/D from the system prompt. No preview answer while a result-changing slot is open.",
+      plan
+        ? "The user wants a plan only. Write it now. Name missing species, tissue, or aim as assumptions and what would change. Do not block on a questionnaire."
+        : "User is in planning/discussion mode: apply 准则 1–4 and pick the matching 范式 A/B/C/D from the system prompt. No preview answer while a result-changing slot is open.",
       "</system-reminder>",
     ]
     userMessage.parts.push({

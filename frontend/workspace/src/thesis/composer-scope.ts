@@ -15,10 +15,9 @@ const rule = (permission: string, action: ScopeRule["action"]): ScopeRule => ({
 })
 
 export const SCOPES: { id: Scope; label: string; hint: string }[] = [
-  { id: "read", label: "只读", hint: "不改文件，不跑命令" },
-  { id: "ask", label: "先问我", hint: "改文件和跑命令前都要确认" },
-  { id: "workspace", label: "工作区内", hint: "项目目录里直接改，目录外仍要问" },
-  { id: "trust", label: "全信任", hint: "可改电脑上的任何文件，可跑任何命令" },
+  { id: "ask", label: "询问审批", hint: "执行命令、修改工作区外文件或访问网络前，始终询问" },
+  { id: "workspace", label: "自动审批", hint: "仅在检测到潜在风险时询问" },
+  { id: "trust", label: "完全访问", hint: "不再询问，可自由访问你的文件、终端和网络" },
 ]
 
 export function isScope(value: unknown): value is Scope {
@@ -30,7 +29,13 @@ export function scopeRules(scope: Scope): ScopeRule[] {
     return [rule("edit", "deny"), rule("bash", "deny"), rule("destructive", "deny"), rule("external_directory", "deny")]
   }
   if (scope === "ask") {
-    return [rule("edit", "ask"), rule("bash", "ask"), rule("destructive", "ask"), rule("external_directory", "ask")]
+    return [
+      rule("edit", "allow"),
+      rule("bash", "ask"),
+      rule("destructive", "ask"),
+      rule("external_directory", "ask"),
+      rule("webfetch", "ask"),
+    ]
   }
   if (scope === "trust") {
     return [
@@ -38,10 +43,17 @@ export function scopeRules(scope: Scope): ScopeRule[] {
       rule("bash", "allow"),
       rule("destructive", "allow"),
       rule("external_directory", "allow"),
+      rule("webfetch", "allow"),
       rule("read", "allow"),
     ]
   }
-  return [rule("edit", "allow"), rule("bash", "allow"), rule("destructive", "ask"), rule("external_directory", "ask")]
+  return [
+    rule("edit", "allow"),
+    rule("bash", "allow"),
+    rule("webfetch", "allow"),
+    rule("destructive", "ask"),
+    rule("external_directory", "ask"),
+  ]
 }
 
 export function readScope(directory: string): Scope {
@@ -50,6 +62,7 @@ export function readScope(directory: string): Scope {
     const raw = localStorage.getItem(KEY)
     const map = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
     const value = map[directory]
+    if (value === "read") return "workspace"
     if (isScope(value)) return value
   } catch {
     return "workspace"

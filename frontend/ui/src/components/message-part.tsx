@@ -1620,12 +1620,13 @@ function QuestionPrompt(props: { request: QuestionRequest }) {
   }
 
   function skip() {
-    stopCountdown()
-    const answers = questions().map((q) => [defaultAnswer(q)])
-    data.replyToQuestion?.({
-      requestID: props.request.id,
-      answers,
-    })
+    const current = question()
+    if (!current) return
+    pick(defaultAnswer(current))
+  }
+
+  function decideCurrent() {
+    pick(i18n.t("ui.question.action.agentDecide"))
   }
 
   function pick(answer: string) {
@@ -1701,7 +1702,7 @@ function QuestionPrompt(props: { request: QuestionRequest }) {
           multiple={multi()}
           onPick={finish}
           onSkip={skip}
-          onAgentDecide={skip}
+          onAgentDecide={decideCurrent}
         />
       </Show>
       <Show when={!recommended() && counting() && remaining() > 0}>
