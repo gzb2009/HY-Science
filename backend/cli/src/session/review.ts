@@ -143,7 +143,8 @@ export namespace SessionReview {
       const path = "path" in node && node.path ? ` ${node.path}` : ""
       return `- ${node.kind} ${node.label}${path}`
     })
-    if (!lines.length) return `No provenance nodes for session ${sessionID}. Review the answer only. Do not start another analysis.`
+    if (!lines.length)
+      return `No provenance nodes for session ${sessionID}. Review the answer only. Do not start another analysis.`
     return ["Provenance nodes for this session. Review these. Do not start another analysis.", ...lines].join("\n")
   }
 
