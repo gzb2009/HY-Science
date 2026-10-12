@@ -34,10 +34,9 @@ export namespace TaskProfile {
     return "research"
   }
 
-  export function pack(research: Project.Research | undefined) {
-    if (research?.domain === "biology" || research?.domain === "physics" || research?.domain === "ml") {
-      return research.domain
-    }
+  export function pack(research: Project.Research | undefined, domain?: string) {
+    const name = domain ?? research?.domain
+    if (name === "biology" || name === "physics" || name === "ml") return name
     return undefined
   }
 
@@ -47,19 +46,25 @@ export namespace TaskProfile {
     return "ml.txt"
   }
 
-  export function fragment(research: Project.Research | undefined, input: { text: string; filenames: string[] }) {
-    if (!research || research.domain === "general") return undefined
-    if (research.domain === "biology") {
-      const profile =
-        research.subdomain && SUBDOMAINS.biology.includes(research.subdomain as BiologySubdomain)
-          ? (research.subdomain as BiologySubdomain)
-          : BiologyProfile.detect(input)
-      return profile ? BiologyProfile.fragment(profile) : undefined
+  export function fragment(
+    research: Project.Research | undefined,
+    input: { text: string; filenames: string[] },
+    decided?: { domain?: string; direction?: string },
+  ) {
+    const domain = decided?.domain ?? research?.domain
+    if (!domain || domain === "general") return undefined
+    if (domain === "biology") {
+      const detected = BiologyProfile.detect(input)
+      const profile = decided?.direction ?? detected ?? research?.subdomain
+      if (!profile || !SUBDOMAINS.biology.includes(profile as BiologySubdomain)) return undefined
+      return BiologyProfile.fragment(profile as BiologySubdomain)
     }
 
-    const profiles = FRAGMENTS[research.domain]
-    if (!research.subdomain || !(research.subdomain in profiles)) return undefined
-    return profiles[research.subdomain as keyof typeof profiles]
+    if (domain !== "physics" && domain !== "ml") return undefined
+    const profiles = FRAGMENTS[domain]
+    const sub = decided?.direction ?? research?.subdomain
+    if (!sub || !(sub in profiles)) return undefined
+    return profiles[sub as keyof typeof profiles]
   }
 
   export function context(research: Project.Research | undefined) {
@@ -71,7 +76,7 @@ export namespace TaskProfile {
     }
     const lines = [
       `<project-research domain="${research.domain}"${research.subdomain ? ` subdomain="${research.subdomain}"` : ""}>`,
-      "This project configuration is authoritative for strategy selection. Adapt subsequent responses to it unless the user explicitly changes the project settings.",
+      "Earlier work in this project used this configuration as memory. A clear request for something else takes priority.",
       research.notes?.trim(),
       "</project-research>",
     ].filter(Boolean)

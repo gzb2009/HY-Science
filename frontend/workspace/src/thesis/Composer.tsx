@@ -10,7 +10,6 @@ import { useModels, type ModelKey } from "@/context/models"
 import { FONT_MONO, FONT_SANS } from "@/styles/tokens"
 import { IconArrowUp, IconChevronDown, IconPaperclip, IconStop, IconX } from "@/thesis/shared/Icon"
 import { recipeMark } from "@/domain/imc-flow"
-import { AgentIcon } from "@/thesis/shared/AgentIcon"
 import { ComposerSlotProvider } from "@/shell/composer-slot"
 import { SlotViews } from "@/shell/builtin"
 import { toast } from "@/thesis/Toast"
@@ -1145,6 +1144,7 @@ export function Composer(): JSX.Element {
       })
 
       maybeUpdateSessionTitle(sessionID, p.text)
+      await sdk.client.session.update({ sessionID, permission: scopeRules(scope()) }).catch(() => undefined)
 
       if (!existing) {
         navigate(`/${params.dir}/session/${sessionID}`, { replace: true })
@@ -1850,29 +1850,6 @@ export function Composer(): JSX.Element {
             />
 
             <span style={{ flex: 1 }} />
-
-            <Show when={streaming()}>
-              <span
-                style={{
-                  "font-family": FONT_MONO,
-                  "font-size": "var(--text-sm)",
-                  color: "var(--color-text-faint)",
-                  display: "inline-flex",
-                  "align-items": "center",
-                  gap: "5px",
-                }}
-              >
-                <AgentIcon
-                  size={12}
-                  animated
-                  style={{
-                    "--agent-icon-ink": "var(--color-text-faint)",
-                    "--agent-icon-paper": "var(--color-surface-solid, var(--color-bg))",
-                  }}
-                />
-                streaming
-              </span>
-            </Show>
 
             <button
               ref={(el) => (modelBtnRef = el)}

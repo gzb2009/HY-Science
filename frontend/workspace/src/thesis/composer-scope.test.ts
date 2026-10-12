@@ -30,6 +30,8 @@ describe("composer scope", () => {
     expect(rules.find((item) => item.permission === "external_directory")?.action).toBe("allow")
     expect(rules.find((item) => item.permission === "destructive")?.action).toBe("allow")
     expect(rules.find((item) => item.permission === "read")?.action).toBe("allow")
+    expect(rules.find((item) => item.permission === "*")?.action).toBe("allow")
+    expect(rules.find((item) => item.permission === "doom_loop")?.action).toBe("allow")
   })
 
   test("scope ids", () => {

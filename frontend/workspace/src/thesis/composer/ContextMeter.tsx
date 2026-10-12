@@ -66,8 +66,10 @@ export function ContextMeter(props: { providerID?: string; modelID?: string; lim
     const skills = new Set<string>()
     for (let i = msgs.length - 1; i >= 0; i--) {
       const msg = msgs[i]
-      if (msg?.role !== "assistant" || !("tokens" in msg)) continue
-      input = msg.tokens.input
+      if (msg?.role !== "assistant" || !("tokens" in msg) || !msg.tokens) continue
+      const cache = msg.tokens.cache
+      const cached = (cache?.read ?? 0) + (cache?.write ?? 0)
+      input = msg.tokens.input || cached
       output = msg.tokens.output
       reasoning = msg.tokens.reasoning
       break

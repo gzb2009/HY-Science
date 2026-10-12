@@ -111,8 +111,8 @@ export namespace DomainScope {
     const item = DIRECTION[key]
     return [
       `<project-research subdomain="${key}">`,
-      `Project direction: ${item.title}. This names the default analysis pipeline, not a definition of any term.`,
-      `Hard limit: do not start a bash/notebook analysis job whose subject is another direction.`,
+      `Project memory: ${item.title}. Earlier work in this project used this pipeline. It does not override a clear request for something else.`,
+      `Drift guard: if this task already chose a direction, ask once before executing a different one.`,
       `Not limited: literature, comparison, methods, panel design, Office deliverables, and other-platform knowledge.`,
       `</project-research>`,
     ].join("\n")
@@ -126,7 +126,7 @@ export namespace DomainScope {
     if (item.kind === "ask") {
       return `当前项目是${item.currentTitle}，可以讨论${item.suggestTitle}的方法与文献，但不能在这里执行。要跑分析请换协议到${item.suggestTitle}，或改成不锁定。`
     }
-    return `当前项目是${item.currentTitle}，无法在这里执行${item.suggestTitle}。请换协议到${item.suggestTitle}，或改成不锁定后再发起分析。`
+    return `这次任务已经定了${item.currentTitle}。现在要执行${item.suggestTitle}，先问人要不要换，不要直接跑。`
   }
 
   export function refuse(item: Drift) {

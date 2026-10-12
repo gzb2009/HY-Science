@@ -180,6 +180,7 @@ export namespace SessionProcessor {
                       const parts = await MessageV2.parts(input.assistantMessage.id)
                       if (isDoomLoop(parts, value.toolName, value.input)) {
                         const agent = await Agent.get(input.assistantMessage.agent)
+                        const session = await Session.get(input.assistantMessage.sessionID)
                         await PermissionNext.ask({
                           permission: "doom_loop",
                           patterns: [value.toolName],
@@ -189,7 +190,7 @@ export namespace SessionProcessor {
                             input: value.input,
                           },
                           always: [value.toolName],
-                          ruleset: agent.permission,
+                          ruleset: PermissionNext.merge(agent.permission, session.permission ?? []),
                         })
                       }
                     }

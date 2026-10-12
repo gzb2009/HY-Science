@@ -20,6 +20,20 @@ describe("measureContext", () => {
     expect(usage.slices.find((slice) => slice.id === "system")?.tokens).toBe(160)
   })
 
+  test("estimates usage from text when the provider has not reported tokens", () => {
+    const usage = measureContext({
+      limit: 1000,
+      input: 0,
+      output: 0,
+      reasoning: 0,
+      messageChars: 400,
+      skillChars: 0,
+      skillCount: 0,
+    })
+    expect(usage.used).toBe(100)
+    expect(usage.percent).toBe(10)
+  })
+
   test("stays empty before the first reply", () => {
     const usage = measureContext({
       limit: 8000,

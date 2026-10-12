@@ -7,6 +7,9 @@ export type ServerOptions = {
   signal?: AbortSignal
   timeout?: number
   config?: Config
+  /** Executable plus args before `serve`. Defaults to the `hyscience` binary. */
+  command?: string[]
+  cwd?: string
 }
 
 export async function createHYscienceServer(options?: ServerOptions) {
@@ -19,11 +22,13 @@ export async function createHYscienceServer(options?: ServerOptions) {
     options ?? {},
   )
 
-  const args = [`serve`, `--hostname=${options.hostname}`, `--port=${options.port}`]
+  const command = options.command?.[0] ? options.command : ["hyscience"]
+  const args = [...command.slice(1), `serve`, `--port=${options.port}`]
   if (options.config?.logLevel) args.push(`--log-level=${options.config.logLevel}`)
 
-  const proc = spawn(`hyscience`, args, {
+  const proc = spawn(command[0], args, {
     signal: options.signal,
+    cwd: options.cwd,
     env: {
       ...process.env,
       HYSCIENCE_CONFIG_CONTENT: JSON.stringify(options.config ?? {}),
@@ -76,7 +81,7 @@ export async function createHYscienceServer(options?: ServerOptions) {
   return {
     url,
     close() {
-      proc.kill()
+      proc.kill("SIGKILL")
     },
   }
 }
