@@ -18,6 +18,8 @@ import { ThemeSlots } from "./theme-slots"
 import { TaskProfile } from "./task-profile"
 import { PromptLoader } from "../agent/prompt-loader"
 import { DomainScope } from "./domain-scope"
+import { Specialty } from "./specialty"
+import { Project } from "../project/project"
 import { Coordinator } from "./coordinator"
 import { ProjectMemory } from "./project-memory"
 import { ResearchContext } from "./research-context"
@@ -377,7 +379,7 @@ export function injectProjectResearch(userMessage: MessageV2.WithParts) {
   })
 }
 
-export function injectDomainDrift(userMessage: MessageV2.WithParts) {
+function messageFacts(userMessage: MessageV2.WithParts) {
   const text = userMessage.parts
     .filter((part): part is MessageV2.TextPart => part.type === "text" && !part.hybio)
     .map((part) => part.text)
@@ -386,18 +388,53 @@ export function injectDomainDrift(userMessage: MessageV2.WithParts) {
     .filter((part): part is MessageV2.FilePart => part.type === "file")
     .map((part) => part.filename || "")
     .filter(Boolean)
-  const hit = DomainScope.drift(Instance.project.research?.subdomain, { text, filenames })
-  DomainScope.hold(userMessage.info.sessionID, hit)
-  if (!hit) return undefined
-  const reminder = DomainScope.alert(hit)
-  if (!userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text === reminder)) {
-    pushHybioText(userMessage, reminder)
+  return { text, filenames }
+}
+
+export async function injectSpecialty(userMessage: MessageV2.WithParts, sessionID: string) {
+  const facts = messageFacts(userMessage)
+  const judgment = Specialty.judge(facts)
+  const memory = Specialty.recall(sessionID)
+  const confirmed = Specialty.take(sessionID, judgment)
+  const drifted = !confirmed && Specialty.slide(memory, judgment)
+  if (drifted && memory && judgment.domain) {
+    Specialty.pend(sessionID, { domain: judgment.domain, direction: judgment.direction })
+    const current = DomainScope.id(memory.direction) ?? "imc"
+    DomainScope.hold(sessionID, {
+      current,
+      suggest: judgment.direction ?? judgment.domain,
+      currentTitle: memory.direction ?? memory.domain,
+      suggestTitle: judgment.direction ?? judgment.domain,
+      kind: "execute",
+    })
   }
-  const card = DomainScope.card(hit)
-  if (!userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text === card)) {
-    pushHybioText(userMessage, card)
+  if (!drifted && !judgment.ambiguous && !judgment.discuss && judgment.domain) {
+    DomainScope.hold(sessionID, undefined)
+    const value = { domain: judgment.domain, direction: judgment.direction }
+    Specialty.remember(sessionID, value)
+    await rememberProject(value)
   }
-  return hit
+  const text = Specialty.reminder({ judgment, memory, drifted })
+  if (text) pushHybioText(userMessage, text)
+  const domain = judgment.discuss || judgment.ambiguous === "domain" ? undefined : (judgment.domain ?? memory?.domain)
+  return {
+    drifted,
+    domain,
+    suppress: judgment.discuss || judgment.ambiguous === "domain",
+    suggest: drifted ? (judgment.direction ?? judgment.domain) : undefined,
+  }
+}
+
+async function rememberProject(value: { domain: "biology" | "physics" | "ml"; direction?: string }) {
+  const project = Instance.project
+  if (!project.id || project.id === "global") return
+  const research = {
+    domain: value.domain,
+    subdomain: value.direction,
+    notes: project.research?.notes,
+  }
+  project.research = research
+  await Project.update({ projectID: project.id, research })
 }
 
 export async function injectLocale(userMessage: MessageV2.WithParts, locale: string) {
@@ -484,7 +521,7 @@ export async function injectComputeTier(userMessage: MessageV2.WithParts) {
       ? `<system-reminder>Compute execution tier: SSH / Slurm. Prefer the \`remote\` tool on configured hosts (${hosts.length ? hosts.map((h) => h.label).join(", ") : "none configured — ask user to add one in Settings → Compute"}). For batch GPU/CPU jobs use skill \`slurm-hpc\` (sbatch/squeue). Local bash/notebook only for light prep. Cloud BYOK skills only if the user asks.</system-reminder>`
       : tier === "cloud"
         ? `<system-reminder>Compute execution tier: Cloud. Prefer Modal / TensorPool / Lambda / Tinker skills for GPU work. Get cost approval before spend. Local bash/notebook for light prep only. Use \`remote\`/Slurm only if the user points at a cluster.</system-reminder>`
-        : `<system-reminder>Compute execution tier: Local. Prefer bash, notebook, and rkernel on this machine for analysis. For heavy GPU or institutional HPC, ask the user to switch Settings → Compute execution to Cloud or SSH/Slurm (or use those tools if they explicitly request).</system-reminder>`
+        : `<system-reminder>Compute execution tier: Local. For analysis that builds up, use the persistent Python notebook or R rkernel. They stay with this project, so later cells keep variables and loaded data. Set title to a short step name. Use bash only for shell setup, not a fresh python process each step. For heavy GPU or institutional HPC, ask the user to switch Settings → Compute execution to Cloud or SSH/Slurm (or use those tools if they explicitly request).</system-reminder>`
   userMessage.parts.push({
     id: Identifier.ascending("part"),
     messageID: userMessage.info.id,
@@ -503,15 +540,17 @@ function researchContext() {
   }
 }
 
-function disciplinePack(agentName: string) {
+function disciplinePack(agentName: string, domain?: string) {
+  const chosen = domain === "biology" || domain === "physics" || domain === "ml" ? domain : undefined
   return (
+    chosen ??
     TaskProfile.pack(researchContext()) ??
     (agentName === "biology" || agentName === "physics" || agentName === "ml" ? agentName : undefined)
   )
 }
 
-export function injectDisciplinePack(userMessage: MessageV2.WithParts, agentName = "research") {
-  const name = disciplinePack(agentName)
+export function injectDisciplinePack(userMessage: MessageV2.WithParts, agentName = "research", domain?: string) {
+  const name = disciplinePack(agentName, domain)
   if (!name) return
   const text = PromptLoader.load(TaskProfile.packFile(name))
   if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text === text)) return
@@ -525,16 +564,16 @@ export function injectDisciplinePack(userMessage: MessageV2.WithParts, agentName
   })
 }
 
-export async function injectTaskProfile(userMessage: MessageV2.WithParts) {
-  const texts = userMessage.parts
-    .filter((p): p is MessageV2.TextPart => p.type === "text")
-    .map((p) => p.text)
-    .join("\n")
-  const filenames = userMessage.parts
-    .filter((p): p is MessageV2.FilePart => p.type === "file")
-    .map((p) => p.filename || "")
-    .filter(Boolean)
-  const fragment = TaskProfile.fragment(Instance.project.research, { text: texts, filenames })
+export async function injectTaskProfile(userMessage: MessageV2.WithParts, sessionID?: string) {
+  const facts = messageFacts(userMessage)
+  const judgment = Specialty.judge(facts)
+  if (judgment.discuss || judgment.ambiguous) return
+  const decided = judgment.domain
+    ? { domain: judgment.domain, direction: judgment.direction }
+    : sessionID
+      ? Specialty.recall(sessionID)
+      : undefined
+  const fragment = TaskProfile.fragment(researchContext(), facts, decided)
   if (!fragment) return
   if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text === fragment)) return
   userMessage.parts.push({
@@ -790,9 +829,9 @@ async function applyDynamicInjections(
     SessionTrace.injection(input.session.id, name)
   }
 
-  const drift = injectDomainDrift(userMessage)
-  const drifted = drift?.kind === "execute"
-  if (drift) note(drift.kind === "execute" ? "domain-drift" : "domain-ask")
+  const specialty = await injectSpecialty(userMessage, input.session.id)
+  const drifted = specialty.drifted
+  if (drifted) note("domain-drift")
   if (HARNESS_AGENTS.has(input.agent.name)) {
     const core = PromptLoader.load("research-core-v2.txt")
     userMessage.parts.push({
@@ -804,9 +843,9 @@ async function applyDynamicInjections(
       hybio: true,
     })
     note("agent-prompt")
-    if (!drifted) {
-      injectDisciplinePack(userMessage, input.agent.name)
-      if (disciplinePack(input.agent.name)) note("discipline-pack")
+    if (!drifted && !specialty.suppress) {
+      injectDisciplinePack(userMessage, input.agent.name, specialty.domain)
+      if (disciplinePack(input.agent.name, specialty.domain)) note("discipline-pack")
     }
   } else if (input.agent.promptText) {
     userMessage.parts.push({
@@ -857,7 +896,7 @@ async function applyDynamicInjections(
     note("compute-tier")
   }
   if (input.agent.gates?.includes("task_profile") && !drifted) {
-    await injectTaskProfile(userMessage)
+    await injectTaskProfile(userMessage, input.session.id)
     note("task-profile")
   }
 
@@ -878,9 +917,10 @@ async function applyDynamicInjections(
   if (HARNESS_AGENTS.has(input.agent.name)) {
     injectProjectResearch(userMessage)
     note("project-research")
+    const pack = !drifted && !specialty.suppress ? disciplinePack(input.agent.name, specialty.domain) : undefined
     injectInteractionContract(userMessage)
     note("interaction-contract")
-    if (disciplinePack(input.agent.name) === "biology") {
+    if (pack === "biology") {
       injectBiologyServiceContract(userMessage)
       note("biology-service-contract")
     }
@@ -888,14 +928,15 @@ async function applyDynamicInjections(
     note("grill-me")
     injectResultDelivery(messages, userMessage, ctx.contract)
     injectResearchContract(messages, userMessage, ctx.contract)
-    if (disciplinePack(input.agent.name) === "biology") {
+    if (pack === "biology") {
       injectDataGate(messages, userMessage, ctx.contract)
       note("data-gate")
-      await DataProfile.inject(userMessage, Instance.directory, researchContext()?.subdomain).catch(() => undefined)
+      const direction = Specialty.recall(input.session.id)?.direction ?? researchContext()?.subdomain
+      await DataProfile.inject(userMessage, Instance.directory, direction).catch(() => undefined)
       note("data-profile")
     }
-    if (task && drifted && drift) {
-      await ResearchContext.forget(input.session.id, task.id, drift.suggest)
+    if (task && drifted && specialty.suggest) {
+      await ResearchContext.forget(input.session.id, task.id, specialty.suggest)
     }
     if (task && !drifted) await injectResearchContext(userMessage, input.session.id, task.id)
     note("research-intent")
@@ -972,7 +1013,8 @@ export async function injectResearchContext(userMessage: MessageV2.WithParts, se
   const text = textParts.map((p) => p.text).join(" ")
   if (!text || text.length < 10) return
   const entities = await ResearchContext.update(sessionID, taskID, text)
-  const report = ResearchContext.evaluate(entities, ThemeSlots.planOnly(text) ? "plan" : "work")
+  const forced = ThemeSlots.requested(userMessage.parts)
+  const report = ResearchContext.evaluate(entities, forced ?? (ThemeSlots.planOnly(text) ? "plan" : "work"))
   const hybio = ResearchContext.formatContext(entities, report)
   if (!hybio) return
   userMessage.parts.push({
@@ -1033,8 +1075,9 @@ export function injectDataGate(
   // Planning intent — user is asking for advice, not requesting analysis on data
   const planningRe =
     /(?:打算|计划|准备|想要|考虑|可能|也许|还没有|还没做|先了解|设计|方案|思路|怎么(?:做|分析)|如何(?:做|分析)|推荐|建议|protocol|experimental.design)/i
-  if (planningRe.test(text) && !contract.mustClarify) {
-    const plan = ThemeSlots.planOnly(text)
+  const forced = ThemeSlots.requested(userMessage.parts)
+  if (forced === "plan" || (forced !== "work" && planningRe.test(text) && !contract.mustClarify)) {
+    const plan = forced === "plan" || ThemeSlots.planOnly(text)
     const lines = [
       '<system-reminder id="planning-mode">',
       "## PLANNING MODE",

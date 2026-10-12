@@ -263,6 +263,13 @@ export namespace ThemeSlots {
     return PLAN.test(text) && PLAN_ONLY.test(text)
   }
 
+  export function requested(parts: { type: string; hybio?: boolean; text?: string }[]) {
+    const part = parts.find((item) => item.type === "text" && item.hybio && item.text?.includes("<research-intent>"))
+    if (!part?.text) return
+    if (part.text.includes("<research-intent>plan</research-intent>")) return "plan" as const
+    if (part.text.includes("<research-intent>work</research-intent>")) return "work" as const
+  }
+
   export function intent(contract: AgentRouter.Contract, text: string): Kind[] {
     if (planOnly(text)) return []
     if (contract.intent === "direct_answer" && !DESIGN.test(text) && !COMPUTE.test(text)) return []
@@ -319,7 +326,7 @@ export namespace ThemeSlots {
       .filter((part): part is MessageV2.TextPart => part.type === "text" && !part.hybio)
       .map((part) => part.text)
       .join("\n")
-    if (planOnly(user)) {
+    if (requested(userMessage.parts) === "plan" || planOnly(user)) {
       userMessage.parts.push({
         id: Identifier.ascending("part"),
         messageID: userMessage.info.id,

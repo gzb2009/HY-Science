@@ -46,6 +46,7 @@ import { ConfigMarkdown } from "../config/markdown"
 import { Config } from "../config/config"
 import { SessionSummary } from "./summary"
 import { TaskProfile } from "./task-profile"
+import { Specialty } from "./specialty"
 import { NamedError } from "@hysci/util/error"
 import { fn } from "@/util/fn"
 import { SessionProcessor } from "./processor"
@@ -153,6 +154,7 @@ export namespace SessionPrompt {
     tier: z.enum(["fast", "pro", "ultra"]).optional(),
     // Per-request fast API param (gpt-5.5 → service_tier:"priority"). See llm.ts.
     fast: z.boolean().optional(),
+    intent: z.enum(["plan", "work"]).optional(),
     newTask: z.boolean().optional(),
     mergeTaskContext: z.boolean().optional(),
     parts: z.array(
@@ -451,6 +453,8 @@ export namespace SessionPrompt {
       }
 
       step++
+      const fresh = await Session.get(sessionID)
+      session.permission = fresh.permission
       SessionTrace.begin(sessionID, step)
       log.info("loop", { step, sessionID })
       if (step === 1)
@@ -966,8 +970,14 @@ export namespace SessionPrompt {
       .filter((part) => part.type === "text")
       .map((part) => part.text)
       .join("\n")
+    const filenames = input.parts.flatMap((part) => (part.type === "file" ? [part.filename ?? ""] : [])).filter(Boolean)
+    const judgment = Specialty.judge({ text, filenames })
+    const subdomain =
+      judgment.discuss || judgment.ambiguous
+        ? undefined
+        : (judgment.direction ?? (judgment.domain ? undefined : Instance.project.research?.subdomain))
     const recipe = await RecipeRoute.resolve({
-      subdomain: Instance.project.research?.subdomain,
+      subdomain,
       text,
     })
     const next = recipe ? await Agent.get(recipe.agent) : agent
@@ -1324,6 +1334,20 @@ export namespace SessionPrompt {
       }),
     ).then((x) => x.flat())
 
+    const ready = input.intent
+      ? [
+          ...parts,
+          {
+            id: Identifier.ascending("part"),
+            messageID: info.id,
+            sessionID: input.sessionID,
+            type: "text" as const,
+            hybio: true,
+            text: `<research-intent>${input.intent}</research-intent>`,
+          },
+        ]
+      : parts
+
     await Plugin.trigger(
       "chat.message",
       {
@@ -1335,18 +1359,18 @@ export namespace SessionPrompt {
       },
       {
         message: info,
-        parts,
+        parts: ready,
       },
     )
 
     await Session.updateMessage(info)
-    for (const part of parts) {
+    for (const part of ready) {
       await Session.updatePart(part)
     }
 
     return {
       info,
-      parts,
+      parts: ready,
     }
   }
 

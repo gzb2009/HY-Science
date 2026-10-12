@@ -25,7 +25,9 @@ export function measureContext(input: {
   skillChars: number
   skillCount: number
 }): ContextUsage {
-  const used = Math.max(0, input.input + input.output + input.reasoning)
+  const counted = Math.max(0, input.input + input.output + input.reasoning)
+  const estimated = Math.round((Math.max(0, input.messageChars) + Math.max(0, input.skillChars)) / CHARS_PER_TOKEN)
+  const used = counted > 0 ? counted : estimated
   const limit = Math.max(0, input.limit)
   const message = Math.min(used, Math.round(Math.max(0, input.messageChars) / CHARS_PER_TOKEN))
   const rest = used - message

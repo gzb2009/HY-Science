@@ -1247,6 +1247,32 @@
     color: var(--text-weak);
   }
 
+  [data-slot="session-turn-step"] {
+    margin: 4px 0 0 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 100%;
+  }
+
+  [data-slot="session-turn-step-title"] {
+    font-family: var(--font-family-sans);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-base);
+  }
+
+  [data-slot="session-turn-step-preview"] {
+    margin: 0;
+    font-family: var(--font-family-mono);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-weak);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   [data-slot="session-turn-trace-body"] {
     width: 100%;
     min-width: 0;

@@ -363,6 +363,16 @@ class PythonKernel implements Kernel {
 class PythonKernelManager implements KernelManager {
   readonly language: KernelLanguage = "python"
   private kernels = new Map<string, PythonKernel>()
+  private lane = new Map<string, Promise<unknown>>()
+
+  private key(sessionID: string) {
+    try {
+      const dir = Instance.directory
+      return dir ? `project:${dir}` : sessionID
+    } catch {
+      return sessionID
+    }
+  }
 
   private reapIdle() {
     const now = Date.now()
@@ -376,26 +386,42 @@ class PythonKernelManager implements KernelManager {
 
   async get(sessionID: string, opts?: KernelStartOptions): Promise<PythonKernel> {
     this.reapIdle()
-    const existing = this.kernels.get(sessionID)
+    const key = this.key(sessionID)
+    const existing = this.kernels.get(key)
     if (existing && existing.ready) {
       existing.lastUsed = Date.now()
       return existing
     }
     if (existing) {
       await existing.shutdown()
-      this.kernels.delete(sessionID)
+      this.kernels.delete(key)
     }
     const kernel = new PythonKernel(sessionID)
     await kernel.start(opts)
-    this.kernels.set(sessionID, kernel)
+    this.kernels.set(key, kernel)
     return kernel
   }
 
+  async run(sessionID: string, code: string, opts?: ExecuteOptions) {
+    const key = this.key(sessionID)
+    const prev = this.lane.get(key) ?? Promise.resolve()
+    const next = prev.then(() => this.get(sessionID).then((kernel) => kernel.execute(code, opts)))
+    this.lane.set(
+      key,
+      next.then(
+        () => undefined,
+        () => undefined,
+      ),
+    )
+    return next
+  }
+
   async release(sessionID: string): Promise<void> {
-    const k = this.kernels.get(sessionID)
+    const key = this.key(sessionID)
+    const k = this.kernels.get(key)
     if (!k) return
     await k.shutdown()
-    this.kernels.delete(sessionID)
+    this.kernels.delete(key)
   }
 
   async shutdownAll(): Promise<void> {
@@ -426,12 +452,14 @@ function clip(s: string, max = 30_000): string {
 
 export const NotebookTool = Tool.define("notebook", {
   description: [
-    "Execute Python code in a persistent kernel. Variables, imports, and state persist across calls.",
-    "Use instead of `bash python` for analysis — no need to re-import or re-load data between cells.",
+    "Execute Python code in a persistent project kernel. Variables, imports, and loaded data stay available to later cells in this project.",
+    "Use this for analysis that builds up. Do not start a fresh python process for every step.",
+    "Set title to a short step name the user can see, such as 检查数据文件.",
     "numpy (np), pandas (pd), scipy, and matplotlib (plt) are pre-imported. Expression results auto-display like Jupyter.",
     "matplotlib figures are captured as inline PNG images. Not gated to any agent.",
   ].join("\n"),
   parameters: z.object({
+    title: z.string().optional().describe("Short step title shown while this cell runs, such as 检查数据文件"),
     code: z.string().describe("Python code to execute in the persistent kernel"),
     timeout: z.number().default(120_000).describe("Execution timeout in ms (default: 120s, max: 600s)"),
   }),
@@ -446,8 +474,7 @@ export const NotebookTool = Tool.define("notebook", {
       metadata: {},
     })
 
-    const kernel = await pythonKernels.get(ctx.sessionID)
-    const result = await kernel.execute(params.code, { timeout: params.timeout, signal: ctx.abort })
+    const result = await pythonKernels.run(ctx.sessionID, params.code, { timeout: params.timeout, signal: ctx.abort })
 
     const images = result.outputs.filter((o) => o.type === "display" && o.data?.["image/png"])
     const dataUrls = images.map((o) => `data:image/png;base64,${o.data!["image/png"]}`)
@@ -471,7 +498,7 @@ export const NotebookTool = Tool.define("notebook", {
     })
 
     return {
-      title: result.ok ? "Python cell" : "Python cell (error)",
+      title: params.title?.trim() || (result.ok ? "Python cell" : "Python cell (error)"),
       output,
       metadata: {
         ok: result.ok,

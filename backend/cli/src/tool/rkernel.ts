@@ -329,6 +329,16 @@ class RKernel implements Kernel {
 class RKernelManager implements KernelManager {
   readonly language: KernelLanguage = "r"
   private kernels = new Map<string, RKernel>()
+  private lane = new Map<string, Promise<unknown>>()
+
+  private key(sessionID: string) {
+    try {
+      const dir = Instance.directory
+      return dir ? `project:${dir}` : sessionID
+    } catch {
+      return sessionID
+    }
+  }
 
   private reapIdle() {
     const now = Date.now()
@@ -342,26 +352,42 @@ class RKernelManager implements KernelManager {
 
   async get(sessionID: string, opts?: KernelStartOptions): Promise<RKernel> {
     this.reapIdle()
-    const existing = this.kernels.get(sessionID)
+    const key = this.key(sessionID)
+    const existing = this.kernels.get(key)
     if (existing && existing.ready) {
       existing.lastUsed = Date.now()
       return existing
     }
     if (existing) {
       await existing.shutdown()
-      this.kernels.delete(sessionID)
+      this.kernels.delete(key)
     }
     const kernel = new RKernel(sessionID)
     await kernel.start(opts)
-    this.kernels.set(sessionID, kernel)
+    this.kernels.set(key, kernel)
     return kernel
   }
 
+  async run(sessionID: string, code: string, opts?: ExecuteOptions) {
+    const key = this.key(sessionID)
+    const prev = this.lane.get(key) ?? Promise.resolve()
+    const next = prev.then(() => this.get(sessionID).then((kernel) => kernel.execute(code, opts)))
+    this.lane.set(
+      key,
+      next.then(
+        () => undefined,
+        () => undefined,
+      ),
+    )
+    return next
+  }
+
   async release(sessionID: string): Promise<void> {
-    const k = this.kernels.get(sessionID)
+    const key = this.key(sessionID)
+    const k = this.kernels.get(key)
     if (!k) return
     await k.shutdown()
-    this.kernels.delete(sessionID)
+    this.kernels.delete(key)
   }
 
   async shutdownAll(): Promise<void> {
@@ -392,12 +418,14 @@ function clip(s: string, max = 30_000): string {
 
 export const RKernelTool = Tool.define("rkernel", {
   description: [
-    "Execute R code in a persistent kernel. Objects, attached packages, and state persist across calls.",
-    "Use instead of `bash Rscript` for analysis — no need to re-source data or reload packages between cells.",
+    "Execute R code in a persistent project kernel. Objects and loaded data stay available to later cells in this project.",
+    "Use this for analysis that builds up. Do not start a fresh Rscript process for every step.",
+    "Set title to a short step name the user can see.",
     "Print output is captured; base-graphics and ggplot2 plots are captured as inline PNG images where the platform supports it.",
     "Requires Rscript on PATH; if R is not installed the tool reports a clear install hint.",
   ].join("\n"),
   parameters: z.object({
+    title: z.string().optional().describe("Short step title shown while this cell runs"),
     code: z.string().describe("R code to execute in the persistent kernel"),
     timeout: z.number().default(120_000).describe("Execution timeout in ms (default: 120s, max: 600s)"),
   }),
@@ -419,8 +447,7 @@ export const RKernelTool = Tool.define("rkernel", {
       return { title: "R kernel unavailable", output: msg, metadata: { ok: false, available: false, output: msg } }
     }
 
-    const kernel = await rKernels.get(ctx.sessionID)
-    const result = await kernel.execute(params.code, { timeout: params.timeout, signal: ctx.abort })
+    const result = await rKernels.run(ctx.sessionID, params.code, { timeout: params.timeout, signal: ctx.abort })
 
     const images = result.outputs.filter((o) => o.type === "display" && o.data?.["image/png"])
     const dataUrls = images.map((o) => `data:image/png;base64,${o.data!["image/png"]}`)
@@ -435,7 +462,7 @@ export const RKernelTool = Tool.define("rkernel", {
     ctx.metadata({ metadata: { output, ok: result.ok } })
 
     return {
-      title: result.ok ? "R cell" : "R cell (error)",
+      title: params.title?.trim() || (result.ok ? "R cell" : "R cell (error)"),
       output,
       metadata: {
         ok: result.ok,

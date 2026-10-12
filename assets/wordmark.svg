@@ -1,11 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 497 228" width="497" height="228" role="img" aria-label="HYscience">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" width="420" height="96" role="img" aria-label="HYscience">
   <style>
-    text { font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 15px; font-weight: 700; fill: #14b8a6; }
+    .ink { fill: #1c1917; }
+    .line { stroke: #1c1917; fill: none; }
+    .paper { fill: #f6f5f2; }
+    .pill { fill: #1c1917; }
+    .pill-text { fill: #f6f5f2; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #f4f1ea; }
+      .line { stroke: #f4f1ea; }
+      .paper { fill: #141413; }
+      .pill { fill: #f4f1ea; }
+      .pill-text { fill: #141413; }
+    }
   </style>
-  <text x="248" y="27" text-anchor="middle" xml:space="preserve">██╗  ██╗██╗   ██╗███████╗ ██████╗██╗███████╗███╗   ██╗ ██████╗███████╗</text>
-  <text x="248" y="45" text-anchor="middle" xml:space="preserve">██║  ██║╚██╗ ██╔╝██╔════╝██╔════╝██║██╔════╝████╗  ██║██╔════╝██╔════╝</text>
-  <text x="248" y="62" text-anchor="middle" xml:space="preserve">███████║ ╚████╔╝ ███████╗██║     ██║█████╗  ██╔██╗ ██║██║     █████╗</text>
-  <text x="248" y="80" text-anchor="middle" xml:space="preserve">██╔══██║  ╚██╔╝  ╚════██║██║     ██║██╔══╝  ██║╚██╗██║██║     ██╔══╝</text>
-  <text x="248" y="98" text-anchor="middle" xml:space="preserve">██║  ██║   ██║   ███████║╚██████╗██║███████╗██║ ╚████║╚██████╗███████╗</text>
-  <text x="248" y="116" text-anchor="middle" xml:space="preserve">╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚═════╝╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝╚══════╝</text>
+  <g transform="translate(8 8) scale(3.333)">
+    <circle class="paper" cx="12" cy="12" r="10" />
+    <circle class="line" cx="12" cy="12" r="10" stroke-width="0.8" />
+    <path class="ink" d="M12 2A10 10 0 0 0 12 22C15 22 15 18.6 12 17C10 16.1 10 7.9 12 7C15 5.4 15 2 12 2Z" />
+    <circle class="paper" cx="12" cy="12" r="7" />
+    <circle class="line" cx="12" cy="12" r="7" stroke-width="0.8" />
+    <path class="line" d="m10 9-3.2 3 3.2 3M14 9l3.2 3-3.2 3M13.1 8.2l-2.2 7.6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <text class="ink" x="104" y="60" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="42" font-weight="700" letter-spacing="-0.04em">HY</text>
+  <rect class="pill" x="178" y="30" width="128" height="34" rx="17" />
+  <text class="pill-text" x="242" y="53" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="14" font-weight="650" letter-spacing="0.16em">SCIENCE</text>
 </svg>

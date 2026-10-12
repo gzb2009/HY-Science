@@ -1,5 +1,17 @@
 export * from "./client.js"
 export * from "./server.js"
+export {
+  AGENT_DECIDE,
+  PROTOCOLS,
+  advance,
+  launch,
+  notice,
+  researchOf,
+  skipLabel,
+  type Intent,
+  type Launch,
+  type Protocol,
+} from "./research.js"
 
 import { createHYscienceClient } from "./client.js"
 import { createHYscienceServer } from "./server.js"

@@ -45,6 +45,9 @@ export function scopeRules(scope: Scope): ScopeRule[] {
       rule("external_directory", "allow"),
       rule("webfetch", "allow"),
       rule("read", "allow"),
+      rule("doom_loop", "allow"),
+      rule("mcp", "allow"),
+      rule("*", "allow"),
     ]
   }
   return [

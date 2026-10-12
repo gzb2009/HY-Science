@@ -54,6 +54,26 @@ describe("ThemeSlots", () => {
     expect(ThemeSlots.planOnly("帮我设计一个 IMC panel")).toBe(false)
   })
 
+  test("an explicit plan intent writes the plan even when the sentence asks for a design", () => {
+    const text = "帮我设计一个 IMC panel"
+    const item = msg(text)
+    item.parts.push({
+      id: Identifier.ascending("part"),
+      messageID: item.info.id,
+      sessionID: item.info.sessionID,
+      type: "text",
+      hybio: true,
+      text: "<research-intent>plan</research-intent>",
+    })
+    expect(ThemeSlots.requested(item.parts)).toBe("plan")
+    ThemeSlots.inject(item, contract(text), "imc")
+    const block = item.parts.find((part) => part.type === "text" && part.text.includes("theme-slots")) as
+      | MessageV2.TextPart
+      | undefined
+    expect(block?.text).toContain('intent="plan"')
+    expect(block?.text).not.toContain("[tissue]")
+  })
+
   test("inject copies option lists and does not invent a modality card", () => {
     const item = msg("帮我设计一个 IMC panel")
     ThemeSlots.inject(item, contract("帮我设计一个 IMC panel"), "imc")

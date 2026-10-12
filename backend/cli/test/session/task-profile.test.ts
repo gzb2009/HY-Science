@@ -16,18 +16,19 @@ describe("TaskProfile", () => {
     expect(TaskProfile.pack({ domain: "general" })).toBeUndefined()
   })
 
-  test("uses the configured biology subdomain before automatic detection", () => {
+  test("uses the current dataset over project memory", () => {
     const fragment = TaskProfile.fragment(
       { domain: "biology", subdomain: "genomics" },
       { text: "analyze a single-cell dataset", filenames: ["cells.h5ad"] },
     )
-    expect(fragment).toContain('name="genomics"')
+    expect(fragment).toContain('name="single-cell"')
   })
 
   test("states the IMC project direction without over-locking", () => {
     const context = TaskProfile.context({ domain: "biology", subdomain: "imc" })
     expect(context).toContain('subdomain="imc"')
-    expect(context).toContain("Hard limit")
+    expect(context).toContain("Project memory")
+    expect(context).toContain("Drift guard")
     expect(context).toContain("Not limited")
     expect(context).not.toContain("BLOCKING")
   })

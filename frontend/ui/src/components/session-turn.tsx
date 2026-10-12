@@ -25,14 +25,13 @@ import {
   Match,
   on,
   onCleanup,
-  onMount,
   ParentProps,
   Show,
   Switch,
   type JSX,
 } from "solid-js"
 import { DiffChanges } from "./diff-changes"
-import { Message, Part } from "./message-part"
+import { Message, Part, getToolInfo } from "./message-part"
 import { Markdown } from "./markdown"
 import { Accordion } from "./accordion"
 import { StickyAccordionHeader } from "./sticky-accordion-header"
@@ -41,7 +40,7 @@ import { FileTypeCard } from "./file-type-mark"
 import { Icon } from "./icon"
 import { IconButton } from "./icon-button"
 import { Card } from "./card"
-import { Dynamic, Portal } from "solid-js/web"
+import { Dynamic } from "solid-js/web"
 import { Button } from "./button"
 import { AgentStreamIcon } from "./agent-stream-icon"
 import { Tooltip } from "./tooltip"
@@ -239,7 +238,7 @@ function TurnTraceTrigger(props: {
   disabled: boolean
   label: string
   duration: string
-  nodes: string[]
+  step?: { title: string; preview: string }
   onToggle: () => void
 }) {
   return (
@@ -284,10 +283,15 @@ function TurnTraceTrigger(props: {
           <span aria-live="off">{props.duration}</span>
         </Show>
       </Button>
-      <Show when={!props.expanded && props.nodes.length > 0}>
-        <ol data-slot="session-turn-trace-nodes">
-          <For each={props.nodes}>{(node) => <li>{node}</li>}</For>
-        </ol>
+      <Show when={props.live && props.step}>
+        {(step) => (
+          <div data-slot="session-turn-step">
+            <div data-slot="session-turn-step-title">{step().title}</div>
+            <Show when={step().preview}>
+              <pre data-slot="session-turn-step-preview">{step().preview}</pre>
+            </Show>
+          </div>
+        )}
       </Show>
     </div>
   )
@@ -424,18 +428,6 @@ export function SessionTurn(
       }
     }
     return out
-  })
-
-  const traceNodes = createMemo(() => {
-    const hits: string[] = []
-    for (const part of reasoningParts()) {
-      for (const node of reasoningNodes(part.text)) {
-        if (hits.includes(node)) continue
-        hits.push(node)
-        if (hits.length >= 4) return hits
-      }
-    }
-    return hits
   })
 
   const textParts = createMemo(() => {
@@ -621,16 +613,30 @@ export function SessionTurn(
     return !!part?.time?.end && !toolBusy() && !reasoningOpen()
   })
   const live = createMemo(() => working() && !waitingOnQuestion() && !answerClosed())
-  const docked = createMemo(() => working() && isLastUserMessage() && !waitingOnQuestion())
-  const [dock, setDock] = createSignal<HTMLElement>()
-  onMount(() => {
-    const node = document.querySelector("[data-chat-live-dock]")
-    if (node instanceof HTMLElement) setDock(node)
-  })
-  createEffect(() => {
-    if (dock()) return
-    const node = document.querySelector("[data-chat-live-dock]")
-    if (node instanceof HTMLElement) setDock(node)
+  const liveStep = createMemo(() => {
+    if (!live()) return
+    let found: ToolPart | undefined
+    for (const msg of assistantMessages()) {
+      for (const part of data.store.part[msg.id] ?? emptyParts) {
+        if (part?.type !== "tool") continue
+        const tool = part as ToolPart
+        const status = tool.state?.status
+        if (status === "running" || status === "pending") found = tool
+      }
+    }
+    if (!found) return
+    const input = (found.state as { input?: Record<string, unknown> } | undefined)?.input ?? {}
+    const described = typeof input.description === "string" ? input.description.trim() : ""
+    const named = typeof input.title === "string" ? input.title.trim() : ""
+    const info = getToolInfo(found.tool, input)
+    const title = named || described || info.subtitle || info.title
+    const meta = (found.state as { metadata?: { output?: string } } | undefined)?.metadata
+    const lines = (meta?.output ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+    const preview = lines.slice(-2).join("\n")
+    return { title, preview: preview.length > 180 ? preview.slice(-180) : preview }
   })
   const lastActivity = createMemo(() => {
     const stamp = assistantMessages().reduce((latest, item) => {
@@ -930,7 +936,7 @@ export function SessionTurn(
                         />
                       </div>
 
-                      <Show when={hasTrace() && !docked()}>
+                      <Show when={hasTrace() && !live()}>
                         <TurnTraceTrigger
                           live={false}
                           expanded={!!props.stepsExpanded}
@@ -939,24 +945,8 @@ export function SessionTurn(
                             awaitingChoice() || retry() ? workingLabel() : i18n.t("ui.messagePart.reasoning.title")
                           }
                           duration={store.duration}
-                          nodes={traceNodes()}
                           onToggle={() => props.onStepsExpandedToggle?.()}
                         />
-                      </Show>
-                      <Show when={hasTrace() && docked() ? dock() : undefined}>
-                        {(el) => (
-                          <Portal mount={el()}>
-                            <TurnTraceTrigger
-                              live={live()}
-                              expanded={!!props.stepsExpanded}
-                              disabled={!canExpand()}
-                              label={workingLabel()}
-                              duration={store.duration}
-                              nodes={traceNodes()}
-                              onToggle={() => props.onStepsExpandedToggle?.()}
-                            />
-                          </Portal>
-                        )}
                       </Show>
                     </div>
                     <Show when={props.stepsExpanded && canExpand()}>
@@ -1175,6 +1165,17 @@ export function SessionTurn(
                       <Card variant="error" class="error-card">
                         {displayError()?.data?.message as string}
                       </Card>
+                    </Show>
+                    <Show when={live() && hasTrace()}>
+                      <TurnTraceTrigger
+                        live
+                        expanded={!!props.stepsExpanded}
+                        disabled={!canExpand()}
+                        label={workingLabel()}
+                        duration={store.duration}
+                        step={liveStep()}
+                        onToggle={() => props.onStepsExpandedToggle?.()}
+                      />
                     </Show>
                   </Match>
                 </Switch>

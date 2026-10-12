@@ -8,6 +8,7 @@ import { CitationCheck } from "./citation-check"
 import { ThemeSlots } from "./theme-slots"
 import { BiologyProfile } from "./biology-profile"
 import { isBiologyTheme } from "@hysci/util/themes"
+import { Provenance } from "../science/provenance/store"
 import z from "zod"
 
 export namespace SessionReview {
@@ -130,11 +131,28 @@ export namespace SessionReview {
     return ['<theme_checklist theme="' + subdomain + '">', items, "</theme_checklist>"].join("\n")
   }
 
+  async function listed(sessionID: string) {
+    const nodes = await Provenance.list().catch(() => [])
+    return nodes
+      .filter((node) => (node.meta as { sessionID?: string } | undefined)?.sessionID === sessionID)
+      .slice(0, 12)
+  }
+
+  function provenanceNote(sessionID: string, nodes: Awaited<ReturnType<typeof listed>>) {
+    const lines = nodes.map((node) => {
+      const path = "path" in node && node.path ? ` ${node.path}` : ""
+      return `- ${node.kind} ${node.label}${path}`
+    })
+    if (!lines.length) return `No provenance nodes for session ${sessionID}. Review the answer only. Do not start another analysis.`
+    return ["Provenance nodes for this session. Review these. Do not start another analysis.", ...lines].join("\n")
+  }
+
   function promptFor(text: string, note = ""): string {
     return [
       "Blindly review the FINAL ANSWER below. You did not write it; do not trust it.",
       "Independently trace every claim, number, and citation to evidence you can verify from the workspace.",
       "Flag citation mismatches, untraceable numbers, and unsupported claims. Judge integrity, not style.",
+      "Attach findings to the answer or the listed provenance nodes. Do not start a second analysis.",
       "Return only JSON using one of these forms:",
       '{"verdict":"CLEAN","findings":[]}',
       '{"verdict":"FLAGGED","findings":[{"severity":"blocking","message":"concise issue","evidence":["path:line or source"]}]}',
@@ -395,9 +413,14 @@ export namespace SessionReview {
       }
       const child = created
       try {
-        const parts = await SessionPrompt.resolvePromptParts(
-          promptFor(text, [CitationCheck.note(citations), checklist(research?.subdomain)].filter(Boolean).join("\n")),
-        )
+        const note = [
+          provenanceNote(input.sessionID, await listed(input.sessionID)),
+          CitationCheck.note(citations),
+          checklist(research?.subdomain),
+        ]
+          .filter(Boolean)
+          .join("\n")
+        const parts = await SessionPrompt.resolvePromptParts(promptFor(text, note))
         const run = SessionPrompt.prompt({
           messageID: Identifier.ascending("message"),
           sessionID: child.id,

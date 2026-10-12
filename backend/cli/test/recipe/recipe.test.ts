@@ -139,6 +139,12 @@ describe("recipe.route", () => {
         ).toBeUndefined()
         expect(
           await RecipeRoute.resolve({
+            subdomain: "imc",
+            text: "请做细胞邻域分析",
+          }),
+        ).toBeUndefined()
+        expect(
+          await RecipeRoute.resolve({
             subdomain: "biology",
             text: '<imc-recipe id="imc.segment" />',
           }),

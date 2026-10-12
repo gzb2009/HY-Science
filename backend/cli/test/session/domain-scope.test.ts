@@ -27,8 +27,8 @@ describe("DomainScope", () => {
 
   test("treats the IMC lock as a direction hint, not a chemistry definition", () => {
     const lock = DomainScope.lock("imc")
-    expect(lock).toContain("Project direction: 空间蛋白成像")
-    expect(lock).toContain("Hard limit")
+    expect(lock).toContain("Project memory: 空间蛋白成像")
+    expect(lock).toContain("Drift guard")
     expect(lock).toContain("Not limited")
     expect(lock).not.toContain("金属核素")
     expect(lock).not.toContain("成像质谱")
@@ -61,7 +61,7 @@ describe("DomainScope", () => {
     const hit = DomainScope.drift("imc", { text: "帮我做单细胞测序的分析", filenames: [] })
     expect(hit?.kind).toBe("execute")
     expect(hit?.suggest).toBe("single-cell")
-    expect(DomainScope.notice(hit!)).toContain("换协议")
+    expect(DomainScope.notice(hit!)).toContain("先问人")
   })
 
   test("polite capability phrasing does not arm the exec gate", () => {

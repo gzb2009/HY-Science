@@ -9,5 +9,5 @@
     "lib": ["es2022", "dom", "dom.iterable"]
   },
   "include": ["src"],
-  "exclude": ["src/gen"]
+  "exclude": ["src/gen", "src/**/*.test.ts"]
 }
