@@ -148,8 +148,7 @@ function mount(
     last = now
     draw()
     const motion = document.documentElement.dataset.reduceMotion
-    const freeze =
-      motion === "on" || (motion !== "off" && matchMedia("(prefers-reduced-motion: reduce)").matches)
+    const freeze = motion === "on" || (motion !== "off" && matchMedia("(prefers-reduced-motion: reduce)").matches)
     if (!state.paused && !freeze) {
       state.wind = Math.sin(now * 0.00018) * 0.16
       for (const item of specks) {

@@ -102,7 +102,6 @@ export const AppearanceSections: Component = () => {
     })),
   )
 
-
   const soundOptions = [...SOUND_OPTIONS]
 
   return (

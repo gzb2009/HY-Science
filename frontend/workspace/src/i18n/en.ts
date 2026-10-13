@@ -824,7 +824,8 @@ export const dict = {
   "settings.appearance.smooth.description": "Use native font anti-aliasing",
   "settings.appearance.contrast.title": "High contrast",
   "settings.appearance.contrast.follow.title": "Follow system high contrast",
-  "settings.appearance.contrast.follow.description": "Switch to a high contrast theme when the OS is in high contrast mode",
+  "settings.appearance.contrast.follow.description":
+    "Switch to a high contrast theme when the OS is in high contrast mode",
   "settings.appearance.motion.title": "Motion",
   "settings.appearance.motion.reduce.title": "Reduce motion",
   "settings.appearance.motion.reduce.description": "Minimize interface animations. System follows the OS preference.",

@@ -7465,7 +7465,8 @@ html[data-color-scheme="dark"][data-high-contrast="true"] {
   --ink-line: #f4f2ec;
 }
 
-html[data-reduce-motion="on"] :is(.thesis-fade-in, .thesis-slide-up, .thesis-stagger, .thesis-pop-up, .thesis-modal, .thesis-overlay) {
+html[data-reduce-motion="on"]
+  :is(.thesis-fade-in, .thesis-slide-up, .thesis-stagger, .thesis-pop-up, .thesis-modal, .thesis-overlay) {
   animation: none !important;
   transition: none !important;
 }

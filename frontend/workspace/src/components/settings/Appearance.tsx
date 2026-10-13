@@ -158,7 +158,10 @@ const AppearanceBody: Component = () => {
       </Card>
 
       <Card title={language.t("settings.appearance.color.title")}>
-        <Row title={language.t("settings.appearance.hue.title")} description={language.t("settings.appearance.hue.description")}>
+        <Row
+          title={language.t("settings.appearance.hue.title")}
+          description={language.t("settings.appearance.hue.description")}
+        >
           <div class="cs-slider-inline">
             <input
               class="cs-appearance-slider"
@@ -416,34 +419,34 @@ const FontPicker: Component<{
       </button>
       <Show when={open()}>
         <Portal>
-        <div class="cs-font-list" ref={list} style={listStyle()}>
-          <input
-            class="cs-font-search"
-            type="text"
-            placeholder={props.searchLabel}
-            value={query()}
-            onInput={(event) => setQuery(event.currentTarget.value)}
-          />
-          <button type="button" class="cs-font-option" onClick={() => choose("system")}>
-            {props.systemLabel}
-          </button>
-          <For each={shown()}>
-            {(name) => (
-              <button
-                type="button"
-                class="cs-font-option"
-                classList={{ "is-current": label() === name }}
-                style={{ "font-family": `"${name.replaceAll('"', "")}"` }}
-                onClick={() => choose(name)}
-              >
-                {name}
-              </button>
-            )}
-          </For>
-          <Show when={shown().length === 0}>
-            <div class="cs-font-empty">{props.emptyLabel}</div>
-          </Show>
-        </div>
+          <div class="cs-font-list" ref={list} style={listStyle()}>
+            <input
+              class="cs-font-search"
+              type="text"
+              placeholder={props.searchLabel}
+              value={query()}
+              onInput={(event) => setQuery(event.currentTarget.value)}
+            />
+            <button type="button" class="cs-font-option" onClick={() => choose("system")}>
+              {props.systemLabel}
+            </button>
+            <For each={shown()}>
+              {(name) => (
+                <button
+                  type="button"
+                  class="cs-font-option"
+                  classList={{ "is-current": label() === name }}
+                  style={{ "font-family": `"${name.replaceAll('"', "")}"` }}
+                  onClick={() => choose(name)}
+                >
+                  {name}
+                </button>
+              )}
+            </For>
+            <Show when={shown().length === 0}>
+              <div class="cs-font-empty">{props.emptyLabel}</div>
+            </Show>
+          </div>
         </Portal>
       </Show>
     </div>
@@ -480,7 +483,12 @@ const Stepper: Component<{
   }
   return (
     <div class="cs-stepper">
-      <button type="button" class="cs-stepper-btn" aria-label={props.resetLabel} onClick={() => props.onChange(props.reset)}>
+      <button
+        type="button"
+        class="cs-stepper-btn"
+        aria-label={props.resetLabel}
+        onClick={() => props.onChange(props.reset)}
+      >
         ↺
       </button>
       <button type="button" class="cs-stepper-btn" disabled={props.value <= props.min} onClick={() => step(-1)}>
