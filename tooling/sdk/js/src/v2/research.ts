@@ -1,11 +1,5 @@
 import type { Config } from "./gen/types.gen.js"
-import type {
-  Event,
-  PermissionRequest,
-  QuestionDecision,
-  QuestionInfo,
-  QuestionRequest,
-} from "./gen/types.gen.js"
+import type { Event, PermissionRequest, QuestionDecision, QuestionInfo, QuestionRequest } from "./gen/types.gen.js"
 import { createHYscienceClient, type HYscienceClient } from "./client.js"
 import { createHYscienceServer } from "./server.js"
 
@@ -100,11 +94,7 @@ export async function launch(input: Launch) {
   })
 }
 
-async function open(
-  input: Launch,
-  directory: string,
-  owned: { url: string; close: () => void } | undefined,
-) {
+async function open(input: Launch, directory: string, owned: { url: string; close: () => void } | undefined) {
   const url = input.baseUrl ?? owned?.url
   if (!url) throw new Error("没有服务地址")
   const client = createHYscienceClient({ baseUrl: url, directory })
@@ -196,9 +186,7 @@ async function open(
     const rows = await read(client.session.messages({ sessionID: session.id, directory }))
     const text = rows
       .filter((row) => row.info.role === "assistant")
-      .flatMap((row) =>
-        row.parts.flatMap((part) => (part.type === "text" && !part.hybio ? [part.text] : [])),
-      )
+      .flatMap((row) => row.parts.flatMap((part) => (part.type === "text" && !part.hybio ? [part.text] : [])))
       .join("\n")
       .trim()
     const files = rows.flatMap((row) =>
@@ -210,7 +198,8 @@ async function open(
       (value) => value,
       () => undefined,
     )
-    if (!recorded || recorded.error || !recorded.data) return { text, files: [], missing: files, provenance: "unknown" as const }
+    if (!recorded || recorded.error || !recorded.data)
+      return { text, files: [], missing: files, provenance: "unknown" as const }
     const nodes = recorded.data.nodes.flatMap((node) => {
       if (!node || typeof node !== "object") return []
       const item = node as { kind?: string; path?: string; label?: string; meta?: { sessionID?: string } }

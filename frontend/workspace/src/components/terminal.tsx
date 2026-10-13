@@ -122,7 +122,7 @@ export const Terminal = (props: TerminalProps) => {
   })
 
   createEffect(() => {
-    const size = settings.appearance.fontSize()
+    const size = settings.appearance.codeFontSize()
     if (!term) return
     const setOption = (term as unknown as { setOption?: (key: string, value: number) => void }).setOption
     if (setOption) setOption("fontSize", size)
@@ -167,7 +167,7 @@ export const Terminal = (props: TerminalProps) => {
       const t = new mod.Terminal({
         cursorBlink: true,
         cursorStyle: "bar",
-        fontSize: settings.appearance.fontSize(),
+        fontSize: settings.appearance.codeFontSize(),
         fontFamily: monoFontFamily(settings.appearance.font()),
         allowTransparency: true,
         theme: terminalColors(),

@@ -163,8 +163,14 @@
     color: var(--text-strong);
   }
 
+  .shiki,
+  pre {
+    font-family: var(--font-family-mono), "PingFang SC", "Hiragino Sans GB", sans-serif;
+    font-size: var(--code-font-size, 12px);
+    line-height: 1.55;
+  }
+
   .shiki {
-    font-size: var(--font-size-base);
     padding: 8px 12px;
     border-radius: 4px;
     border: 0.5px solid var(--border-weak-base);
@@ -203,6 +209,9 @@
     margin-top: 2rem;
     margin-bottom: 2rem;
     overflow: auto;
+    font-family: var(--font-family-mono), "PingFang SC", "Hiragino Sans GB", sans-serif;
+    font-size: var(--code-font-size, 12px);
+    line-height: 1.55;
 
     scrollbar-width: none;
     &::-webkit-scrollbar {
@@ -212,11 +221,11 @@
 
   /* Inline names such as fig.tiff / plot.png: bold only, same color as the sentence. */
   :not(pre) > code {
-    font-family: var(--font-family-mono);
+    font-family: var(--font-family-mono), "PingFang SC", "Hiragino Sans GB", sans-serif;
     font-feature-settings: var(--font-family-mono--font-feature-settings);
     color: inherit;
     font-weight: 700;
-    font-size: 0.92em;
+    font-size: calc(0.92em * var(--code-font-size, 12px) / 12px);
     padding: 0;
     border-radius: 0;
     background: none;

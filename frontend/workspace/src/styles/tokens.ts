@@ -1,6 +1,7 @@
 import type { JSX } from "solid-js"
 
-export const FONT_SANS = 'Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif'
+export const FONT_SANS =
+  'var(--font-family-sans, Arial, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif)'
 export const FONT_SERIF =
   '"Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif'
 /** Code font — resolves through the theme/Settings-owned mono variable. */
