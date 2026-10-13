@@ -29,6 +29,7 @@ export type SettingsPanelId =
   | "permissions"
   | "credentials"
   | "storage"
+  | "appearance"
   | "general"
 
 export interface SettingsPanel {
@@ -84,6 +85,13 @@ export const SETTINGS_PANELS: SettingsPanel[] = [
     component: lazy(() => import("./Credentials")),
   },
   { id: "storage", title: "Storage", icon: "folder", section: "workspace", component: lazy(() => import("./Storage")) },
+  {
+    id: "appearance",
+    title: "Appearance",
+    icon: "sliders",
+    section: "workspace",
+    component: lazy(() => import("./Appearance")),
+  },
   {
     id: "general",
     title: "General",

@@ -1,4 +1,4 @@
-// General — Account, reasoning effort, licensing, and appearance.
+// General — Account, reasoning effort, and licensing. Appearance is its own page.
 // Model pickers and provider keys live on the workbench Model dock.
 import { Component, Show, createSignal, onMount, type JSX } from "solid-js"
 import { Button } from "@hysci/ui/button"
@@ -100,7 +100,7 @@ export default function General() {
         <div class="flex flex-col gap-1 pt-8 pb-8 max-w-[760px]">
           <h2 class="text-16-medium text-text-strong">General</h2>
           <p class="text-13-regular text-text-weak">
-            Your account, licensing, and appearance. Models are set in the workbench Model dock.
+            Your account, licensing, and notifications. Appearance is its own page.
           </p>
         </div>
       </div>
