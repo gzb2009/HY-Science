@@ -17,8 +17,12 @@ jobs:
       fail-fast: false
       matrix:
         settings:
+          # ubuntu-latest became 26.04 on 2026-10-21. Playwright 1.57
+          # has no ubuntu26.04-x64 Chromium build, so `playwright install
+          # --with-deps` fails in ~20s and the nightly mail says every
+          # job failed. Stay on 24.04 until @playwright/test is >= 1.61.
           - name: linux
-            host: ubuntu-latest
+            host: ubuntu-24.04
             playwright: bunx playwright install --with-deps
             workdir: .
             command: |
