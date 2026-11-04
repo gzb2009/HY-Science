@@ -17,6 +17,7 @@ import { Truncate } from "@/tool/truncation"
 import { Log } from "../util/log"
 import { SessionArtifact } from "./artifact"
 import { DecisionGate } from "./decision-gate"
+import { LiteratureGate } from "./literature-gate"
 import { PlanDraft } from "./plan-draft"
 
 const log = Log.create({ service: "session.prompt-tools" })
