@@ -289,7 +289,7 @@ export const dict = {
   "dialog.project.new.browse": "Browse",
   "dialog.project.new.workspacePreview": "Project workspace",
   "dialog.project.new.resultPreview": "Result folder",
-  "dialog.project.new.resultHint": "Outputs stay in result/ inside this project workspace.",
+  "dialog.project.new.resultHint": "Leave this empty to use result/. You can set another folder name in this project.",
   "dialog.project.new.isolateFailed": "Could not isolate this project from the parent folder. Try a different folder.",
   "dialog.project.research.label": "Analysis direction",
   "dialog.project.research.hint":
@@ -538,7 +538,7 @@ export const dict = {
   "home.capabilities.model.ready": "{{count}} models",
   "home.capabilities.model.needKey": "Add API key",
   "home.capabilities.model.agent": "This agent",
-  "home.capabilities.model.agentHint": "research harness · {{domain}}",
+  "home.capabilities.model.agentHint": "Chief Investigator · {{domain}}",
   "home.capabilities.model.default": "Default model",
   "home.capabilities.model.auto": "Auto",
   "home.capabilities.model.autoHint": "Uses the first connected provider model",
@@ -704,19 +704,16 @@ export const dict = {
   "layout.resizeInspector": "Resize inspector",
   "layout.resizeHint": "Drag to resize. Double-click to reset.",
 
-  "chat.welcome.title": "What should we analyze in {{name}}?",
+  "chat.welcome.title": "Beyond conversation\nHengyi Science takes you into remarkable life",
   "chat.welcome.title.before": "What should we analyze in",
   "chat.welcome.title.after": "?",
   "chat.welcome.switchProject": "Switch project",
   "chat.welcome.lead": "Describe your research question, or start from a suggestion below.",
   "chat.welcome.noModel": "No model is connected yet — set one up to start, with managed credits or your own key.",
   "chat.welcome.setup": "Set up models →",
-  "chat.welcome.prompt1":
-    "Run QC, normalization, and clustering on a scRNA-seq dataset, then identify major cell types.",
-  "chat.welcome.prompt2":
-    "Analyze IMC / CODEX spatial proteomics data and compare cell composition and neighborhoods across tissue regions.",
-  "chat.welcome.prompt3":
-    "Draft a next-step experiment plan from the current results, with hypotheses, metrics, and controls.",
+  "chat.welcome.prompt1": "Every cell in a single-cell dataset deserves to be recognized, slowly.",
+  "chat.welcome.prompt2": "Proteins will quietly show which cells sit beside each other.",
+  "chat.welcome.prompt3": "The next experiment can grow out of the results you already have.",
   "chat.welcome.imc.1":
     "Run the standard IMC analysis pipeline:\n\n1. Convert raw MCD or QPTIFF to OME-TIFF for downstream analysis\n2. Preprocess and segment cells; output a MASK of cell boundaries\n3. QC and normalize: denoise, remove background, filter at cell level\n4. Cluster and annotate cell types\n5. Spatial analysis: neighborhood, interaction, and patch\n6. Downstream stats: cell proportion and density comparisons\n\nConfirm the data path and panel first, then proceed step by step.",
   "chat.welcome.imc.2":
@@ -748,28 +745,18 @@ export const dict = {
   "chat.welcome.imc.flow.p4": "Run IMC clustering and annotation: group segmented cells and assign phenotypes.",
   "chat.welcome.imc.flow.p5": "Run IMC spatial analysis: neighborhood, interaction, and patch analysis.",
   "chat.welcome.imc.flow.p6": "Run IMC downstream stats: compare cell proportions and densities across tissue regions.",
-  "chat.welcome.single-cell.1":
-    "Run QC, normalization, and clustering on a scRNA-seq dataset, then identify major cell types.",
-  "chat.welcome.single-cell.2":
-    "Integrate multiple scRNA samples, correct batch effects, and compare cell composition across samples.",
-  "chat.welcome.single-cell.3":
-    "Draft a next-step experiment plan from current clustering and annotation, with hypotheses, metrics, and controls.",
-  "chat.welcome.spatial.1":
-    "Analyze Visium / Stereo-seq spatial transcriptomics for neighborhood structure and ligand–receptor inference.",
-  "chat.welcome.spatial.2":
-    "Deconvolve spatial spots with a single-cell reference and compare cell composition across regions.",
-  "chat.welcome.spatial.3":
-    "Draft a next-step experiment plan from current spatial results, with hypotheses, metrics, and controls.",
-  "chat.welcome.genomics.1": "Align WGS / WES data, call variants, and annotate pathogenicity.",
-  "chat.welcome.genomics.2": "Run differential expression and pathway enrichment, then summarize significant genes.",
-  "chat.welcome.genomics.3":
-    "Draft a next-step experiment plan from current variant or expression results, with hypotheses, metrics, and controls.",
-  "chat.welcome.general.1":
-    "Run QC, normalization, and clustering on a scRNA-seq dataset, then identify major cell types.",
-  "chat.welcome.general.2":
-    "Analyze IMC / CODEX spatial proteomics data and compare cell composition and neighborhoods across tissue regions.",
-  "chat.welcome.general.3":
-    "Draft a next-step experiment plan from the current results, with hypotheses, metrics, and controls.",
+  "chat.welcome.single-cell.1": "Every cell in a single-cell dataset deserves to be recognized, slowly.",
+  "chat.welcome.single-cell.2": "Put the samples side by side, and the differences beyond batch will show themselves.",
+  "chat.welcome.single-cell.3": "The next experiment can grow out of the clusters you already have.",
+  "chat.welcome.spatial.1": "Spatial transcriptomics will show how cells sit beside each other in tissue.",
+  "chat.welcome.spatial.2": "With a single-cell reference, who lives in each region becomes clear.",
+  "chat.welcome.spatial.3": "The next experiment can grow out of the spatial results you already have.",
+  "chat.welcome.genomics.1": "The variants worth noticing in this sequencing can be found, slowly.",
+  "chat.welcome.genomics.2": "The genes and pathways that are changing will surface on their own.",
+  "chat.welcome.genomics.3": "The next experiment can grow out of the results you already have.",
+  "chat.welcome.general.1": "Every cell in a single-cell dataset deserves to be recognized, slowly.",
+  "chat.welcome.general.2": "Proteins will quietly show which cells sit beside each other.",
+  "chat.welcome.general.3": "The next experiment can grow out of the results you already have.",
 
   "app.name.desktop": "HYscience Desktop",
 
@@ -1121,6 +1108,17 @@ export const dict = {
   "rightpane.evidence.filesEmpty": "No artifacts from the latest turn.",
 
   "composer.placeholder": "ask a research question · / for skills",
+  "sitting.mark": "Group",
+  "sitting.hint": "Seat the researchers who take work. The Chief Investigator checks it and is the only one who delivers.",
+  "sitting.agents": "Group",
+  "sitting.agents.lead": "{{count}} at work · {{busy}} moving",
+  "sitting.agents.idle": "Researchers appear here once the Chief Investigator assigns them",
+  "sitting.agents.none": "No researchers sent out yet",
+  "sitting.agents.empty": "When the Chief Investigator assigns work, the researchers appear here.",
+  "sitting.status.idle": "idle",
+  "sitting.status.working": "working",
+  "sitting.status.waiting": "waiting for you",
+  "sitting.status.retry": "retry",
   "composer.skills": "skills",
   "composer.skills.empty": "no matching skills",
   "composer.model": "select model",

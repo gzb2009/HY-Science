@@ -110,6 +110,28 @@ export const BUILTIN: BuiltinDefinition[] = [
     permission: { question: "allow" },
   },
   {
+    key: "planner",
+    name: "planner",
+    steps: 8,
+    description:
+      "Writes the step-by-step plan for a research task. Does not run the analysis. The chief investigator delivers the plan and waits for approval.",
+    promptFile: "planner.txt",
+    promptRole: "promptText",
+    mode: "subagent",
+    native: true,
+    color: "#3b6ea5",
+    permission: {
+      "*": "deny",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      list: "allow",
+      webfetch: "allow",
+      websearch: "allow",
+      codesearch: "allow",
+    },
+  },
+  {
     key: "plan",
     name: "plan",
     steps: 30,

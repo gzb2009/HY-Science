@@ -17,7 +17,7 @@ import { Truncate } from "@/tool/truncation"
 import { Log } from "../util/log"
 import { SessionArtifact } from "./artifact"
 import { DecisionGate } from "./decision-gate"
-import { LiteratureGate } from "./literature-gate"
+import { PlanDraft } from "./plan-draft"
 
 const log = Log.create({ service: "session.prompt-tools" })
 
@@ -68,11 +68,12 @@ export async function resolveTools(input: {
       }
     },
     async ask(req: { permission: string; metadata: Record<string, unknown>; patterns: string[]; always: string[] }) {
+      const fresh = await Session.get(input.session.id)
       await PermissionNext.ask({
         ...req,
         sessionID: input.session.id,
         tool: { messageID: input.processor.message.id, callID: options.toolCallId },
-        ruleset: PermissionNext.merge(input.agent.permission, input.session.permission ?? []),
+        ruleset: PermissionNext.merge(input.agent.permission, fresh.permission ?? []),
       })
     },
   })
@@ -236,11 +237,17 @@ export async function resolveTools(input: {
   }
 
   const wildcardDisable = input.tools?.["*"] === false
-  const disabled = PermissionNext.disabled(Object.keys(tools), input.agent.permission)
+  const disabled = PermissionNext.disabled(
+    Object.keys(tools),
+    PermissionNext.merge(input.agent.permission, input.session.permission ?? []),
+  )
   for (const tool of Object.keys(tools)) {
     if (wildcardDisable || input.tools?.[tool] === false || disabled.has(tool)) {
       delete tools[tool]
     }
+  }
+  if (PlanDraft.holding(input.session.id)) {
+    for (const tool of Object.keys(tools)) delete tools[tool]
   }
   return tools
 }

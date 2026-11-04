@@ -178,6 +178,8 @@ describe("AgentRouter v2 regex fallback", () => {
       history: ["帮我设计一个做PCF的胃癌 50 marker panel", "PCF是PhenoCycler-Fusion"],
     })
     expect(contract.intent).toBe("execution")
+    expect(contract.action).toBe("execute")
+    expect(contract.blocking).toBeUndefined()
     expect(contract.mustClarify).toBe(false)
     expect(contract.knownContext).toContain("agreed deliverable export")
     expect(contract.knownContext).toContain("phenocycler chemistry")
@@ -234,6 +236,8 @@ describe("AgentRouter v2 regex fallback", () => {
     const contract = AgentRouter.interpret({ text: "IMC 和 PhenoCycler 有什么区别" })
     expect(contract.knownContext).not.toContain("phenocycler chemistry")
     expect(contract.knownContext).not.toContain("imc metal chemistry")
+    expect(contract.action).toBe("answer")
+    expect(contract.blocking).toBeUndefined()
     expect(contract.mustClarify).toBe(false)
   })
 
@@ -258,5 +262,63 @@ describe("AgentRouter v2 regex fallback", () => {
       AgentRouter.interpret({ text: "Run these dependent tasks in parallel and provide separate deliverables." })
         .coordinate,
     ).toBe(true)
+  })
+
+  test("a vague data look is clarify, never execute", () => {
+    for (const text of ["帮我看看这个数据怎么样", "look at this data", "how's this data"]) {
+      const contract = AgentRouter.interpret({ text, filenames: ["a.h5ad"] })
+      expect(contract.action).toBe("clarify")
+      expect(contract.blocking).toBe(AgentRouter.ANALYSIS_TARGET_SLOT)
+    }
+    const bare = AgentRouter.interpret({ text: "帮我看看这个数据怎么样" })
+    expect(bare.action).not.toBe("execute")
+    expect(bare.blocking).toBe(AgentRouter.ANALYSIS_TARGET_SLOT)
+    expect(bare.missingPremises).toContain("data location, variables, or analysis target")
+  })
+
+  test("literature plus an export stays one turn and keeps the literature gate", () => {
+    const contract = AgentRouter.interpret({ text: "搜索 IMC 血管文献并导出 Excel" })
+    expect(contract.gates).toContain("literature")
+    expect(contract.coordinate).toBe(false)
+    expect(contract.action).toBe("answer")
+  })
+
+  test("an undefined chemistry acronym blocks before platform, species, or format", () => {
+    const contract = AgentRouter.interpret({ text: "帮我设计一个 PCF 前列腺癌 50 marker / TLS panel" })
+    expect(contract.action).toBe("clarify")
+    expect(contract.blocking).toBe("meaning of PCF")
+    expect(contract.missingPremises).toContain("meaning of TLS")
+    expect(contract.missingPremises).toContain("deliverable form (table / Excel / markdown / figure)")
+  })
+
+  test("a missing platform is the only ask while species and aim stay open", () => {
+    const contract = AgentRouter.interpret({ text: "帮我设计一个 50 marker panel，输出 Excel" })
+    expect(contract.action).toBe("clarify")
+    expect(contract.blocking).toBe(AgentRouter.PLATFORM_SLOT)
+    expect(contract.missingPremises).toContain(AgentRouter.SPECIES_SLOT)
+    expect(contract.missingPremises).toContain(
+      "scientific aim (general vs T-biased vs B/TLS vs myeloid vs tumor-stroma)",
+    )
+  })
+
+  test("the same sentence returns the same action and blocking slot", () => {
+    const text = "帮我设计一个 50 marker panel，输出 Excel"
+    const first = AgentRouter.interpret({ text })
+    const second = AgentRouter.interpret({ text })
+    expect(first.action).toBe(second.action)
+    expect(first.blocking).toBe(second.blocking)
+    expect(first.confidence).toBe(1)
+    expect(AgentRouter.interpret({ text: "  " }).confidence).toBe(0)
+  })
+
+  test("a numbered list of deliverables is a plan, not an agent split", () => {
+    const contract = AgentRouter.interpret({
+      text: [
+        "1. Find papers about CAR-T therapy for solid tumors published after 2023.",
+        "2. Find papers about spatial proteomics published after 2023.",
+      ].join("\n"),
+    })
+    expect(contract.action).toBe("plan")
+    expect(contract.coordinate).toBe(false)
   })
 })

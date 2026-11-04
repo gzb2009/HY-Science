@@ -21,6 +21,13 @@ import { DomainScope } from "./domain-scope"
 import { Specialty } from "./specialty"
 import { Project } from "../project/project"
 import { Coordinator } from "./coordinator"
+import { Sitting } from "./sitting"
+import { PlanDraft } from "./plan-draft"
+import { PlanRun } from "./plan-run"
+import { Query } from "./query-type"
+import { ExecutionRun } from "./execution-run"
+import { Supervision } from "./supervision"
+import { brief } from "@hysci/util/seat"
 import { ProjectMemory } from "./project-memory"
 import { ResearchContext } from "./research-context"
 import { TaskDecisionState } from "./task-decisions"
@@ -123,23 +130,8 @@ export function injectResultDelivery(
 }
 
 export function injectAgentRouter(userMessage: MessageV2.WithParts, agent: Agent.Info) {
-  const key = "agent-router"
-  if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text.includes(key))) return
-  const textParts = userMessage.parts.filter((p): p is MessageV2.TextPart => p.type === "text" && !MessageV2.isHybio(p))
-  const text = textParts.map((p) => p.text).join(" ")
-  if (!text || text.length < 10) return
-  const fileParts = userMessage.parts.filter((p) => p.type === "file")
-  const filenames = fileParts.map((p) => p.filename ?? "").filter(Boolean)
-  const rec = AgentRouter.recommend({ current: agent.name, text, filenames })
-  if (!AgentRouter.shouldSwitch(agent.name, rec)) return
-  userMessage.parts.push({
-    id: Identifier.ascending("part"),
-    messageID: userMessage.info.id,
-    sessionID: userMessage.info.sessionID,
-    type: "text",
-    text: AgentRouter.advice(rec),
-    hybio: true,
-  })
+  void userMessage
+  void agent
 }
 
 export function injectExperimentDesign(userMessage: MessageV2.WithParts) {
@@ -488,6 +480,7 @@ export async function injectLiteratureGate(userMessage: MessageV2.WithParts, con
     })
     return
   }
+  if (!/(文献|调研|综述|引用|citation|pubmed|literature)/i.test(reportText)) return
   const candidates = ["literature-review.md", path.join(".context", "literature-review.md")]
   const present = await Promise.all(
     candidates.map(async (rel) => {
@@ -501,16 +494,16 @@ export async function injectLiteratureGate(userMessage: MessageV2.WithParts, con
     }),
   )
   const hit = present.find(Boolean)
-  userMessage.parts.push({
-    id: Identifier.ascending("part"),
-    messageID: userMessage.info.id,
-    sessionID: userMessage.info.sessionID,
-    type: "text",
-    text: hit
-      ? `<system-reminder>Stage gate: literature-review.md found at \`${hit}\`. You may proceed past LITERATURE. Still call provenance_record for new figures/tables/datasets.</system-reminder>`
-      : `<system-reminder>Advisory: \`literature-review.md\` is not in the working directory. For a literature survey, write the report in chat. For analysis you may proceed; survey first if a claim needs published support. Compute tools stay available unless this turn is a literature survey.</system-reminder>`,
-    hybio: true,
-  })
+  if (!hit) {
+    userMessage.parts.push({
+      id: Identifier.ascending("part"),
+      messageID: userMessage.info.id,
+      sessionID: userMessage.info.sessionID,
+      type: "text",
+      text: `<system-reminder>This turn cites literature and \`literature-review.md\` is not in the working directory. Verify sources in the answer, or mark the claim unverified.</system-reminder>`,
+      hybio: true,
+    })
+  }
 }
 
 export async function injectComputeTier(userMessage: MessageV2.WithParts) {
@@ -584,6 +577,98 @@ export async function injectTaskProfile(userMessage: MessageV2.WithParts, sessio
     text: fragment,
     hybio: true,
   })
+}
+
+async function injectPlan(
+  userMessage: MessageV2.WithParts,
+  session: Session.Info,
+  agentName: string,
+  contract: AgentRouter.Contract,
+  userText: string,
+) {
+  if (agentName !== "research") return
+  const text = userText.trim()
+  const taskID = session.taskScope?.currentID ?? "root"
+  const draft = await PlanDraft.load(session.id, taskID)
+  const kind = Query.classify({
+    text,
+    intent: contract.intent,
+    action: contract.action,
+    mustClarify: contract.mustClarify,
+  })
+  const move = PlanDraft.decide({
+    text,
+    intent: contract.intent,
+    action: contract.action,
+    mustClarify: contract.mustClarify,
+    draft,
+  })
+  if (move === "skip") PlanDraft.release(session.id)
+  const model = userMessage.info.role === "user" ? userMessage.info.model : undefined
+  const written =
+    (move === "draft" || move === "redraft") && model
+      ? await PlanRun.write({
+          sessionID: session.id,
+          task: text,
+          prior: move === "redraft" ? draft?.plan : undefined,
+          shape: Query.shape(kind),
+          model,
+        })
+      : ""
+  const current = written
+    ? await PlanDraft.save(session.id, { status: "pending", taskID, source: text, plan: written })
+    : move === "execute" && draft?.status === "pending"
+      ? await PlanDraft.save(session.id, { ...draft, status: "approved" })
+      : draft
+  const plan = move === "skip" ? "" : (current?.plan ?? "")
+  const status = move === "skip" ? "noted" : Supervision.status(move, plan.length > 0)
+  const prior = await Supervision.load(session.id, taskID)
+  const run =
+    move === "execute" && plan && model
+      ? await ExecutionRun.advance({
+          sessionID: session.id,
+          taskID,
+          model,
+          text,
+          plan,
+          queryType: kind ?? prior?.queryType,
+          prior,
+        })
+      : undefined
+  const memory = await Supervision.save(session.id, {
+    taskID,
+    intent: contract.intent,
+    action: contract.action,
+    blocking: contract.blocking,
+    strategy: run?.strategy ?? Supervision.strategy({ mustClarify: contract.mustClarify, blocking: contract.blocking, move, queryType: kind ?? prior?.queryType }),
+    plan,
+    status,
+    phase: run?.phase === "customer" || run?.phase === "final" ? run.phase : undefined,
+    queryType: kind ?? prior?.queryType,
+    layer: run?.layer ?? prior?.layer,
+    assessment: Query.assess(text, kind ?? prior?.queryType, contract.knownContext),
+    tracks: run?.tracks,
+    delivery: run?.delivery,
+    auditCount: run?.auditCount,
+    source: text,
+  })
+  pushHybioText(userMessage, Supervision.block(memory))
+  if (memory.status === "pending" || memory.phase === "customer" || memory.phase === "final") {
+    PlanDraft.hold(session.id)
+    return true
+  }
+  PlanDraft.release(session.id)
+  return memory.status === "approved"
+}
+
+async function injectSitting(userMessage: MessageV2.WithParts, session: Session.Info, agentName: string) {
+  const key = "<sitting>"
+  if (userMessage.parts.some((part) => part.type === "text" && part.hybio && part.text.includes(key))) return false
+  const members = await Sitting.membersFor(session.id, async (id) => (await Session.get(id)).parentID)
+  const text = brief(agentName, members)
+  if (!text) return false
+  pushHybioText(userMessage, text)
+  return true
 }
 
 export function injectCoordinatorPlan(userMessage: MessageV2.WithParts) {
@@ -704,7 +789,7 @@ export function injectResearchContract(
   contract = InjectionPipeline.interpretTurn(messages, userMessage),
 ) {
   const lines = [
-    `<research-intent intent="${contract.intent}" confidence="${contract.confidence}">`,
+    `<research-intent intent="${contract.intent}" action="${contract.action}" confidence="${contract.confidence}">`,
     "Turn contract derived from the request. Apply the system prompt 准则 1–4; the lines below only name what this turn already knows or still lacks.",
   ]
 
@@ -738,20 +823,20 @@ export function injectResearchContract(
       `Known context: ${contract.knownContext.join(", ")}. Do not ask for it again unless it conflicts with the current request.`,
     )
   }
-  if (contract.mustClarify) {
-    lines.push(
-      `Ask is blocking: ${contract.missingPremises.join("; ")}. One question tool call for all of them, then stop.`,
-    )
+  if (contract.blocking) {
+    lines.push(`Ask is blocking: ${contract.blocking}. One question tool call for this slot, then stop.`)
+    const later = contract.missingPremises.filter((item) => item !== contract.blocking)
+    if (later.length > 0) lines.push(`Open but not this turn: ${later.join("; ")}. Do not ask them now.`)
   }
-  if (contract.missingPremises.includes("meaning of PCF")) {
+  if (contract.blocking === "meaning of PCF") {
     lines.push(
       "Ask what PCF means with options: PhenoCycler-Fusion（Akoya，前身 CODEX）/ Protein Correlation Fingerprinting / 其他.",
     )
   }
-  if (contract.missingPremises.includes(AgentRouter.IMC_CONFIRM)) {
+  if (contract.blocking === AgentRouter.IMC_CONFIRM) {
     lines.push("Ask whether IMC means 成像质谱 (imaging mass cytometry); the project direction is not a confirmation.")
   }
-  if (contract.missingPremises.includes(AgentRouter.PLATFORM_SLOT)) {
+  if (contract.blocking === AgentRouter.PLATFORM_SLOT) {
     lines.push(
       "Ask which assay or platform defines the reagents and channels. Offer concrete options plus 其他. Do not start a panel from a guessed platform.",
     )
@@ -829,6 +914,9 @@ async function applyDynamicInjections(
     SessionTrace.injection(input.session.id, name)
   }
 
+  if (await injectSitting(userMessage, input.session, input.agent.name)) note("sitting")
+  if (input.agent.name === "research" && (await injectPlan(userMessage, input.session, input.agent.name, ctx.contract, ctx.userText)))
+    note("plan-gate")
   const specialty = await injectSpecialty(userMessage, input.session.id)
   const drifted = specialty.drifted
   if (drifted) note("domain-drift")
@@ -918,8 +1006,6 @@ async function applyDynamicInjections(
     injectProjectResearch(userMessage)
     note("project-research")
     const pack = !drifted && !specialty.suppress ? disciplinePack(input.agent.name, specialty.domain) : undefined
-    injectInteractionContract(userMessage)
-    note("interaction-contract")
     if (pack === "biology") {
       injectBiologyServiceContract(userMessage)
       note("biology-service-contract")
@@ -1052,7 +1138,7 @@ export function injectInteractionContract(userMessage: MessageV2.WithParts) {
       "## Live interaction (runtime hints; rules are in the system prompt 准则 1–4)",
       "Simple factual or method questions: answer directly. Do not load skills, spawn sub-agents, or outline a pipeline unless asked.",
       "Analysis or compute tasks: at most one short line of what you will do, then start. Never announce tool names.",
-      "Open result-changing slots: one question tool call covering all of them, then stop — not prose in chat, not a later turn. A plan-only request is the exception: write the plan and mark open slots as assumptions.",
+      "Open result-changing slots: one question tool call for the single blocking slot, then stop — not prose in chat, not a later turn. A plan-only request is the exception: write the plan and mark open slots as assumptions.",
       "When extended thinking/reasoning is available, start each major segment with a bold one-line label (e.g. **检查数据文件**) so the UI can show live status.",
       "</system-reminder>",
     ].join("\n"),

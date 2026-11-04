@@ -1,11 +1,8 @@
-/**
- * Coordinator — 任务拆分 + 多 Agent 并行调度
- *
- * 接收用户复杂请求 → LLM 拆分任务 → 并行分派 sub-agent → 汇总结果。
- * 与 agent-router 互补：router 负责意图分类，coordinator 负责任务编排。
- */
+import { seat } from "@hysci/util/seat"
 
-import { AgentRouter } from "./agent-router"
+/**
+ * 首席导研究员的任务拆分。编号事项留在科研回路上，核查研究员在依赖完成后核查。
+ */
 
 export namespace Coordinator {
   export type Role = "coordinator" | "expert" | "reviewer"
@@ -46,83 +43,65 @@ export namespace Coordinator {
       })
     }
 
-    // Detect multi-part questions: numbered items, multiple ?, "and also", "additionally"
-    const numberedItems = text.match(/(?:^|\n)\s*(?:\d+[.)]\s*|[-*]\s+)([^\n]+)/g)
-    if (numberedItems && numberedItems.length >= 2) {
-      for (let i = 0; i < numberedItems.length; i++) {
-        const item = numberedItems[i].replace(/^\s*(?:\d+[.)]\s*|[-*]\s+)/, "").trim()
-        if (item.length < 10) continue
-        const rec = AgentRouter.recommend({ current: "research", text: item })
+    const numberedItems = text.match(/(?:^|\n)\s*(?:\d+[.)]\s*|[-*]\s+)([^\n]+)/g) ?? []
+    const items = numberedItems
+      .map((raw) => raw.replace(/^\s*(?:\d+[.)]\s*|[-*]\s+)/, "").trim())
+      .filter((item) => item.length >= 10)
+    if (items.length >= 2) {
+      for (const item of items) {
         subtasks.push({
-          id: `subtask-${i + 1}`,
+          id: `subtask-${subtasks.length + 1}`,
           description: item,
-          agent: rec.agent,
+          agent: "research",
           role: "expert",
           dependencies: [],
-          priority: i + 1,
+          priority: subtasks.length + 1,
         })
       }
       review()
       return { subtasks, reasoning: `Decomposed into ${subtasks.length} subtasks from numbered list` }
     }
 
-    // Detect "A and B" pattern for two distinct domains
-    const domains: Array<{ pattern: RegExp; agent: string }> = [
-      { pattern: /\b(?:分析|数据|统计|bioinfo|genomic|RNA|seq|cell|cluster)\b/i, agent: "biology" },
-      { pattern: /\b(?:文献|paper|literature|review|summarize|find.*paper)\b/i, agent: "research" },
-      { pattern: /\b(?:train|model|ML|machine.learning|deep.learning|neural)\b/i, agent: "ml" },
-    ]
-
-    const matched = domains.filter((d) => d.pattern.test(text)).map((d) => d.agent)
-    const unique = [...new Set(matched)]
-    if (unique.length >= 2) {
-      for (let i = 0; i < unique.length; i++) {
-        subtasks.push({
-          id: `subtask-${i + 1}`,
-          description: text.slice(0, 100) + (text.length > 100 ? "..." : ""),
-          agent: unique[i],
-          role: "expert",
-          dependencies: [],
-          priority: i + 1,
-        })
-      }
-      review()
-      return {
-        subtasks,
-        reasoning: `Decomposed into ${subtasks.length} domain-specific subtasks: ${unique.join(", ")}`,
-      }
-    }
-
-    // Single task, no decomposition needed
-    const rec = AgentRouter.recommend({ current: "research", text })
     return {
       subtasks: [
-        { id: "subtask-1", description: text, agent: rec.agent, role: "expert", dependencies: [], priority: 1 },
+        { id: "subtask-1", description: text, agent: "research", role: "expert", dependencies: [], priority: 1 },
       ],
-      reasoning: "Single task — no decomposition needed",
+      reasoning: "Single task — the visible agent stays research",
     }
   }
 
-  /** Format coordination plan as hybio injection for the agent. */
+  function role(name: string) {
+    if (name === "reviewer") return "核查研究员"
+    if (name === "expert") return "研究员"
+    return "首席导研究员"
+  }
+
+  function who(key: string) {
+    const item = seat(key)
+    if (!item) return key
+    return `${item.zh} ${key}`
+  }
+
+  /** Format the sitting plan as hybio injection for 首席导研究员. */
   export function formatPlan(plan: Plan): string {
     if (plan.subtasks.length <= 1) return ""
     const lines = [
       "<coordinator-plan>",
-      `## 任务拆分为 ${plan.subtasks.length} 个子任务`,
+      `## 首席导研究员把这件事分成 ${plan.subtasks.length} 件`,
       plan.reasoning,
       "",
-      "| # | 角色 | 子任务 | Agent | 依赖 |",
-      "|---|------|--------|-------|------|",
+      "| # | 角色 | 子任务 | 研究员 | 依赖 |",
+      "|---|------|--------|--------|------|",
       ...plan.subtasks.map(
         (s) =>
-          `| ${s.id.split("-")[1]} | ${s.role} | ${s.description.slice(0, 60)}... | ${s.agent} | ${s.dependencies.length > 0 ? s.dependencies.join(", ") : "无"} |`,
+          `| ${s.id.split("-")[1]} | ${role(s.role)} | ${s.description.slice(0, 60)}... | ${who(s.agent)} | ${s.dependencies.length > 0 ? s.dependencies.join(", ") : "无"} |`,
       ),
       "",
       "执行策略：",
-      "- coordinator 负责委派与汇总；expert 子任务可在无依赖时并行执行（使用 Task 工具）",
-      "- reviewer 必须在所有 dependencies 的 <task_result> 可引用后执行；只接收这些结构化结果，不接收专家分支的完整对话历史",
-      "- reviewer 只核查引用、计算和代码-图表一致性，不重复执行",
-      "- reviewer 的阻断性发现必须在最终汇总前解决或明确标注",
+      "- 首席导研究员派工与交付；进组的事没有依赖时可以并行，用 task，subagent_type 用括号里的 key",
+      "- 核查研究员必须在所有 dependencies 的 <task_result> 可引用后执行；只接收这些结构化结果，不接收执行分支的完整对话历史",
+      "- 核查研究员只核查引用、计算和代码-图表一致性，不重复执行",
+      "- 核查研究员的阻断性发现必须在首席导研究员交付前解决或明确标注",
       "</coordinator-plan>",
     ]
     return lines.join("\n")

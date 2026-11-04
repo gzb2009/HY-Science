@@ -38,8 +38,13 @@ export namespace AgentRouter {
    * deliberately describes what the assistant must preserve or verify; it
    * never prescribes a workflow stage, tool, or agent switch.
    */
+  export type Action = "answer" | "clarify" | "plan" | "execute"
+
   export type Contract = {
     intent: InteractionIntent
+    action: Action
+    /** The single slot to ask this turn. Other missing premises stay recorded and unasked. */
+    blocking?: string
     confidence: number
     knownContext: string[]
     missingPremises: string[]
@@ -153,6 +158,11 @@ export namespace AgentRouter {
   const PANEL_OR_ASSAY = /(?:panel|marker|清单|assay|抗体[盘组]|panel设计)/i
   const DESIGN_VERB = /(?:设计|做|写|给|输出|交付)/i
   const AIM_SAID = AIM
+  const VAGUE_DATA =
+    /(?:看看|看一下).{0,16}(?:数据|data)|(?:数据|data).{0,10}(?:怎么样|如何|怎样)|look at (?:this|the) data|how(?:'s| is| does) (?:this|the) data/i
+  const ANALYSIS_TARGET = /(?:\bqc\b|质控|聚类|cluster|差异|\bdeg\b|归一|normaliz|注释|annotat|降维|umap|\bpca\b)/i
+  export const ANALYSIS_TARGET_SLOT = "analysis target (QC, clustering, differential, or other)"
+  const NUMBERED = /(?:^|\n)\s*\d+[.)]\s+\S/g
 
   export const IMC_CONFIRM = "confirm IMC is imaging mass cytometry (成像质谱)"
   export const PLATFORM_SLOT = "assay or platform that defines reagents and channels"
@@ -286,21 +296,25 @@ export namespace AgentRouter {
     const hasData = files.length > 0
     const actionable = !exporting && (DELIVERABLE.test(text) || analysis || execution)
     const terms = actionable ? unresolvedAcronyms(text, prior) : []
+    const vague = VAGUE_DATA.test(text) && !ANALYSIS_TARGET.test(`${prior}\n${text}`)
     const missingPremises = exporting
       ? []
       : [
-          ...(analysis || execution ? (hasData ? [] : ["data location, variables, or analysis target"]) : []),
-          ...(inference ? (knownContext.includes("comparison") ? [] : ["comparison or intervention definition"]) : []),
           ...terms.map((token) => `meaning of ${token}`),
           ...(actionable && missingImcConfirm(text, prior) ? [IMC_CONFIRM] : []),
           ...(actionable && missingPlatform(text, prior) ? [PLATFORM_SLOT] : []),
+          ...(missingSpecies(text, prior) ? [SPECIES_SLOT] : []),
+          ...(missingTissue(text, prior) ? [TISSUE_SLOT] : []),
+          ...(vague ? [ANALYSIS_TARGET_SLOT] : []),
+          ...(analysis || execution || vague ? (hasData ? [] : ["data location, variables, or analysis target"]) : []),
+          ...(missingDeliverableForm(text) ? ["deliverable form (table / Excel / markdown / figure)"] : []),
           ...(missingDesignAim(text, prior)
             ? ["scientific aim (general vs T-biased vs B/TLS vs myeloid vs tumor-stroma)"]
             : []),
-          ...(missingSpecies(text, prior) ? [SPECIES_SLOT] : []),
-          ...(missingTissue(text, prior) ? [TISSUE_SLOT] : []),
-          ...(missingDeliverableForm(text) ? ["deliverable form (table / Excel / markdown / figure)"] : []),
+          ...(inference ? (knownContext.includes("comparison") ? [] : ["comparison or intervention definition"]) : []),
         ]
+    const blocking = pickBlocking(missingPremises)
+    const numbered = (text.match(NUMBERED) ?? []).length >= 2
     const intent: InteractionIntent = correction
       ? "correction"
       : exporting
@@ -318,17 +332,46 @@ export namespace AgentRouter {
                   : inference
                     ? "exploration"
                     : "direct_answer"
+    const action: Action = !text
+      ? "answer"
+      : exporting
+        ? "execute"
+        : blocking
+          ? "clarify"
+          : coordinate || numbered
+            ? "plan"
+            : analysis || execution
+              ? "execute"
+              : "answer"
 
     return {
       intent,
-      confidence: text ? 0.75 : 0,
+      action,
+      blocking,
+      confidence: text ? 1 : 0,
       knownContext,
       missingPremises,
-      mustClarify: missingPremises.length > 0,
+      mustClarify: blocking !== undefined,
       gates,
       coordinate,
       review: highImpact || (inference && /\d/.test(text)),
     }
+  }
+
+  function pickBlocking(missing: string[]) {
+    const rank = (item: string) => {
+      if (item.startsWith("meaning of ")) return 0
+      if (item === IMC_CONFIRM) return 1
+      if (item === PLATFORM_SLOT) return 2
+      if (item === SPECIES_SLOT) return 3
+      if (item === TISSUE_SLOT) return 4
+      if (item === ANALYSIS_TARGET_SLOT) return 5
+      if (item.startsWith("data location")) return 6
+      if (item.startsWith("deliverable form")) return 7
+      if (item.startsWith("scientific aim")) return 8
+      return 9
+    }
+    return [...missing].sort((a, b) => rank(a) - rank(b))[0]
   }
 
   // ===== PUBLIC API =====

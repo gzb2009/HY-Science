@@ -131,15 +131,19 @@ export namespace SessionCompaction {
     return text.slice(0, cap) + "…"
   }
 
-  /** Facts the condenser must copy verbatim: open theme slots, data profiles, failed tools. */
+  /** Facts the condenser must copy verbatim: open theme slots, closed decisions, data profiles, failed tools. */
   export function keepFacts(messages: MessageV2.WithParts[]) {
     const slots: string[] = []
+    const decisions: string[] = []
     const profiles: string[] = []
     const failures: string[] = []
     for (const msg of messages) {
       for (const part of msg.parts) {
         if (part.type === "text" && part.hybio && part.text) {
           if (part.text.includes("<theme-slots")) slots.push(clip(part.text, 2000))
+          if (part.text.includes("<research-intent") || part.text.includes("<task-decisions"))
+            decisions.push(clip(part.text, 2000))
+          if (part.text.includes("<chief-memory")) decisions.push(clip(part.text, 4000))
           if (part.text.includes("<data-profile")) profiles.push(clip(part.text, 2000))
         }
         if (part.type !== "tool" || !toolFailed(part)) continue
@@ -148,11 +152,12 @@ export namespace SessionCompaction {
         failures.push(clip(`${part.tool}: ${detail}`, 400))
       }
     }
-    if (slots.length + profiles.length + failures.length === 0) return ""
+    if (slots.length + decisions.length + profiles.length + failures.length === 0) return ""
     return [
       "<compaction-keep>",
       "Copy these facts into the summary unchanged. Do not drop them to save space.",
       ...(slots.length ? ["## open-theme-slots", ...slots.slice(-2)] : []),
+      ...(decisions.length ? ["## closed-slots", ...decisions.slice(-2)] : []),
       ...(profiles.length ? ["## data-profile", ...profiles.slice(-3)] : []),
       ...(failures.length ? ["## failed-tools", ...failures.slice(-8)] : []),
       "</compaction-keep>",

@@ -7,6 +7,8 @@ import { MessageV2 } from "../session/message-v2"
 import { Identifier } from "../id/id"
 import { Agent } from "../agent/agent"
 import { SessionPrompt } from "../session/prompt"
+import { Sitting } from "../session/sitting"
+import { allowed, seat } from "@hysci/util/seat"
 import { iife } from "@/util/iife"
 import { defer } from "@/util/defer"
 import { Config } from "../config/config"
@@ -16,6 +18,13 @@ import { TaskDecisionState } from "../session/task-decisions"
 import { TaskScope } from "../session/task-scope"
 import { SubtaskContext } from "../session/subtask-context"
 import { ClaimLedger } from "../session/claim-ledger"
+
+async function depth(sessionID: string, seen = 0): Promise<number> {
+  if (seen > 6) return seen
+  const current = await Session.get(sessionID)
+  if (!current.parentID) return seen
+  return depth(current.parentID, seen + 1)
+}
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
@@ -37,7 +46,11 @@ export const TaskTool = Tool.define("task", async (ctx) => {
   const description = DESCRIPTION.replace(
     "{agents}",
     accessibleAgents
-      .map((a) => `- ${a.name}: ${a.description ?? "This subagent should only be called manually by the user."}`)
+      .map((a) => {
+        const named = seat(a.name)
+        const title = named ? `${named.zh} / ${named.en} [${a.name}]` : a.name
+        return `- ${title}: ${a.description ?? "This subagent should only be called manually by the user."}`
+      })
       .join("\n"),
   )
   return {
@@ -61,8 +74,16 @@ export const TaskTool = Tool.define("task", async (ctx) => {
 
       const agent = await Agent.get(params.subagent_type)
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
+      const members = await Sitting.membersFor(ctx.sessionID, async (id) => (await Session.get(id)).parentID)
+      if (!allowed(ctx.agent, params.subagent_type, members)) {
+        const named = seat(params.subagent_type)
+        const who = named ? `${named.zh} ${named.en}` : params.subagent_type
+        throw new Error(`${who} is not at this sitting. Seat them, or do the work yourself.`)
+      }
 
       const hasTaskPermission = agent.permission.some((rule) => rule.permission === "task")
+      const openPeer = seat(agent.name)?.kind === "seat" && (await depth(ctx.sessionID)) === 0
+      const allowTask = hasTaskPermission || openPeer
       const parent = await Session.get(ctx.sessionID)
       const task = TaskScope.current(parent.taskScope)
       if (!task) throw new Error("Subtasks require an active parent task scope")
@@ -85,7 +106,7 @@ export const TaskTool = Tool.define("task", async (ctx) => {
 
         return await Session.create({
           parentID: ctx.sessionID,
-          title: params.description + ` (@${agent.name} subagent)`,
+          title: `${params.description} · ${seat(agent.name)?.zh ?? agent.name}`,
           permission: [
             {
               permission: "todowrite",
@@ -97,8 +118,14 @@ export const TaskTool = Tool.define("task", async (ctx) => {
               pattern: "*",
               action: "deny",
             },
-            ...(hasTaskPermission
-              ? []
+            ...(allowTask
+              ? [
+                  {
+                    permission: "task" as const,
+                    pattern: "*" as const,
+                    action: "allow" as const,
+                  },
+                ]
               : [
                   {
                     permission: "task" as const,
@@ -174,7 +201,7 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         tools: {
           todowrite: false,
           todoread: false,
-          ...(hasTaskPermission ? {} : { task: false }),
+          ...(allowTask ? {} : { task: false }),
           ...Object.fromEntries((config.experimental?.primary_tools ?? []).map((t) => [t, false])),
         },
         parts: promptParts,

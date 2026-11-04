@@ -4722,6 +4722,7 @@ export type SessionPromptData = {
     fast?: boolean
     newTask?: boolean
     mergeTaskContext?: boolean
+    sitting?: Array<string>
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
   path: {
@@ -4913,6 +4914,7 @@ export type SessionPromptAsyncData = {
     fast?: boolean
     newTask?: boolean
     mergeTaskContext?: boolean
+    sitting?: Array<string>
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
   path: {

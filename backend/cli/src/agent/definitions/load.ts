@@ -5,6 +5,7 @@ import { PermissionNext } from "@/permission/next"
 import { Truncate } from "@/tool/truncation"
 import type { Agent } from "../agent"
 import { PromptLoader } from "../prompt-loader"
+import { seat } from "@hysci/util/seat"
 import { BUILTIN, type BuiltinDefinition, type PermissionPreset } from "./builtin"
 
 type Perm = (overrides: Parameters<typeof PermissionNext.fromConfig>[0]) => PermissionNext.Ruleset
@@ -67,6 +68,7 @@ export function loadBuiltin(input: { perm: Perm; vars?: Record<string, string> }
       def.promptFile && def.promptRole === "prompt" ? PromptLoader.load(def.promptFile, input.vars) : undefined
     const promptText =
       def.promptFile && def.promptRole === "promptText" ? PromptLoader.load(def.promptFile, input.vars) : undefined
+    const named = seat(def.name)
 
     result[def.key] = {
       name: def.name,
@@ -84,7 +86,9 @@ export function loadBuiltin(input: { perm: Perm; vars?: Record<string, string> }
       color: def.color,
       temperature: def.temperature,
       permission: permission(def, input.perm),
-      options: def.options ?? {},
+      options: named
+        ? { ...def.options, seat: { zh: named.zh, en: named.en, kind: named.kind } }
+        : (def.options ?? {}),
     }
   }
 

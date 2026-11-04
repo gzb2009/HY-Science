@@ -7,6 +7,7 @@ import { MessageV2 } from "./message-v2"
 import { Log } from "../util/log"
 import { SessionRevert } from "./revert"
 import { Session } from "."
+import { Sitting } from "./sitting"
 import { Agent } from "../agent/agent"
 import { Provider } from "../provider/provider"
 import { type Tool as AITool, tool, jsonSchema, type ToolCallOptions } from "ai"
@@ -70,8 +71,9 @@ import { SessionReview } from "./review"
 import { SessionLoop } from "./session-loop"
 import { SessionTrace } from "./session-trace"
 
-// @ts-ignore
-globalThis.AI_SDK_LOG_WARNINGS = false
+import { silenceSdkWarnings } from "../util/sdk-warnings"
+
+silenceSdkWarnings()
 
 export namespace SessionPrompt {
   const log = Log.create({ service: "session.prompt" })
@@ -155,6 +157,7 @@ export namespace SessionPrompt {
     // Per-request fast API param (gpt-5.5 → service_tier:"priority"). See llm.ts.
     fast: z.boolean().optional(),
     intent: z.enum(["plan", "work"]).optional(),
+    sitting: z.array(z.string()).optional(),
     newTask: z.boolean().optional(),
     mergeTaskContext: z.boolean().optional(),
     parts: z.array(
@@ -206,6 +209,7 @@ export namespace SessionPrompt {
 
   export const prompt = fn(PromptInput, async (input) => {
     const session = await Session.get(input.sessionID)
+    if (input.sitting) await Sitting.save(input.sessionID, input.sitting)
     await SessionRevert.cleanup(session)
 
     const message = await createUserMessage(input).catch((e) => {
@@ -617,10 +621,11 @@ export namespace SessionPrompt {
             } satisfies MessageV2.ToolPart)
           },
           async ask(req) {
+            const fresh = await Session.get(sessionID)
             await PermissionNext.ask({
               ...req,
               sessionID: sessionID,
-              ruleset: PermissionNext.merge(taskAgent.permission, session.permission ?? []),
+              ruleset: PermissionNext.merge(taskAgent.permission, fresh.permission ?? []),
             })
           },
         }

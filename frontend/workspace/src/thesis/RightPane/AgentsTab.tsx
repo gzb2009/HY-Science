@@ -1,6 +1,8 @@
 import { createMemo, For, Show, type JSX } from "solid-js"
 import { useParams, useNavigate } from "@solidjs/router"
 import { useSync } from "@/context/sync"
+import { useLanguage } from "@/context/language"
+import { face } from "@hysci/util/seat"
 import { FONT_MONO, FONT_SANS } from "@/styles/tokens"
 
 interface AgentNode {
@@ -17,9 +19,8 @@ interface AgentNode {
   children: AgentNode[]
 }
 
-function agentLabel(name: string): string {
-  if (!name) return "task"
-  return name
+function agentLabel(name: string, locale: string) {
+  return face(name || "task", locale).primary
 }
 
 function statusDot(status: string): JSX.CSSProperties {
@@ -43,6 +44,7 @@ export function AgentsTab(): JSX.Element {
   const params = useParams()
   const navigate = useNavigate()
   const sync = useSync()
+  const language = useLanguage()
 
   const agentDefs = createMemo(() => {
     const map: Record<string, { color?: string }> = {}
@@ -91,10 +93,10 @@ export function AgentsTab(): JSX.Element {
         const busy = status?.type === "busy" && !waiting
         const retrying = status?.type === "retry"
 
-        let statusText = "idle"
-        if (waiting) statusText = "waiting for you"
-        if (busy) statusText = "working"
-        else if (retrying) statusText = `retry ${(status as any).attempt ?? ""}`
+        let statusText = language.t("sitting.status.idle")
+        if (waiting) statusText = language.t("sitting.status.waiting")
+        if (busy) statusText = language.t("sitting.status.working")
+        else if (retrying) statusText = `${language.t("sitting.status.retry")} ${(status as any).attempt ?? ""}`
 
         let steps = 0
         let cost: number | undefined
@@ -129,7 +131,7 @@ export function AgentsTab(): JSX.Element {
 
         return {
           id: s.id,
-          title: s.title ?? agentLabel(agent),
+          title: s.title ?? agentLabel(agent, language.locale()),
           agentName: agent || "task",
           agentColor: def?.color,
           status: busy ? "busy" : retrying ? "retry" : "idle",
@@ -153,11 +155,11 @@ export function AgentsTab(): JSX.Element {
     <section style={{ flex: 1, "min-height": 0, display: "flex", "flex-direction": "column" }}>
       <div style={agentsHeader()}>
         <div>
-          <div style={agentsTitle()}>Agents</div>
+          <div style={agentsTitle()}>{language.t("sitting.agents")}</div>
           <div style={agentsHint()}>
             {totalChildren() > 0
-              ? `${totalChildren()} sub-agent${totalChildren() === 1 ? "" : "s"} · ${busyCount()} active`
-              : "Sub-agents spawned during research appear here"}
+              ? language.t("sitting.agents.lead", { count: String(totalChildren()), busy: String(busyCount()) })
+              : language.t("sitting.agents.idle")}
           </div>
         </div>
       </div>
@@ -166,18 +168,20 @@ export function AgentsTab(): JSX.Element {
           when={tree().length > 0}
           fallback={
             <div style={empty()}>
-              <div style={emptyTitle()}>No sub-agents yet</div>
-              <p style={emptyHint()}>
-                When the research agent delegates work to sub-agents (literature review, critique, exploration, etc.),
-                they will appear here with live status.
-              </p>
+              <div style={emptyTitle()}>{language.t("sitting.agents.none")}</div>
+              <p style={emptyHint()}>{language.t("sitting.agents.empty")}</p>
             </div>
           }
         >
           <div style={{ display: "flex", "flex-direction": "column", gap: "2px", padding: "8px" }}>
             <For each={tree()}>
               {(node) => (
-                <AgentNodeRow node={node} depth={0} onNavigate={(id) => navigate(`/${params.dir}/session/${id}`)} />
+                <AgentNodeRow
+                  node={node}
+                  depth={0}
+                  locale={language.locale()}
+                  onNavigate={(id) => navigate(`/${params.dir}/session/${id}`)}
+                />
               )}
             </For>
           </div>
@@ -187,7 +191,13 @@ export function AgentsTab(): JSX.Element {
   )
 }
 
-function AgentNodeRow(props: { node: AgentNode; depth: number; onNavigate: (id: string) => void }): JSX.Element {
+function AgentNodeRow(props: {
+  node: AgentNode
+  depth: number
+  locale: string
+  onNavigate: (id: string) => void
+}): JSX.Element {
+  const named = () => face(props.node.agentName, props.locale)
   return (
     <>
       <button
@@ -211,7 +221,9 @@ function AgentNodeRow(props: { node: AgentNode; depth: number; onNavigate: (id: 
           style={{ flex: 1, "min-width": 0, overflow: "hidden", "text-overflow": "ellipsis", "white-space": "nowrap" }}
         >
           <span style={agentName()}>{props.node.title}</span>
-          <span style={agentType()}>{agentLabel(props.node.agentName)}</span>
+          <span style={agentType()}>
+            {named().primary} {named().secondary}
+          </span>
         </span>
         <span style={agentMeta()}>
           <Show when={props.node.toolSummary}>
@@ -229,7 +241,9 @@ function AgentNodeRow(props: { node: AgentNode; depth: number; onNavigate: (id: 
         </span>
       </button>
       <For each={props.node.children}>
-        {(child) => <AgentNodeRow node={child} depth={props.depth + 1} onNavigate={props.onNavigate} />}
+        {(child) => (
+          <AgentNodeRow node={child} depth={props.depth + 1} locale={props.locale} onNavigate={props.onNavigate} />
+        )}
       </For>
     </>
   )

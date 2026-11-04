@@ -10,9 +10,12 @@ import { useModels, type ModelKey } from "@/context/models"
 import { FONT_MONO, FONT_SANS } from "@/styles/tokens"
 import { IconArrowUp, IconChevronDown, IconPaperclip, IconStop, IconX } from "@/thesis/shared/Icon"
 import { recipeMark } from "@/domain/imc-flow"
+import { SittingBar } from "@/thesis/SittingBar"
+import { bindSitting, readSitting, writeSitting } from "@/thesis/sitting-store"
 import { ComposerSlotProvider } from "@/shell/composer-slot"
 import { SlotViews } from "@/shell/builtin"
 import { toast } from "@/thesis/Toast"
+import { confirmDialog } from "@/thesis/dialogs"
 import { ScopePick, WorkspacePick } from "@/thesis/composer-picks"
 import { readScope, scopeRules, writeScope, type Scope } from "@/thesis/composer-scope"
 import { decode64 } from "@/utils/base64"
@@ -82,7 +85,8 @@ export function Composer(): JSX.Element {
   const layout = useLayout()
   const server = useServer()
 
-  const [text, setText] = createSignal("")
+  const text = uiStore.composerText
+  const setText = (value: string) => uiStore.setComposerText(value)
   const [recipeId, setRecipeId] = createSignal<string | undefined>(undefined)
   const [model, setModel] = createSignal<ModelKey | undefined>(undefined)
   const agent = (): AgentName => "research"
@@ -144,6 +148,7 @@ export function Composer(): JSX.Element {
     model: ModelKey
     variant: string | undefined
     fast: boolean | undefined
+    sitting: string[]
   }
   const [queue, setQueue] = createSignal<QueuedPrompt[]>([])
   const [inflight, setInflight] = createSignal(false)
@@ -158,6 +163,14 @@ export function Composer(): JSX.Element {
   const [focused, setFocused] = createSignal(false)
   const [dragOver, setDragOver] = createSignal(false)
   const [attachments, setAttachments] = createSignal<Attachment[]>([])
+  const [seated, setSeated] = createSignal<string[]>(readSitting(params.id))
+  createEffect(
+    on(
+      () => params.id,
+      (id) => setSeated(readSitting(id)),
+      { defer: true },
+    ),
+  )
   // Slash-command autocomplete (skills surfaced via `sync.data.skill`).
   // Popover opens whenever the input is exactly `/<query>` (single token,
   // no spaces). Arrow keys move selection; Enter inserts `/<name> `.
@@ -206,18 +219,36 @@ export function Composer(): JSX.Element {
     projectPrefs.unhide(worktree)
     layout.projects.open(worktree)
     server.projects.touch(worktree)
-    const [store] = globalSync.child(dir, { bootstrap: false })
-    const latest = [...store.session]
-      .filter((item) => !item.parentID && !item.time?.archived)
-      .sort((a, b) => (b.time?.updated ?? 0) - (a.time?.updated ?? 0))[0]?.id
     setWorkspaceOpen(false)
     if (dir.replace(/\/$/, "") === directory().replace(/\/$/, "")) return
-    navigate(projectSessionHref(worktree, latest))
+    navigate(projectSessionHref(worktree))
   }
-  const pickScope = (next: Scope) => {
+  const applyScope = (next: Scope) => {
     setScope(next)
     writeScope(directory(), next)
     setScopeOpen(false)
+    const sid = sessionPending()
+    if (!sid) return
+    void sdk.client.session.update({ sessionID: sid, permission: scopeRules(next) }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err)
+      toast.error("没能更新权限", message)
+    })
+  }
+  const pickScope = (next: Scope) => {
+    if (next !== "trust") {
+      applyScope(next)
+      return
+    }
+    void confirmDialog(dialog, {
+      title: "开启完全访问",
+      message: "开启后不再逐条询问。智能体可以读写文件、运行终端、访问网络。",
+      confirmLabel: "确认开启",
+      cancelLabel: "取消",
+      danger: true,
+    }).then((ok) => {
+      if (!ok) return
+      applyScope("trust")
+    })
   }
   createEffect(() => {
     if (centerTabs.active() === "chat") return
@@ -958,7 +989,7 @@ export function Composer(): JSX.Element {
     }
     const waiting = pendingQuestions()[0]
     if (waiting && trimmed) {
-      setText("")
+      uiStore.clearDraft()
       if (textareaRef) textareaRef.style.height = "auto"
       try {
         await sdk.client.question.reply({
@@ -979,9 +1010,10 @@ export function Composer(): JSX.Element {
       model: chosen,
       variant: models.variant.get(chosen),
       fast: isGpt55(chosen.modelID) ? fast() : undefined,
+      sitting: seated(),
     }
     // Clear the input immediately in both paths so typing can continue.
-    setText("")
+    uiStore.clearDraft()
     setAttachments([])
     if (textareaRef) textareaRef.style.height = "auto"
 
@@ -1051,6 +1083,7 @@ export function Composer(): JSX.Element {
         toast.error("could not start session", "session.create returned no id")
         return
       }
+      bindSitting(sessionID, p.sitting, !existing)
 
       const messageID = Identifier.ascending("message")
 
@@ -1163,6 +1196,7 @@ export function Composer(): JSX.Element {
           agent: p.agent,
           variant: p.variant,
           fast: p.fast,
+          sitting: p.sitting,
           parts: promptParts,
         } as any)
         .catch((e: any) => {
@@ -1278,20 +1312,13 @@ export function Composer(): JSX.Element {
           style={{
             display: "flex",
             "flex-direction": "column",
-            padding: "12px 14px",
-            gap: "8px",
+            padding: "6px 12px 4px",
+            gap: "4px",
             position: "relative",
-            "border-color": dragOver()
-              ? "var(--color-accent)"
-              : focused()
-                ? "var(--color-border-strong)"
-                : "var(--color-border)",
-            "box-shadow":
-              dragOver() || focused()
-                ? "0 0 0 4px color-mix(in srgb, var(--color-focus) 10%, transparent), var(--shadow-xs)"
-                : "var(--shadow-xs)",
+            "border-color": "var(--color-border)",
+            "box-shadow": "var(--shadow-xs)",
             background: dragOver() ? "color-mix(in srgb, var(--color-accent-subtle) 70%, transparent)" : undefined,
-            "border-radius": "14px",
+            "border-radius": "var(--frame-radius, 16px)",
             transition: "background 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
           }}
         >
@@ -1300,7 +1327,7 @@ export function Composer(): JSX.Element {
               style={{
                 position: "absolute",
                 inset: 0,
-                "border-radius": "14px",
+                "border-radius": "var(--frame-radius, 16px)",
                 display: "flex",
                 "align-items": "center",
                 "justify-content": "center",
@@ -1365,6 +1392,16 @@ export function Composer(): JSX.Element {
               </For>
             </div>
           </Show>
+          <SittingBar
+            locale={language.locale()}
+            members={seated()}
+            mark={language.t("sitting.mark")}
+            hint={language.t("sitting.hint")}
+            onChange={(members) => {
+              setSeated(members)
+              writeSitting(params.id, members)
+            }}
+          />
           <ComposerSlotProvider
             value={{
               insert: (value, recipe) => {
@@ -1380,6 +1417,7 @@ export function Composer(): JSX.Element {
             <textarea
               ref={textareaRef}
               value={text()}
+              spellcheck={false}
               onInput={(e) => {
                 grow(e.currentTarget.value)
                 setCaret(e.currentTarget.selectionStart ?? e.currentTarget.value.length)
@@ -1387,7 +1425,12 @@ export function Composer(): JSX.Element {
               onKeyUp={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
               onClick={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
               onKeyDown={onKey}
-              onFocus={() => setFocused(true)}
+              onFocus={(event) => {
+                setFocused(true)
+                const el = event.currentTarget
+                el.style.height = "auto"
+                el.style.height = Math.min(280, el.scrollHeight) + "px"
+              }}
               // Delay blur so popover clicks register before the popover unmounts.
               onBlur={() => setTimeout(() => setFocused(false), 120)}
               onPaste={onPaste}
@@ -1398,7 +1441,7 @@ export function Composer(): JSX.Element {
                 "font-size": "var(--app-font-size, 14px)",
                 "line-height": 1.55,
                 color: "var(--color-text)",
-                "min-height": "20px",
+                "min-height": "calc(1.55em * 2)",
                 "max-height": "280px",
                 "overflow-y": "auto",
                 resize: "none",

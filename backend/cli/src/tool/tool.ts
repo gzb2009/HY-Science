@@ -3,6 +3,7 @@ import type { MessageV2 } from "../session/message-v2"
 import type { Agent } from "../agent/agent"
 import type { PermissionNext } from "../permission/next"
 import { Truncate } from "./truncation"
+import { ToolLane } from "../session/tool-lane"
 
 export namespace Tool {
   interface Metadata {
@@ -66,20 +67,22 @@ export namespace Tool {
               { cause: error },
             )
           }
-          const result = await execute(args, ctx)
-          // skip truncation for tools that handle it themselves
-          if (result.metadata.truncated !== undefined) {
-            return result
-          }
-          const truncated = await Truncate.output(result.output, {}, initCtx?.agent)
-          return {
-            ...result,
-            output: truncated.content,
-            metadata: {
-              ...result.metadata,
-              truncated: truncated.truncated,
-              ...(truncated.truncated && { outputPath: truncated.outputPath }),
-            },
+          await ToolLane.acquire(ctx.sessionID)
+          try {
+            const result = await execute(args, ctx)
+            if (result.metadata.truncated !== undefined) return result
+            const truncated = await Truncate.output(result.output, {}, initCtx?.agent)
+            return {
+              ...result,
+              output: truncated.content,
+              metadata: {
+                ...result.metadata,
+                truncated: truncated.truncated,
+                ...(truncated.truncated && { outputPath: truncated.outputPath }),
+              },
+            }
+          } finally {
+            ToolLane.release(ctx.sessionID)
           }
         }
         return toolInfo
